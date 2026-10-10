@@ -1,0 +1,147 @@
+x-broker: &broker
+  image: registry-1.docker.io/redpandadata/redpanda:v26.2.4
+  restart: unless-stopped
+  networks: [lab]
+  healthcheck:
+    test: [CMD, rpk, cluster, health, -X, brokers=localhost:9092, --exit-when-healthy]
+    interval: 10s
+    timeout: 5s
+    retries: 30
+  mem_limit: 1536m
+  logging:
+    driver: k8s-file
+    options: {max-size: 10m}
+
+services:
+  redpanda-0:
+    <<: *broker
+    command:
+      - redpanda
+      - start
+      - --mode=dev-container
+      - --smp=1
+      - --memory=1G
+      - --reserve-memory=0M
+      - --node-id=0
+      - --kafka-addr=internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr=internal://redpanda-0:9092,external://127.0.0.1:${KAFKA_0_PORT}
+      - --rpc-addr=0.0.0.0:33145
+      - --advertise-rpc-addr=redpanda-0:33145
+      - --pandaproxy-addr=0.0.0.0:8082
+      - --schema-registry-addr=0.0.0.0:8081
+      - --default-log-level=warn
+    ports:
+      - 127.0.0.1:${KAFKA_0_PORT}:19092
+      - 127.0.0.1:${REGISTRY_PORT}:8081
+      - 127.0.0.1:${PROXY_PORT}:8082
+      - 127.0.0.1:${ADMIN_PORT}:9644
+    volumes: [broker-0:/var/lib/redpanda/data]
+  redpanda-1:
+    <<: *broker
+    command:
+      - redpanda
+      - start
+      - --mode=dev-container
+      - --smp=1
+      - --memory=1G
+      - --reserve-memory=0M
+      - --node-id=1
+      - --seeds=redpanda-0:33145
+      - --kafka-addr=internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr=internal://redpanda-1:9092,external://127.0.0.1:${KAFKA_1_PORT}
+      - --rpc-addr=0.0.0.0:33145
+      - --advertise-rpc-addr=redpanda-1:33145
+      - --pandaproxy-addr=0.0.0.0:8082
+      - --schema-registry-addr=0.0.0.0:8081
+      - --default-log-level=warn
+    ports: ["127.0.0.1:${KAFKA_1_PORT}:19092"]
+    volumes: [broker-1:/var/lib/redpanda/data]
+  redpanda-2:
+    <<: *broker
+    command:
+      - redpanda
+      - start
+      - --mode=dev-container
+      - --smp=1
+      - --memory=1G
+      - --reserve-memory=0M
+      - --node-id=2
+      - --seeds=redpanda-0:33145
+      - --kafka-addr=internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr=internal://redpanda-2:9092,external://127.0.0.1:${KAFKA_2_PORT}
+      - --rpc-addr=0.0.0.0:33145
+      - --advertise-rpc-addr=redpanda-2:33145
+      - --pandaproxy-addr=0.0.0.0:8082
+      - --schema-registry-addr=0.0.0.0:8081
+      - --default-log-level=warn
+    ports: ["127.0.0.1:${KAFKA_2_PORT}:19092"]
+    volumes: [broker-2:/var/lib/redpanda/data]
+  app:
+    build: {context: ./app, dockerfile: Containerfile}
+    image: localhost/${LAB_PROJECT}-app:1
+    restart: unless-stopped
+    init: true
+    networks: [lab]
+    environment:
+      KAFKA_BROKERS: redpanda-0:9092,redpanda-1:9092,redpanda-2:9092
+      CONSOLE_URL: http://127.0.0.1:${CONSOLE_PORT}
+      GRAFANA_URL: http://127.0.0.1:${GRAFANA_PORT}/d/redpanda-lab
+      PROMETHEUS_URL: http://127.0.0.1:${PROMETHEUS_PORT}
+      REGISTRY_URL: http://127.0.0.1:${REGISTRY_PORT}
+    ports: ["127.0.0.1:${APP_PORT}:3000"]
+    mem_limit: 256m
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges]
+  console:
+    image: registry-1.docker.io/redpandadata/console:v3.12.0
+    restart: unless-stopped
+    networks: [lab]
+    environment: {CONFIG_FILEPATH: /etc/console.yml}
+    volumes: ["./telemetry/console.yml:/etc/console.yml:ro,Z"]
+    ports: ["127.0.0.1:${CONSOLE_PORT}:8080"]
+    mem_limit: 512m
+  prometheus:
+    image: quay.io/prometheus/prometheus:v3.2.1
+    restart: unless-stopped
+    networks: [lab]
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=6h
+      - --storage.tsdb.retention.size=256MB
+    volumes:
+      - ./telemetry/prometheus.yml:/etc/prometheus/prometheus.yml:ro,Z
+      - ./telemetry/alerts.yml:/etc/prometheus/alerts.yml:ro,Z
+      - prometheus:/prometheus
+    ports: ["127.0.0.1:${PROMETHEUS_PORT}:9090"]
+    mem_limit: 512m
+  grafana:
+    image: registry-1.docker.io/grafana/grafana:11.6.0
+    restart: unless-stopped
+    networks: [lab]
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: 'true'
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_AUTH_DISABLE_LOGIN_FORM: 'true'
+      GF_USERS_DEFAULT_THEME: dark
+      GF_ANALYTICS_REPORTING_ENABLED: 'false'
+      GF_ANALYTICS_CHECK_FOR_UPDATES: 'false'
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: 'false'
+      GF_PLUGINS_PREINSTALL_DISABLED: 'true'
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/redpanda-lab.json
+    volumes:
+      - ./telemetry/grafana/provisioning:/etc/grafana/provisioning:ro,Z
+      - ./telemetry/grafana/dashboards:/var/lib/grafana/dashboards:ro,Z
+      - grafana:/var/lib/grafana
+    ports: ["127.0.0.1:${GRAFANA_PORT}:3000"]
+    mem_limit: 512m
+
+networks:
+  lab: {driver: bridge}
+volumes:
+  broker-0: {}
+  broker-1: {}
+  broker-2: {}
+  prometheus: {}
+  grafana: {}

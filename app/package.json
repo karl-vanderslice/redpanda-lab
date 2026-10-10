@@ -1,0 +1,9 @@
+{
+  "name": "redpanda-lab-app",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {"start": "node server.js"},
+  "engines": {"node": "^22 || ^24 || >=26"},
+  "dependencies": {"@confluentinc/kafka-javascript": "1.11.0", "@prometheus-io/client": "0.16.1"}
+}

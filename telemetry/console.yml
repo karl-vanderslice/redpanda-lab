@@ -1,0 +1,24 @@
+# Disposable local lab only: plaintext internal container-network connections.
+# Console v3 uses a top-level schemaRegistry stanza.
+# https://docs.redpanda.com/streaming/current/console/config/configure-console/
+kafka:
+  brokers:
+    - redpanda-0:9092
+    - redpanda-1:9092
+    - redpanda-2:9092
+
+schemaRegistry:
+  enabled: true
+  urls:
+    - http://redpanda-0:8081
+
+redpanda:
+  adminApi:
+    enabled: true
+    urls:
+      - http://redpanda-0:9644
+      - http://redpanda-1:9644
+      - http://redpanda-2:9644
+
+server:
+  listenPort: 8080

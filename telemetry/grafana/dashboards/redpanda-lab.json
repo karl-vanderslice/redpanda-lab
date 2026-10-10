@@ -1,0 +1,1932 @@
+{
+  "id": null,
+  "uid": "redpanda-lab",
+  "title": "Redpanda Lab \u00b7 Message Flow & Broker Health",
+  "description": "Three-broker disposable Redpanda lab. App process-lifetime counters, committed consumer backlog, delivery latency and documented Redpanda public metrics.",
+  "tags": [
+    "redpanda",
+    "kafka",
+    "lab"
+  ],
+  "timezone": "browser",
+  "editable": false,
+  "graphTooltip": 1,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m"
+    ],
+    "time_options": [
+      "5m",
+      "15m",
+      "1h",
+      "6h"
+    ]
+  },
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "links": [
+    {
+      "title": "Redpanda public metrics",
+      "type": "link",
+      "url": "https://docs.redpanda.com/streaming/current/reference/public-metrics-reference/",
+      "targetBlank": true
+    },
+    {
+      "title": "Prometheus query semantics",
+      "type": "link",
+      "url": "https://prometheus.io/docs/prometheus/latest/querying/functions/",
+      "targetBlank": true
+    },
+    {
+      "title": "Explore metrics",
+      "type": "link",
+      "url": "/explore",
+      "targetBlank": true
+    }
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Redpanda Lab \u00b7 live telemetry",
+      "type": "text",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 4
+      },
+      "description": "### Produce \u2192 pause \u2192 build lag \u2192 resume\n**Three brokers \u00b7 `lab.events` \u00b7 group `lab-explorer`.** Application counters are process-lifetime totals: they reset on app restart, not when the generator stops. Broker counters reset when brokers restart.\nScrapes and dashboard refresh run every **5 seconds**. Rate and p95 queries use Grafana **`$__rate_interval`** (at least four scrapes / 20 seconds); a fresh lab needs multiple scrapes before rates appear. An idle latency histogram has **no p95**, not zero latency.\n**No data is not healthy:** public broker metrics only appear for supported, active features. Scrape availability below is HTTP metrics reachability, not Kafka readiness. Alerts are evaluated in Prometheus; no external notification receiver is configured.",
+      "options": {
+        "mode": "markdown",
+        "content": "### Produce \u2192 pause \u2192 build lag \u2192 resume\n**Three brokers \u00b7 `lab.events` \u00b7 group `lab-explorer`.** Application counters are process-lifetime totals: they reset on app restart, not when the generator stops. Broker counters reset when brokers restart.\nScrapes and dashboard refresh run every **5 seconds**. Rate and p95 queries use Grafana **`$__rate_interval`** (at least four scrapes / 20 seconds); a fresh lab needs multiple scrapes before rates appear. An idle latency histogram has **no p95**, not zero latency.\n**No data is not healthy:** public broker metrics only appear for supported, active features. Scrape availability below is HTTP metrics reachability, not Kafka readiness. Alerts are evaluated in Prometheus; no external notification receiver is configured."
+      }
+    },
+    {
+      "id": 2,
+      "title": "Broker metrics reachable / 3",
+      "type": "stat",
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 6,
+        "h": 4
+      },
+      "description": "Counts successful public_metrics scrapes out of the three fixed broker targets. This is not a Kafka protocol readiness or fully commissioned membership check.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(up{job=\"redpanda\"})",
+          "legendFormat": "Reachable brokers",
+          "refId": "A",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 3
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "links": [
+        {
+          "title": "Official Redpanda metric reference",
+          "url": "https://docs.redpanda.com/streaming/current/reference/public-metrics-reference/",
+          "targetBlank": true
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Shared consumer",
+      "type": "stat",
+      "gridPos": {
+        "x": 6,
+        "y": 4,
+        "w": 6,
+        "h": 4
+      },
+      "description": "The shared lab-explorer consumer state, controlled by the lab app. 1 means paused; 0 means running. Browser state does not control this gauge.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "lab_consumer_paused{job=\"lab-app\"}",
+          "legendFormat": "Consumer",
+          "refId": "A",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "RUNNING",
+                  "color": "green"
+                },
+                "1": {
+                  "text": "PAUSED",
+                  "color": "orange"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "links": [
+        {
+          "title": "Explore application metrics",
+          "url": "/explore?schemaVersion=1&panes=%7B%22lab%22%3A%7B%22datasource%22%3A%22prometheus%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bjob%3D%5C%22lab-app%5C%22%7D%22%7D%5D%7D%7D",
+          "targetBlank": true
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Committed lag \u00b7 lab.events",
+      "type": "stat",
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 6,
+        "h": 4
+      },
+      "description": "Total broker high-water offsets minus committed next offsets for lab-explorer across lab.events partitions. This is a broker-offset backlog, not produced minus consumed process counters. No data means lag could not be measured.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "lab_consumer_lag{job=\"lab-app\"}",
+          "legendFormat": "Committed lag",
+          "refId": "A",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix:records",
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "links": [
+        {
+          "title": "Explore application metrics",
+          "url": "/explore?schemaVersion=1&panes=%7B%22lab%22%3A%7B%22datasource%22%3A%22prometheus%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bjob%3D%5C%22lab-app%5C%22%7D%22%7D%5D%7D%7D",
+          "targetBlank": true
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Generator",
+      "type": "stat",
+      "gridPos": {
+        "x": 18,
+        "y": 4,
+        "w": 6,
+        "h": 4
+      },
+      "description": "1 while the backend generator is running; 0 when stopped. Stopping prevents future sends; an in-flight send can still complete.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "lab_generator_running{job=\"lab-app\"}",
+          "legendFormat": "Generator",
+          "refId": "A",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "STOPPED",
+                  "color": "blue"
+                },
+                "1": {
+                  "text": "RUNNING",
+                  "color": "green"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "links": [
+        {
+          "title": "Explore application metrics",
+          "url": "/explore?schemaVersion=1&panes=%7B%22lab%22%3A%7B%22datasource%22%3A%22prometheus%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bjob%3D%5C%22lab-app%5C%22%7D%22%7D%5D%7D%7D",
+          "targetBlank": true
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Application \u00b7 lab.events / lab-explorer",
+      "type": "row",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 24,
+        "h": 1
+      },
+      "description": "",
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 7,
+      "title": "Acknowledged production & consumption",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 12,
+        "h": 8
+      },
+      "description": "Acknowledged app sends split by source, and records handled by the shared consumer. Rates use the moving scrape window, not generator configured rate. Kafka retries or consumption replay can make broker and app rates differ.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (source) (rate(lab_produced_total{job=\"lab-app\"}[$__rate_interval]))",
+          "legendFormat": "Produced \u00b7 {{source}}",
+          "refId": "A",
+          "range": true,
+          "instant": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(lab_consumed_total{job=\"lab-app\"}[$__rate_interval]))",
+          "legendFormat": "Consumed",
+          "refId": "B",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix:events/s",
+          "decimals": 2,
+          "noValue": "No data",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisPlacement": "auto",
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "links": [
+        {
+          "title": "Explore application metrics",
+          "url": "/explore?schemaVersion=1&panes=%7B%22lab%22%3A%7B%22datasource%22%3A%22prometheus%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bjob%3D%5C%22lab-app%5C%22%7D%22%7D%5D%7D%7D",
+          "targetBlank": true
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Delivery latency \u00b7 p95",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 9,
+        "w": 12,
+        "h": 8
+      },
+      "description": "95th percentile of event creation-to-consumption time in seconds from the application histogram. Includes time spent waiting while the consumer is paused. Bucket interpolation is approximate. No observations in the rate window gives no p95; it must not be treated as zero.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(lab_delivery_seconds_bucket{job=\"lab-app\"}[$__rate_interval])))",
+          "legendFormat": "Creation \u2192 consumption p95",
+          "refId": "A",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 2,
+          "noValue": "No data",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisPlacement": "auto",
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "links": [
+        {
+          "title": "Explore application metrics",
+          "url": "/explore?schemaVersion=1&panes=%7B%22lab%22%3A%7B%22datasource%22%3A%22prometheus%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bjob%3D%5C%22lab-app%5C%22%7D%22%7D%5D%7D%7D",
+          "targetBlank": true
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Produced \u00b7 process lifetime",
+      "type": "stat",
+      "gridPos": {
+        "x": 0,
+        "y": 17,
+        "w": 6,
+        "h": 4
+      },
+      "description": "Acknowledged manual and generator sends since this app process started. Not totals for the dashboard time range; resetting or recreating the app resets them.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (source) (lab_produced_total{job=\"lab-app\"})",
+          "legendFormat": "{{source}}",
+          "refId": "A",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix:events",
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "links": [
+        {
+          "title": "Explore application metrics",
+          "url": "/explore?schemaVersion=1&panes=%7B%22lab%22%3A%7B%22datasource%22%3A%22prometheus%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bjob%3D%5C%22lab-app%5C%22%7D%22%7D%5D%7D%7D",
+          "targetBlank": true
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Consumed \u00b7 process lifetime",
+      "type": "stat",
+      "gridPos": {
+        "x": 6,
+        "y": 17,
+        "w": 6,
+        "h": 4
+      },
+      "description": "Records handled since this app process started. Process restart resets this counter but does not reset committed broker offsets. Replay can increment the counter again.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(lab_consumed_total{job=\"lab-app\"})",
+          "legendFormat": "Consumed",
+          "refId": "A",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix:events",
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "links": [
+        {
+          "title": "Explore application metrics",
+          "url": "/explore?schemaVersion=1&panes=%7B%22lab%22%3A%7B%22datasource%22%3A%22prometheus%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bjob%3D%5C%22lab-app%5C%22%7D%22%7D%5D%7D%7D",
+          "targetBlank": true
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "App metrics reachable",
+      "type": "stat",
+      "gridPos": {
+        "x": 12,
+        "y": 17,
+        "w": 6,
+        "h": 4
+      },
+      "description": "Whether app:3000/metrics was successfully scraped. An app can expose metrics while Kafka initialization is incomplete; this is not the API ready flag.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "up{job=\"lab-app\"}",
+          "legendFormat": "App scrape",
+          "refId": "A",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "UNREACHABLE",
+                  "color": "red"
+                },
+                "1": {
+                  "text": "SCRAPED",
+                  "color": "green"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "links": [
+        {
+          "title": "Explore application metrics",
+          "url": "/explore?schemaVersion=1&panes=%7B%22lab%22%3A%7B%22datasource%22%3A%22prometheus%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bjob%3D%5C%22lab-app%5C%22%7D%22%7D%5D%7D%7D",
+          "targetBlank": true
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "App resident memory",
+      "type": "stat",
+      "gridPos": {
+        "x": 18,
+        "y": 17,
+        "w": 6,
+        "h": 4
+      },
+      "description": "prom-client default process resident set size (RSS) in bytes. Includes Node runtime and native memory, not just JavaScript heap. This is not a container memory limit.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "process_resident_memory_bytes{job=\"lab-app\"}",
+          "legendFormat": "App RSS",
+          "refId": "A",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "links": [
+        {
+          "title": "Explore application metrics",
+          "url": "/explore?schemaVersion=1&panes=%7B%22lab%22%3A%7B%22datasource%22%3A%22prometheus%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bjob%3D%5C%22lab-app%5C%22%7D%22%7D%5D%7D%7D",
+          "targetBlank": true
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "title": "Committed-offset backlog",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 21,
+        "w": 12,
+        "h": 8
+      },
+      "description": "Summed committed lag measured against broker offsets. During a pause, continued production increases this backlog; after resume, committed offsets catch up. Missing samples must not be displayed as zero.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "lab_consumer_lag{job=\"lab-app\"}",
+          "legendFormat": "lab-explorer \u00b7 lab.events",
+          "refId": "A",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix:records",
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisPlacement": "auto",
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "links": [
+        {
+          "title": "Explore application metrics",
+          "url": "/explore?schemaVersion=1&panes=%7B%22lab%22%3A%7B%22datasource%22%3A%22prometheus%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bjob%3D%5C%22lab-app%5C%22%7D%22%7D%5D%7D%7D",
+          "targetBlank": true
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "title": "Consumer pause & generator history",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 21,
+        "w": 12,
+        "h": 8
+      },
+      "description": "Binary gauges: 1 means consumer paused or generator running, respectively. Correlate these transitions with backlog growth and the delivery-latency spike after resume.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "lab_consumer_paused{job=\"lab-app\"}",
+          "legendFormat": "Consumer paused",
+          "refId": "A",
+          "range": true,
+          "instant": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "lab_generator_running{job=\"lab-app\"}",
+          "legendFormat": "Generator running",
+          "refId": "B",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisPlacement": "auto",
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "links": [
+        {
+          "title": "Explore application metrics",
+          "url": "/explore?schemaVersion=1&panes=%7B%22lab%22%3A%7B%22datasource%22%3A%22prometheus%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bjob%3D%5C%22lab-app%5C%22%7D%22%7D%5D%7D%7D",
+          "targetBlank": true
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "title": "Application error rate",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 29,
+        "w": 12,
+        "h": 7
+      },
+      "description": "Application operation error counter rate. No matching series may mean that no errors for an operation have been recorded yet. This is not a count of rejected Kafka broker requests.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (operation) (rate(lab_errors_total{job=\"lab-app\"}[$__rate_interval]))",
+          "legendFormat": "{{operation}}",
+          "refId": "A",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix:errors/s",
+          "decimals": 0,
+          "noValue": "No errors recorded",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisPlacement": "auto",
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "links": [
+        {
+          "title": "Explore application metrics",
+          "url": "/explore?schemaVersion=1&panes=%7B%22lab%22%3A%7B%22datasource%22%3A%22prometheus%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bjob%3D%5C%22lab-app%5C%22%7D%22%7D%5D%7D%7D",
+          "targetBlank": true
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "title": "Application resident memory history",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 29,
+        "w": 12,
+        "h": 7
+      },
+      "description": "Resident memory in bytes from prom-client default process metrics. Pause/backlog does not imply that all lagging records are held in this process; they remain in broker storage.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "process_resident_memory_bytes{job=\"lab-app\"}",
+          "legendFormat": "App RSS",
+          "refId": "A",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisPlacement": "auto",
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "links": [
+        {
+          "title": "Explore application metrics",
+          "url": "/explore?schemaVersion=1&panes=%7B%22lab%22%3A%7B%22datasource%22%3A%22prometheus%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bjob%3D%5C%22lab-app%5C%22%7D%22%7D%5D%7D%7D",
+          "targetBlank": true
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "title": "Redpanda \u00b7 broker public metrics",
+      "type": "row",
+      "gridPos": {
+        "x": 0,
+        "y": 36,
+        "w": 24,
+        "h": 1
+      },
+      "description": "",
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 18,
+      "title": "Per-broker scrape availability",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 37,
+        "w": 8,
+        "h": 8
+      },
+      "description": "Prometheus up is 1 on successful scrape and 0 on failed scrape. All three targets remain configured even when a broker is stopped. HTTP metrics health is not a Kafka readiness check.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "up{job=\"redpanda\"}",
+          "legendFormat": "{{instance}}",
+          "refId": "A",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisPlacement": "auto",
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "links": [
+        {
+          "title": "Official Redpanda metric reference",
+          "url": "https://docs.redpanda.com/streaming/current/reference/public-metrics-reference/",
+          "targetBlank": true
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "title": "Kafka topic byte throughput",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 8,
+        "y": 37,
+        "w": 16,
+        "h": 8
+      },
+      "description": "Bytes per second read from or written to lab.events partitions, split by broker and documented redpanda_request values produce / consume. Fetched bytes may include bytes not returned to the client. These are topic I/O counters, not NIC traffic or replication bandwidth.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (instance, redpanda_request) (rate(redpanda_kafka_request_bytes_total{job=\"redpanda\",redpanda_namespace=\"kafka\",redpanda_topic=\"lab.events\"}[$__rate_interval]))",
+          "legendFormat": "{{instance}} \u00b7 {{redpanda_request}}",
+          "refId": "A",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "decimals": 2,
+          "noValue": "No data",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisPlacement": "auto",
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "links": [
+        {
+          "title": "Official Redpanda metric reference",
+          "url": "https://docs.redpanda.com/streaming/current/reference/public-metrics-reference/#redpanda_kafka_request_bytes_total",
+          "targetBlank": true
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "title": "Broker attached disk free space",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 45,
+        "w": 12,
+        "h": 8
+      },
+      "description": "Free bytes on each broker attached data filesystem, not the size of lab.events. Multiple lab volumes may share the same host filesystem; do not sum their capacities or free space. No host filesystem exporter is used.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "redpanda_storage_disk_free_bytes{job=\"redpanda\"}",
+          "legendFormat": "{{instance}}",
+          "refId": "A",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisPlacement": "auto",
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "links": [
+        {
+          "title": "Official Redpanda metric reference",
+          "url": "https://docs.redpanda.com/streaming/current/reference/public-metrics-reference/#redpanda_storage_disk_free_bytes",
+          "targetBlank": true
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "title": "Broker attached disk used",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 45,
+        "w": 12,
+        "h": 8
+      },
+      "description": "100 \u00d7 (1 \u2212 free bytes / total bytes) on each broker attached filesystem. Measures filesystem occupancy including other data, not just Redpanda log bytes or lab topic storage. Volumes may share their backing filesystem.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "100 * (1 - redpanda_storage_disk_free_bytes{job=\"redpanda\"} / redpanda_storage_disk_total_bytes{job=\"redpanda\"})",
+          "legendFormat": "{{instance}}",
+          "refId": "A",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 2,
+          "noValue": "No data",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisPlacement": "auto",
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "links": [
+        {
+          "title": "Official Redpanda metric reference",
+          "url": "https://docs.redpanda.com/streaming/current/reference/public-metrics-reference/#redpanda_storage_disk_total_bytes",
+          "targetBlank": true
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "title": "Broker memory \u00b7 Seastar shards",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 53,
+        "w": 12,
+        "h": 8
+      },
+      "description": "Documented per-shard byte gauges summed by broker. Allocated includes reclaimable batch cache; available includes free plus reclaimable memory and is more useful for memory pressure. These are Redpanda allocator values, not OS RSS or container limits.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (instance) (redpanda_memory_allocated_memory{job=\"redpanda\"})",
+          "legendFormat": "{{instance}} \u00b7 allocated",
+          "refId": "A",
+          "range": true,
+          "instant": false
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (instance) (redpanda_memory_available_memory{job=\"redpanda\"})",
+          "legendFormat": "{{instance}} \u00b7 available",
+          "refId": "B",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisPlacement": "auto",
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "links": [
+        {
+          "title": "Official Redpanda metric reference",
+          "url": "https://docs.redpanda.com/streaming/current/reference/public-metrics-reference/#redpanda_memory_allocated_memory",
+          "targetBlank": true
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "title": "Live under-replicated partition replicas",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 53,
+        "w": 12,
+        "h": 8
+      },
+      "description": "Number of live partition replicas behind the latest offset, by broker and topic. This is a replica count, not a distinct partition count; unreachable replicas are not represented. A sustained positive value triggers the replication rule after one minute. Metric absence means unavailable / not exported, not zero.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by (instance, redpanda_topic) (redpanda_kafka_under_replicated_replicas{job=\"redpanda\",redpanda_namespace=\"kafka\"})",
+          "legendFormat": "{{instance}} \u00b7 {{redpanda_topic}}",
+          "refId": "A",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "No data",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisPlacement": "auto",
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "links": [
+        {
+          "title": "Official Redpanda metric reference",
+          "url": "https://docs.redpanda.com/streaming/current/reference/public-metrics-reference/#redpanda_kafka_under_replicated_replicas",
+          "targetBlank": true
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "title": "Units, counters & experimental alerts",
+      "type": "text",
+      "gridPos": {
+        "x": 0,
+        "y": 61,
+        "w": 24,
+        "h": 5
+      },
+      "description": "**Read the units:** app delivery histogram is in seconds; Kafka request counters are bytes (shown as bytes/second); Redpanda disk and allocator gauges are bytes. Consumer lag is an offset distance in records, not a byte size or process counter difference. Broker allocator memory is not process RSS.\n**Windows & resets:** `$__rate_interval` follows the graph resolution with a 5s scrape minimum. `rate()` accounts for counter resets; instant lifetime totals do not become range totals. P95 is based on consumed events in the window and may spike after resume because those events waited in Kafka.\n**Prometheus alerts:** broker scrape failure for 30s; paused consumer with positive, growing lag over a 1m window for 30s; live under-replicated replicas for 1m when exported. No Alertmanager is configured. Missing broker feature metrics are left as no data, never fabricated as zero.\n[Official Redpanda public metrics and feature-dependent export behavior](https://docs.redpanda.com/streaming/current/reference/public-metrics-reference/) \u00b7 [Prometheus rate and histogram functions](https://prometheus.io/docs/prometheus/latest/querying/functions/)",
+      "options": {
+        "mode": "markdown",
+        "content": "**Read the units:** app delivery histogram is in seconds; Kafka request counters are bytes (shown as bytes/second); Redpanda disk and allocator gauges are bytes. Consumer lag is an offset distance in records, not a byte size or process counter difference. Broker allocator memory is not process RSS.\n**Windows & resets:** `$__rate_interval` follows the graph resolution with a 5s scrape minimum. `rate()` accounts for counter resets; instant lifetime totals do not become range totals. P95 is based on consumed events in the window and may spike after resume because those events waited in Kafka.\n**Prometheus alerts:** broker scrape failure for 30s; paused consumer with positive, growing lag over a 1m window for 30s; live under-replicated replicas for 1m when exported. No Alertmanager is configured. Missing broker feature metrics are left as no data, never fabricated as zero.\n[Official Redpanda public metrics and feature-dependent export behavior](https://docs.redpanda.com/streaming/current/reference/public-metrics-reference/) \u00b7 [Prometheus rate and histogram functions](https://prometheus.io/docs/prometheus/latest/querying/functions/)"
+      }
+    }
+  ]
+}

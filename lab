@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+if [[ ${REDPANDA_LAB_SHELL:-0} != 1 ]]; then
+  command -v nix >/dev/null || { echo 'Nix is required. Alternatively provide Podman, podman-compose, Node/npm, curl, jq and coreutils, then set REDPANDA_LAB_SHELL=1.' >&2; exit 1; }
+  exec nix develop "path:$root" --no-update-lock-file -c env REDPANDA_LAB_SHELL=1 bash "$root/lab" "$@"
+fi
+for tool in podman podman-compose node npm curl jq flock sha256sum; do
+  command -v "$tool" >/dev/null || { echo "Missing tool: $tool" >&2; exit 1; }
+done
+identity=$(printf '%s' "$root" | sha256sum)
+export LAB_PROJECT="rp-lab-${identity:0:10}"
+state="${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/${identity:0:10}"
+mkdir -p "$state"
+command=${1:-help}
+if [[ $command == up || $command == down ]]; then
+  # Containers outlive this script; never let their conmon processes inherit the lock descriptor.
+  exec 9>"$state/lifecycle.lock"
+  flock -n 9 || { echo 'Another ./lab up or ./lab down is running.' >&2; exit 1; }
+fi
+compose() { podman-compose -p "$LAB_PROJECT" -f "$root/compose.yml" "$@" 9>&-; }
+ports() {
+  export APP_PORT=$((base)) CONSOLE_PORT=$((base+1)) GRAFANA_PORT=$((base+2)) PROMETHEUS_PORT=$((base+3))
+  export REGISTRY_PORT=$((base+4)) PROXY_PORT=$((base+5)) ADMIN_PORT=$((base+6))
+  export KAFKA_0_PORT=$((base+10)) KAFKA_1_PORT=$((base+11)) KAFKA_2_PORT=$((base+12))
+}
+urls() {
+  printf '\nStream app:       http://127.0.0.1:%s\nRedpanda Console: http://127.0.0.1:%s\nGrafana:          http://127.0.0.1:%s/d/redpanda-lab\nPrometheus:       http://127.0.0.1:%s\nSchema Registry:  http://127.0.0.1:%s\nHTTP Proxy:       http://127.0.0.1:%s\nKafka brokers:    127.0.0.1:%s,127.0.0.1:%s,127.0.0.1:%s\n' "$APP_PORT" "$CONSOLE_PORT" "$GRAFANA_PORT" "$PROMETHEUS_PORT" "$REGISTRY_PORT" "$PROXY_PORT" "$KAFKA_0_PORT" "$KAFKA_1_PORT" "$KAFKA_2_PORT"
+}
+
+if [[ -f $state/port-base ]]; then
+  read -r base < "$state/port-base"
+else
+  base=${LAB_PORT_BASE:-$((49152 + RANDOM % 16000))}
+fi
+[[ $base =~ ^[0-9]+$ ]] && (( base >= 49152 && base <= 65520 )) || { echo 'LAB_PORT_BASE must be an integer from 49152 through 65520.' >&2; exit 1; }
+ports
+case "$command" in
+  up)
+    if [[ ! -f $state/port-base ]]; then
+      available=0
+      for attempt in {1..20}; do
+        if node --input-type=module - "$base" <<'JS'
+import net from 'node:net';
+const base=Number(process.argv[2]);
+const servers=[];
+try {
+  for (const offset of [0,1,2,3,4,5,6,10,11,12]) {
+    const s=net.createServer(); servers.push(s);
+    await new Promise((resolve,reject)=>s.once('error',reject).listen(base+offset,'127.0.0.1',resolve));
+  }
+} catch { process.exitCode=1; }
+finally { for(const s of servers) s.close(); }
+JS
+        then available=1; break; fi
+        [[ -z ${LAB_PORT_BASE:-} ]] || break
+        base=$((49152 + RANDOM % 16000)); ports
+      done
+      (( available )) || { echo 'Cannot reserve a free port range. Choose another LAB_PORT_BASE.' >&2; exit 1; }
+      printf '%s\n' "$base" > "$state/port-base"
+    fi
+    echo "Starting $LAB_PROJECT (rootless Podman, loopback only)."
+    compose up -d --build
+    deadline=$((SECONDS+240))
+    until curl -fs --max-time 3 "http://127.0.0.1:$APP_PORT/api/stats" | jq -e '.ready and (.brokers | length == 3)' >/dev/null &&
+          curl -fs --max-time 3 "http://127.0.0.1:$ADMIN_PORT/v1/cluster/health_overview" | jq -e '.is_healthy and (.all_nodes | length == 3)' >/dev/null &&
+          curl -fs --max-time 3 "http://127.0.0.1:$CONSOLE_PORT/admin/health" >/dev/null &&
+          curl -fs --max-time 3 "http://127.0.0.1:$GRAFANA_PORT/api/health" >/dev/null &&
+          curl -fs --max-time 3 "http://127.0.0.1:$PROMETHEUS_PORT/-/ready" >/dev/null; do
+      if (( SECONDS >= deadline )); then
+        echo 'Readiness timed out. Containers remain for diagnosis; use ./lab logs or ./lab down.' >&2
+        compose ps; exit 1
+      fi
+      sleep 2
+    done
+    urls
+    echo 'No login needed. Stop and erase lab data with ./lab down.'
+    ;;
+  down)
+    compose down --volumes --remove-orphans
+    # Port state belongs to the disposed runtime, not to the optional build cache.
+    rm -f "$state/port-base"
+    echo "Removed $LAB_PROJECT containers, network and volumes; released saved port state. Pulled upstream images stay cached."
+    if podman image rm --ignore "localhost/$LAB_PROJECT-app:1"; then
+      echo "Removed $LAB_PROJECT app image (if present)."
+    else
+      echo "WARNING: $LAB_PROJECT runtime disposal completed, but its optional app image could not be removed. See the Podman error above; remove that exact image later if desired." >&2
+    fi
+    ;;
+  lock)
+    # Environment registry/auth settings outrank .npmrc. Resolve in a clean public-only npm environment.
+    mkdir -p "$state/npm-home"
+    : > "$state/npm-home/empty.npmrc"
+    env -i PATH="$PATH" HOME="$state/npm-home" npm_config_cache="$state/npm" \
+      npm --prefix "$root/app" install --package-lock-only --ignore-scripts --no-audit --no-fund \
+      --registry=https://registry.npmjs.org/ --userconfig="$state/npm-home/empty.npmrc" --globalconfig=/dev/null
+    ;;
+  status) compose ps; [[ ! -f $state/port-base ]] || urls ;;
+  urls) [[ -f $state/port-base ]] || { echo 'Lab is not initialized. Run ./lab up.' >&2; exit 1; }; urls ;;
+  logs) shift; compose logs --tail=100 "$@" ;;
+  rpk) shift; compose exec -T redpanda-0 rpk -X brokers=redpanda-0:9092,redpanda-1:9092,redpanda-2:9092 "$@" ;;
+  *) printf 'Usage: ./lab {up|down|lock|status|urls|logs [service]|rpk ...}\n\nup starts the lab; down deletes all lab records and telemetry.\nlock resolves app dependencies using public npm only, without installing host node_modules.\nOptional LAB_PORT_BASE selects a free high port range on first startup.\n' ; [[ $command == help || $command == --help ]] ;;
+esac

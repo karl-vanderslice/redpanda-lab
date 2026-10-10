@@ -1,0 +1,41 @@
+groups:
+  - name: redpanda-lab
+    rules:
+      - alert: RedpandaBrokerUnavailable
+        expr: up{job="redpanda"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: 'Redpanda broker {{ $labels.instance }} cannot be scraped'
+          description: 'The broker public metrics endpoint has been unreachable for 30 seconds. Scrape health is not a Kafka protocol readiness check. Inspect the container and its logs.'
+          dashboard_path: /d/redpanda-lab
+
+      - alert: LabPausedConsumerAccumulatingLag
+        expr: >-
+          (lab_consumer_paused{job="lab-app"} == 1)
+          and on (job, instance) (lab_consumer_lag{job="lab-app"} > 0)
+          and on (job, instance) (delta(lab_consumer_lag{job="lab-app"}[1m]) > 0)
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Paused lab consumer is accumulating committed lag'
+          description: 'The shared lab-explorer consumer is paused, committed-offset lag is positive, and lag has increased across the last minute for at least 30 seconds. Resume it in the lab app to drain the backlog. Intentional during the pause experiment.'
+          dashboard_path: /d/redpanda-lab
+
+      # Public metrics are feature-dependent. No matching series means this rule
+      # is inactive, not proof of healthy replication. The separate up rule
+      # covers unreachable brokers; this metric counts live, lagging replicas.
+      # https://docs.redpanda.com/streaming/current/reference/public-metrics-reference/#redpanda_kafka_under_replicated_replicas
+      - alert: RedpandaUnderReplicatedPartitions
+        expr: >-
+          sum by (instance, redpanda_namespace, redpanda_topic)
+          (redpanda_kafka_under_replicated_replicas{job="redpanda"}) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Under-replicated partitions on {{ $labels.instance }}'
+          description: 'Topic {{ $labels.redpanda_namespace }}/{{ $labels.redpanda_topic }} has {{ $value }} live partition replicas behind the latest offset for one minute. This public metric does not count unreachable replicas and may be absent when unsupported or unused.'
+          dashboard_path: /d/redpanda-lab

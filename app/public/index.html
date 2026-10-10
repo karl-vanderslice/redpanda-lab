@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#10151b">
+  <title>Redpanda Lab · Event explorer</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to event explorer</a>
+  <header class="site-header">
+    <div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" width="28" height="28"><path d="M5 7h9v7H5zm13 11h9v7h-9zM18 7h9v7h-9zM5 18h9v7H5z" fill="currentColor"/><path d="M14 10h4M10 14v4m12-4v4m-8 4h4" fill="none" stroke="currentColor" stroke-width="2"/></svg></span><span>Redpanda <strong>Lab</strong></span></div>
+    <div class="header-status"><span class="status-pill" id="connection-status" role="status">Connecting</span><span id="broker-count" class="muted">Discovering brokers</span></div>
+  </header>
+
+  <main id="main" class="workspace">
+    <section class="intro" aria-labelledby="page-title">
+      <div><p class="eyebrow">Local streaming playground</p><h1 id="page-title">Follow the event.</h1><p class="intro-copy">Produce a record. Watch it arrive. Pause the consumer to see lag build.</p></div>
+      <div class="topic-meta"><span class="meta-label">Topic</span><code>lab.events</code><span class="meta-label">Consumer group</span><code>lab-explorer</code></div>
+    </section>
+
+    <div class="connection-error notice error" id="connection-error" role="alert" hidden></div>
+    <div class="notice warning" id="backend-error" role="status" hidden></div>
+    <div class="snapshot-toolbar"><p id="snapshot-status">Waiting for the first snapshot.</p><div class="button-row"><button type="button" id="refresh-button">Refresh stats</button><button type="button" id="live-button" aria-pressed="false">Pause live updates</button></div></div>
+
+    <section class="metrics" aria-label="Event counters and committed lag">
+      <article class="metric"><div class="metric-top"><h2>Produced</h2><span class="metric-index" aria-hidden="true">01 / IN</span></div><p class="metric-value" id="produced-value">—</p><p>Acknowledged by the brokers</p></article>
+      <article class="metric"><div class="metric-top"><h2>Consumed</h2><span class="metric-index" aria-hidden="true">02 / OUT</span></div><p class="metric-value" id="consumed-value">—</p><p>Observed by the shared consumer</p></article>
+      <article class="metric lag-metric"><div class="metric-top"><h2>Committed lag</h2><span class="metric-index" aria-hidden="true">03 / GAP</span></div><p class="metric-value" id="lag-value">—</p><p id="lag-caption">Broker offsets minus committed offsets</p></article>
+    </section>
+    <p id="lag-error" class="notice warning" role="status" hidden></p>
+
+    <div class="control-grid">
+      <section class="panel producer-panel" aria-labelledby="producer-title">
+        <div class="panel-heading"><div><p class="eyebrow">Write to the stream</p><h2 id="producer-title">Produce an event</h2></div><span class="tag">acks = all</span></div>
+        <p class="section-copy">Send one JSON object to <code>lab.events</code>. A key keeps related events on the same partition.</p>
+        <form id="producer-form">
+          <fieldset id="producer-fields" disabled>
+            <div class="form-row"><div class="field"><label for="event-key">Event key</label><input id="event-key" name="key" type="text" value="order-1001" autocomplete="off" required></div><div class="field"><label for="event-kind">Event kind</label><select id="event-kind" name="kind"><option value="order.created">order.created</option><option value="payment.received">payment.received</option><option value="sensor.reading">sensor.reading</option></select></div></div>
+            <div class="field"><label for="event-payload">JSON payload</label><textarea id="event-payload" name="payload" rows="8" spellcheck="false" aria-describedby="payload-hint payload-error" required>{
+  "orderId": "order-1001",
+  "customerId": "customer-42",
+  "total": 49.90,
+  "currency": "USD"
+}</textarea><p id="payload-hint" class="field-hint">Use a JSON object, not an array or a primitive value.</p><p id="payload-error" class="field-error" hidden></p></div>
+            <button type="submit" class="primary" id="produce-button">Produce event</button>
+          </fieldset>
+        </form>
+        <p id="produce-result" class="action-result" role="status"></p>
+      </section>
+
+      <div class="control-stack">
+        <section class="panel" aria-labelledby="generator-title">
+          <div class="panel-heading"><div><p class="eyebrow">Create some traffic</p><h2 id="generator-title">Traffic generator</h2></div><span class="status-pill" id="generator-status">Waiting</span></div>
+          <p class="section-copy">Generate sample events at a bounded rate, for a bounded time.</p>
+          <form id="generator-form">
+            <fieldset id="generator-fields" disabled><div class="form-row"><div class="field"><label for="generator-rate">Rate <span class="label-unit">(events per second)</span></label><input id="generator-rate" name="rate" type="number" inputmode="numeric" min="1" max="100" step="1" value="10" required><p class="field-hint">1–100 events / second</p></div><div class="field"><label for="generator-duration">Duration <span class="label-unit">(seconds)</span></label><input id="generator-duration" name="duration" type="number" inputmode="numeric" min="1" max="300" step="1" value="30" required><p class="field-hint">1–300 seconds</p></div></div><button type="submit" id="generator-start">Start generator</button></fieldset>
+          </form>
+          <div class="generator-running" id="generator-running" hidden><p id="generator-progress"></p><button type="button" id="generator-stop" disabled>Stop generator</button></div>
+          <p class="field-hint">Stopping prevents future sends; in-flight events can still complete.</p>
+          <p id="generator-result" class="action-result" role="status"></p>
+        </section>
+
+        <section class="panel" aria-labelledby="consumer-title">
+          <div class="panel-heading"><div><p class="eyebrow">Control the other end</p><h2 id="consumer-title">Shared consumer</h2></div><span class="status-pill" id="consumer-status">Waiting</span></div>
+          <p class="section-copy" id="consumer-explanation">Pause the actual Kafka consumer, not just this view. Resume to drain the backlog.</p>
+          <div class="consumer-action"><code>lab-explorer</code><button type="button" id="consumer-button" disabled>Pause consumer</button></div>
+          <p id="consumer-result" class="action-result" role="status"></p>
+        </section>
+      </div>
+    </div>
+
+    <section class="panel records-panel" aria-labelledby="records-title">
+      <div class="panel-heading records-heading"><div><p class="eyebrow">Read from the stream</p><h2 id="records-title">Recent records <span id="records-count" class="count-badge">0</span></h2></div><p class="field-hint">Newest consumed first · expand for the full event</p></div>
+      <div class="empty-state" id="records-empty"><span class="empty-glyph" aria-hidden="true">[ ]</span><h3>Waiting for the stream</h3><p>Records appear here after the shared consumer reads them.</p></div>
+      <div id="records-list" class="records-list" tabindex="0" role="region" aria-label="Recent consumed records; scroll to earlier records" hidden></div>
+      <p class="records-note">Latest 100 consumed records, held in app memory. Scroll inside the list for earlier records.</p>
+    </section>
+
+    <section class="offset-section" aria-labelledby="offset-title"><div class="offset-heading"><h2 id="offset-title">Partition offsets</h2><p class="field-hint">High = next broker offset · committed = next group offset</p></div><div id="partition-list" class="partition-list"><p class="muted">Partition offsets will appear when the API is ready.</p></div></section>
+
+    <footer class="lab-footer">
+      <div class="footer-copy"><h2>Know what you’re measuring</h2><p>Produced and consumed counters reset when the app restarts. Recent records are an in-memory view, not the broker’s storage. Committed lag comes from broker-stored group offsets; a consumed event may not be committed yet. Pausing does not undo in-flight reads or commits.</p><p id="brokers-detail" class="broker-detail">Broker discovery pending.</p></div>
+      <nav class="tool-nav" aria-label="Lab tools"><h2>Go deeper</h2><p id="tools-loading" class="field-hint">Tool links arrive with the first snapshot.</p><div id="tool-links" hidden><a id="console-link" target="_blank" rel="noopener noreferrer">Redpanda Console</a><a id="grafana-link" target="_blank" rel="noopener noreferrer">Grafana</a><a id="prometheus-link" target="_blank" rel="noopener noreferrer">Prometheus</a><a id="registry-link" target="_blank" rel="noopener noreferrer">Schema Registry</a><p class="field-hint">Tools open in a new tab.</p></div></nav>
+    </footer>
+  </main>
+  <noscript><div class="notice error">JavaScript is required for the event explorer. Enable JavaScript and reload this page.</div></noscript>
+</body>
+</html>

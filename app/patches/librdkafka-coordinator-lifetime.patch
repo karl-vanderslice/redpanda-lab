@@ -1,0 +1,33 @@
+Coordinator request ownership fix for bundled librdkafka 2.16.0.
+Based on https://github.com/confluentinc/librdkafka/pull/5397 (unmerged).
+Keep the worker alive until the error response consumes its eonce reference.
+Do not enqueue a response if the admin operation has already been destroyed.
+The upstream proposal's generic NULL-opaque guard is intentionally omitted:
+NULL can be valid callback data for non-admin coordinator requests.
+
+--- a/src/rdkafka_admin.c
++++ b/src/rdkafka_admin.c
+@@ -485,1 +485,0 @@
+-        rd_kafka_t *rk             = rkb->rkb_rk;
+@@ -504,7 +503,3 @@
+-        if (err) {
+-                rd_kafka_admin_result_fail(
+-                    rko, err, "%s worker failed to send request: %s",
+-                    rd_kafka_op2str(rko->rko_type), errstr);
+-                rd_kafka_admin_common_worker_destroy(rk, rko,
+-                                                     rd_true /*destroy*/);
+-        }
++        /* The coordinator caller delivers errors through the response callback,
++         * which owns destruction of rko and its eonce. Destroying them here
++         * would leave the queued error response with a freed opaque pointer. */
+--- a/src/rdkafka_coord.c
++++ b/src/rdkafka_coord.c
+@@ -506,1 +506,7 @@
+-                        if (err) {
++                        if (err == RD_KAFKA_RESP_ERR__DESTROY) {
++                                /* The admin operation has timed out and released
++                                 * its opaque. Do not enqueue another response. */
++                                rd_kafka_replyq_destroy(&replyq);
++                                rd_kafka_coord_req_destroy(rk, creq,
++                                                           rd_true /*done*/);
++                        } else if (err) {
