@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Relay: agent messaging lab</title>
+  <link rel="stylesheet" href="/styles.css"><script src="/app.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to workspace</a>
+<header class="topbar"><a class="brand" href="/" aria-label="Relay home"><span class="mark" aria-hidden="true">↗</span> Relay <span class="lab-tag">REDPANDA LAB</span></a><button id="theme" type="button">Dark theme</button></header>
+<main id="main">
+  <section class="intro"><div><p class="eyebrow">MULTI-AGENT WORKSPACE / 01</p><h1>One task. Two perspectives.</h1><p class="lede">A planner proposes. A reviewer challenges. The planner brings it together.<br>Independent fx agents, connected by an event log.</p></div><div class="connection"><span class="dot" aria-hidden="true"></span><span id="connection" role="status">Connecting to the log…</span></div></section>
+  <div class="workspace">
+    <aside>
+      <section class="panel composer"><p class="eyebrow">START A CONVERSATION</p><h2>What should we work on?</h2><form id="task-form"><label for="task">Task for the agents</label><textarea id="task" name="task" rows="6" maxlength="1200" required aria-describedby="task-hint form-error" placeholder="Plan a small community book swap in three steps."></textarea><p id="task-hint" class="hint">Keep it focused. The tiny local model is here to demonstrate coordination, not expert reasoning.</p><p id="form-error" class="error" role="alert"></p><button class="primary" id="submit" type="submit">Send to planner <span aria-hidden="true">↗</span></button></form><p id="submission" class="hint" role="status"></p><button id="lookup" type="button" hidden>Check uncertain submission</button></section>
+      <section class="panel roster"><p class="eyebrow">THE AGENTS</p><div class="agent"><span class="avatar">P</span><div><h3>Planner</h3><p>Proposal + synthesis</p><code>agent / planner</code></div></div><div class="agent"><span class="avatar reviewer">R</span><div><h3>Reviewer</h3><p>Risk + improvement</p><code>agent / reviewer</code></div></div><div class="local-note"><span aria-hidden="true">⌂</span><p>Local inference only<br><strong>SmolLM2 · 135M · Q8_0</strong></p></div></section>
+      <section class="history"><div class="section-heading"><h2>Conversations</h2><span id="count">0</span></div><div id="history"><p class="hint">Your tasks will appear here.</p></div></section>
+    </aside>
+    <section class="panel transcript" aria-labelledby="transcript-heading"><div class="transcript-top"><div><p class="eyebrow">LIVE EVENT TRANSCRIPT</p><h2 id="transcript-heading">The conversation starts here.</h2></div><button id="pause" type="button" aria-pressed="false">Pause updates</button></div><p id="task-summary" class="task-summary">Send a task to watch the handoff between two separate agent containers.</p><div class="flow" aria-label="Workflow"><span>01 Proposal</span><span aria-hidden="true">→</span><span>02 Critique</span><span aria-hidden="true">→</span><span>03 Synthesis</span></div><div id="messages" class="messages"><div class="empty"><span class="empty-glyph" aria-hidden="true">↔</span><h3>Good work travels in both directions.</h3><p>Every handoff passes through Redpanda.<br>Answers appear here only after real local fx inference completes.</p></div></div><p id="task-status" class="footer-status" role="status">No task selected.</p></section>
+  </div>
+  <footer><span>ONE PARTITION · ORDERED HANDOFFS · REPLAYABLE TRANSCRIPT</span><code id="position">agent-messaging.events.v1</code></footer>
+</main>
+</body>
+</html>

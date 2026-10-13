@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bitcoin paper trader</title><link rel="stylesheet" href="/style.css"><script defer src="/app.js"></script></head>
+<body>
+<header><div><p class="eyebrow">REDPANDA LAB / PAPER ACCOUNT</p><h1>Bitcoin paper trader</h1><p class="intro">Watch historical BTC/USD prices. Follow a simple strategy into and out of a position, then inspect the ledger that made it happen.</p></div><button id="theme" type="button">Dark theme</button></header>
+<main>
+<section class="notice" aria-label="Simulation limits"><strong>Historical replay. Paper trades only.</strong><span>Coinbase hourly closes for 11 October 2026. No live exchange, wallets, credentials, or actual orders.</span></section>
+<div class="toolbar"><span id="connection" role="status">Connecting to the ledger</span><span id="progress">No quotes consumed</span></div>
+<section class="account" aria-label="Paper account">
+<article><h2>BTC / USD</h2><p id="price" class="value">Not started</p><p id="market-time" class="detail">Source time appears after the first quote.</p></article>
+<article><h2>Cash</h2><p id="cash" class="value">$10,000.00</p><p class="detail">Starts with ten thousand paper dollars.</p></article>
+<article><h2>Bitcoin position</h2><p id="position" class="value">0.00000000 BTC</p><p id="cost" class="detail">Cost basis: $0.00</p></article>
+<article><h2>Marked equity</h2><p id="equity" class="value">$10,000.00</p><p class="detail">Cash plus position at the last close.</p></article>
+</section>
+<section class="panel"><div class="section-heading"><div><h2>Price and moving averages</h2><p>Amber: close. Blue: 3-hour average. Muted: 8-hour average.</p></div><span id="signal" class="badge">Warming up</span></div>
+<svg id="chart" viewBox="0 0 1000 280" role="img" aria-labelledby="chart-title chart-description"><title id="chart-title">Consumed historical Bitcoin prices</title><desc id="chart-description">No market data consumed yet.</desc><path id="close-line" class="close-line"></path><path id="fast-line" class="fast-line"></path><path id="slow-line" class="slow-line"></path></svg>
+<div class="chart-labels"><span id="chart-start">Start the replay to draw the chart.</span><span id="chart-end"></span></div>
+<div class="controls"><button id="play" type="button">Play replay</button><button id="pause" type="button">Pause replay</button><button id="step" type="button">Consume next quote</button><label class="check"><input id="automatic" type="checkbox" checked> Automatic paper trading</label></div>
+<p class="detail">The strategy compares the last 3 and 8 observed closes, then fills at the next close. It buys with 25% of available cash and sells the whole position when the short average reaches or falls below the long average. Each fill charges a 0.1% fee.</p>
+</section>
+<div class="split"><section class="panel"><h2>Position results</h2><dl class="results"><div><dt>Realized P&amp;L</dt><dd id="realized">$0.00</dd></div><div><dt>Unrealized P&amp;L</dt><dd id="unrealized">$0.00</dd></div><div><dt>Fees paid</dt><dd id="fees">$0.00</dd></div></dl><p class="detail">Realized P&amp;L includes entry and exit fees. The open-position mark does not deduct a future exit fee.</p><div class="controls"><button id="buy" type="button">Buy with 25% of cash</button><button id="sell" type="button">Sell position</button></div><p class="detail">Disable automatic trading to use manual trades at the displayed historical close.</p></section>
+<section class="panel"><h2>Ledger receipt</h2><p id="receipt" role="status">Controls publish stable command IDs. The account changes only after Redpanda records are consumed.</p><label for="lookup">Command ID</label><div class="lookup"><input id="lookup" placeholder="Paste an uncertain command ID" autocomplete="off"><button id="lookup-button" type="button">Look up</button></div><button id="resolve" type="button" disabled>Resolve original command</button><p class="detail">A missing receipt does not prove failure. After inspecting the ledger and restarting a faulted owner, resolve only the retained command with its original ID and action. Never replace it with a new ID.</p><p id="offset" class="mono">No consumed offset</p></section></div>
+<section class="panel"><div class="section-heading"><h2>Paper fills</h2><span id="trade-count">No fills</span></div><div class="table-wrap"><table><caption class="sr-only">Paper executions in ledger order</caption><thead><tr><th scope="col">Market time (UTC)</th><th scope="col">Side</th><th scope="col">Bitcoin</th><th scope="col">Price</th><th scope="col">Fee</th><th scope="col">Offset</th></tr></thead><tbody id="fills"><tr><td colspan="6">The strategy needs eight closes before it can make a decision.</td></tr></tbody></table></div></section>
+</main><footer><p>One account, one writer, one ordered topic: <code>bitcoin.paper.v1</code>.</p><p>Historical results are not a forecast. This is an execution and replay exercise, not investment advice.</p></footer>
+</body></html>

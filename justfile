@@ -4,39 +4,60 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 default:
     @just --list
 
-# Start the explorer and print its loopback URLs.
-up:
-    ./lab up
-
-# Delete the explorer's containers, volumes, network, and records.
-down:
-    ./lab down
-
-# Show container state.
-status:
-    ./lab status
-
-# Print the running explorer's URLs.
-urls:
-    ./lab urls
-
-# Read recent logs, optionally for one service.
+# Start one lab and print its loopback URLs (default: explorer).
 [positional-arguments]
-logs *args:
-    ./lab logs "$@"
+up name='explorer':
+    bash scripts/dispatch up "$@"
 
-# Run rpk inside the explorer broker.
+# Delete one lab's containers and data.
 [positional-arguments]
-rpk +args:
-    ./lab rpk "$@"
+down name='explorer':
+    bash scripts/dispatch down "$@"
 
-# Run the real explorer E2E, including failure and disposal.
-test:
-    bash tests/e2e.sh
+# Show one lab's state.
+[positional-arguments]
+status name='explorer':
+    bash scripts/dispatch status "$@"
 
-# Check Bash and JavaScript syntax and build documentation.
-check:
-    bash scripts/check
+# Print one lab's URLs.
+[positional-arguments]
+urls name='explorer':
+    bash scripts/dispatch urls "$@"
+
+# Read logs: just logs LAB [SERVICE].
+[positional-arguments]
+logs name='explorer' *args:
+    bash scripts/dispatch logs "$@"
+
+# Run broker CLI: just rpk LAB ARGS...
+[positional-arguments]
+rpk name +args:
+    bash scripts/dispatch rpk "$@"
+
+# Run a real lab E2E and delete its data (default: explorer).
+[positional-arguments]
+test name='explorer':
+    bash scripts/e2e "$@"
+
+# Run source/packaging gates for one lab or all labs, plus docs.
+[positional-arguments]
+check name='all':
+    bash scripts/check "$@"
+
+# Execute a command inside a lab service: just exec LAB SERVICE COMMAND...
+[positional-arguments]
+exec name +args:
+    bash scripts/dispatch exec "$@"
+
+# Restart exactly one lab service.
+[positional-arguments]
+restart name service:
+    bash scripts/dispatch restart "$@"
+
+# Manage saved Terraform plans: just tf plan, just tf apply --reviewed HASH.
+[positional-arguments]
+tf +args:
+    bash labs/terraform/lab "$@"
 
 # Build Zensical outside the checkout.
 docs:

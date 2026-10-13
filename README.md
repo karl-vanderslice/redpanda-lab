@@ -1,50 +1,87 @@
-# Redpanda lab
+# Redpanda Lab
 
-Explore event streaming on your own machine. This disposable lab runs three Redpanda brokers, a producer/consumer web app, Redpanda Console, Prometheus, and Grafana in rootless Podman containers. Every published port binds to `127.0.0.1`. No cloud account or API key is needed.
+A collection of disposable, local systems built around Redpanda. The repository includes an event-stream explorer and six independent labs: a commodity exchange, a sports portal, two coordinating agents, scheduled agent chat, a Bitcoin paper trader, and a Terraform-managed cluster.
 
-## Start here
+These are working applications, not deployment templates. They use real broker records and containerized services, but fixture data and development settings. You can inspect a record, restart an application, and see which state comes back from the log. You should not use them for production data.
 
-You need **Nix with flakes enabled** on Linux. Nix supplies Podman and the development tools. Your host must permit rootless containers: user namespaces, subordinate UID/GID ranges, and working `newuidmap`/`newgidmap` helpers. A flake cannot configure those privileged host facilities. The first run needs internet access to fetch pinned Nix inputs, images, and application dependencies.
+## Run a lab
+
+You need Linux, Nix with flakes enabled, and a host configured for rootless containers. User namespaces, subordinate UID/GID mappings, and cgroup delegation are host requirements. Nix supplies Podman, Compose, Just, Bash, language toolchains, Terraform, and the other command-line tools. No cloud account, API key, host model installation, or separately installed agent harness is required.
+
+From this checkout:
 
 ```bash
-git clone https://github.com/karl-vanderslice/redpanda-lab.git
-cd redpanda-lab
 nix develop --no-update-lock-file
 just up
 ```
 
-Open the **Stream app** URL printed by the command. Produce an event, then watch it appear in the consumed event list. Open the printed Console URL to inspect the underlying record, or Grafana to see throughput and consumer lag. No login is required. Allow several minutes for the first build and startup.
-
-When you finish:
+The default lab is the explorer. The command builds its application, starts three brokers, Console, Prometheus, and Grafana, waits for readiness, then prints the actual loopback URLs. Open the app URL, produce an event, and inspect it in Console. Pause consumption to let lag accumulate, then resume it.
 
 ```bash
+just status
+just urls
 just down
 ```
 
-**`down` deletes this checkout's records, telemetry, containers, network, and volumes.** It attempts to remove its app image, but keeps downloaded upstream images and Nix caches. It never performs a global prune.
+**`down` deletes the selected lab's broker data, containers, and network.** It does not prune the engine or remove another lab. Shared upstream images and Nix caches remain available for the next run. The explorer also attempts to remove its checkout-specific application image.
 
-Prefer one command without entering a shell? `./lab up` and `./lab down` enter the same pinned Nix environment automatically.
+The first build needs network access to download pinned inputs. Subsequent runs reuse caches. Start one lab at a time while learning; the three-broker labs need several GiB of RAM in addition to normal host workloads.
 
-## Choose your next experiment
+## Labs
 
-| Goal | What to do |
-| --- | --- |
-| Understand keys, partitions, and offsets | Produce two events with the same key. Compare their partitions in the app and Console. |
-| See backpressure | Pause consumption, run the generator, watch lag grow, then resume. |
-| Explore broker failure | Follow the [broker-failure walkthrough](docs/how-to/failure-and-recovery.md). |
-| Inspect the stack | `just status`, `just urls`, or `just logs app`. |
-| Use the Kafka CLI | `just rpk topic describe lab.events -p`. |
-| Verify the complete workflow | `just test` starts the lab, exercises real services and one-broker failover, then deletes its data. |
-| Read the guide locally | `just docs-serve` prints a loopback URL for the Zensical site. |
+| Name | Application | Main behavior to inspect |
+| --- | --- | --- |
+| `explorer` | Browser producer/consumer with Console, Prometheus, and Grafana | Keys, partitions, offsets, consumer lag, and one-broker failure. |
+| [`trading`](docs/labs/trading.md) | Rust commodity exchange with CLI and web orders | Price-time priority, partial fills, cancellation, stable operation IDs, and replay. |
+| [`sports`](docs/labs/sports.md) | Multi-sport web portal | Local video playback, score events, watchlists, and consumed playback telemetry. |
+| [`agent-messaging`](docs/labs/agent-messaging.md) | Separate planner and reviewer agents | Genuine upstream `fx` invokes a local 135M model; Redpanda records proposal, critique, and synthesis. |
+| [`agent-chat`](docs/labs/agent-chat.md) | Web chat with local inference | Durable conversations, future jobs, ordered cancellation, and restart recovery. |
+| [`bitcoin`](docs/labs/bitcoin.md) | Web Bitcoin paper trader with historical BTC/USD data | Price watching, next-close strategy entries/exits, positions, fees, P&L, and replay. No live or real orders. |
+| [`terraform`](docs/labs/terraform.md) | Terraform-managed three-broker cluster and Console | Saved-plan review, infrastructure state, observed drift, and complete teardown. |
 
-## Documentation
+The application labs have separate networks, volumes, ports, and topics. Each uses one broker and one ordered topic. The explorer and Terraform use three brokers. Running three brokers on one machine is useful for quorum experiments; it is not a simulation of three availability zones.
 
-The [documentation home](docs/index.md) routes you through setup, experiments, architecture, options, and recovery. Start with [your first event](docs/tutorials/first-event.md), then read [how the stack works](docs/explanation/architecture.md).
+For example, to run the exchange:
 
-- [Commands and configuration](docs/reference/commands.md)
-- [Telemetry and event delivery](docs/explanation/telemetry-and-delivery.md)
-- [Supply-chain pins and reproducibility limits](docs/reference/supply-chain.md)
-- [Production multi-region and disaster recovery](docs/explanation/production.md)
-- [Troubleshooting](docs/how-to/troubleshooting.md)
+```bash
+just up trading
+just urls trading
+just exec trading app commodity-exchange help
+just rpk trading topic describe trading.exchange.v1
+just down trading
+```
 
-The local lab is deliberately unauthenticated and disposable. Three brokers on one machine demonstrate broker failover, **not** availability-zone or regional resilience. Do not expose these ports or use this configuration for real trading, personal messages, or production data. CI/CD is outside this repository's scope.
+Use `sports`, `agent-messaging`, `agent-chat`, or `bitcoin` in the same lifecycle commands. The domain guides explain their APIs, state transitions, and failure cases. Terraform is different: `just up terraform` and `just down terraform` display a plan and require you to type the project name before making changes. Read its guide before applying a plan.
+
+The sports lab serves original, silent, synthetic video loops. It does not redistribute film footage or sports broadcasts. The agent labs include the model file and model server in containers. Their small model performs real inference, but its answers are not a quality or safety guarantee.
+
+## Checks and documentation
+
+```bash
+just check                 # All source, packaging, and documentation gates.
+just check trading         # One lab's gates, plus documentation.
+just test sports           # Real services and domain workflow, then disposal.
+just docs-serve            # Local Zensical preview; prints its URL.
+```
+
+`just test LAB` is destructive. Application tests delete the selected lab's existing account/history before starting a fresh workflow, then dispose it. Terraform tests require an empty owned project and retain a failed deployment for diagnosis rather than retrying or deleting it automatically. Reports, build outputs, and runtime state stay outside the checkout. The optional pre-commit hook runs the local validation gate:
+
+```bash
+prek install
+```
+
+There is no CI/CD configuration.
+
+The [documentation](docs/index.md) starts with [a first event](docs/tutorials/first-event.md) and includes [lab walkthroughs](docs/labs/index.md), [commands and options](docs/reference/commands.md), [architecture](docs/explanation/architecture.md), and [troubleshooting](docs/how-to/troubleshooting.md). It explains why each application uses the log, what an acknowledgement establishes, and how interruption changes the outcome of an operation.
+
+Browser storage is optional. Documentation theme and search controls stay usable when it is blocked; theme choices persist only when the browser permits storage.
+
+## Reproducibility and production
+
+`flake.lock`, application lockfiles, immutable model hashes, the Terraform provider lock, and digest-qualified upstream images define the inputs. The new application images are built with Nix. The original explorer still installs Debian packages inside its pinned base image, so those package versions are not a byte-for-byte rebuild guarantee. The [supply-chain reference](docs/reference/supply-chain.md) distinguishes version pins, artifact identity, provenance, and the remaining limits.
+
+All published ports are loopback-only. The labs omit production authentication, TLS, storage tuning, and distributed application ownership. Broker retention is finite; deleting a volume deletes its log. The [production and recovery guide](docs/explanation/production.md) covers independent failure domains, cross-region replication, writer fencing, recovery objectives, and restore drills. Those requirements are documented, not claimed as capabilities of this single-host setup.
+
+## License
+
+The first-party code is [MIT licensed](LICENSE). Broker images, model weights, the fx harness, Terraform, and other dependencies retain their upstream licenses. This license does not grant rights to third-party sports, film, or character assets.

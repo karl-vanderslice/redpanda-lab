@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+command=${1:?Specify a lifecycle command}
+name=${2:-explorer}
+shift
+if (( $# > 0 )); then shift; fi
+if [[ $name == explorer ]]; then
+  exec bash "$root/lab" "$command" "$@"
+fi
+exec bash "$root/labs/run" "$name" "$command" "$@"

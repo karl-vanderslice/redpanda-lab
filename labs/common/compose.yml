@@ -1,0 +1,43 @@
+services:
+  redpanda:
+    image: registry-1.docker.io/redpandadata/redpanda:v26.2.4@sha256:c98c2f04a751e6646012cc701bac5183252cee44c88ba1dfa412e4c7124f2e89
+    command:
+      - redpanda
+      - start
+      - --mode=dev-container
+      - --smp=1
+      - --memory=512M
+      - --reserve-memory=0M
+      - --node-id=0
+      - --kafka-addr=internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr=internal://redpanda:9092,external://127.0.0.1:${KAFKA_PORT}
+      - --rpc-addr=0.0.0.0:33145
+      - --advertise-rpc-addr=redpanda:33145
+      - --pandaproxy-addr=0.0.0.0:8082
+      - --advertise-pandaproxy-addr=redpanda:8082
+      - --default-log-level=warn
+    ports:
+      - 127.0.0.1:${KAFKA_PORT}:19092
+      - 127.0.0.1:${ADMIN_PORT}:9644
+      - 127.0.0.1:${PROXY_PORT}:8082
+    networks: [lab]
+    volumes: [broker:/var/lib/redpanda/data]
+    mem_limit: 1g
+    healthcheck:
+      test: [CMD, rpk, cluster, health, -X, brokers=localhost:9092, --exit-when-healthy]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  console:
+    image: registry-1.docker.io/redpandadata/console:v3.12.0@sha256:9dc0cd55db172c6be9c2ff8a51f33a14395f7675fa7fbc002c277f3b96115c27
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+      REDPANDA_ADMINAPI_ENABLED: 'true'
+      REDPANDA_ADMINAPI_URLS: http://redpanda:9644
+    ports: ["127.0.0.1:${CONSOLE_PORT}:8080"]
+    networks: [lab]
+    mem_limit: 512m
+networks:
+  lab: {driver: bridge}
+volumes:
+  broker: {}

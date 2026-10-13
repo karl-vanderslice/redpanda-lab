@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+if [[ ${REDPANDA_LAB_SHELL:-0} != 1 ]]; then
+  exec nix develop "path:$root" --no-update-lock-file -c bash "$root/labs/run" "$@"
+fi
+name=${1:-help}
+case "$name" in
+  trading|sports|agent-messaging|agent-chat|bitcoin) ;;
+  terraform) shift; exec bash "$root/labs/terraform/lab" "$@" ;;
+  *) printf 'Usage: labs/run {trading|sports|agent-messaging|agent-chat|bitcoin|terraform} {up|down|status|urls [--json]|logs|rpk|exec|restart}\n'; exit 2 ;;
+esac
+shift
+command=${1:-help}
+shift || true
+identity=$(printf '%s' "$root/$name" | sha256sum)
+export LAB_PROJECT="rp-${name}-${identity:0:10}"
+state="${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/labs/${identity:0:10}"
+mkdir -p "$state"
+if [[ $command == up || $command == down || $command == restart ]]; then
+  exec 9>"$state/lifecycle.lock"
+  flock -n 9 || { echo "Another lifecycle action owns $LAB_PROJECT" >&2; exit 1; }
+fi
+base=${LAB_PORT_BASE:-$((49152 + RANDOM % 16000))}
+if [[ -f $state/port-base ]]; then read -r base < "$state/port-base"; fi
+if [[ ! $base =~ ^[0-9]+$ ]] || (( base < 49152 || base > 65530 )); then
+  echo 'LAB_PORT_BASE must be an integer from 49152 through 65530.' >&2; exit 2
+fi
+ports() {
+  export APP_PORT=$base CONSOLE_PORT=$((base+1)) ADMIN_PORT=$((base+2)) PROXY_PORT=$((base+3)) KAFKA_PORT=$((base+4))
+}
+ports
+export LAB_APP_IMAGE="localhost/redpanda-$name:nix" LAB_MODEL_IMAGE=localhost/redpanda-lab-model:nix
+export REDPANDA_PROXY_URL=http://redpanda:8082
+compose() {
+  local limit=()
+  if [[ ${1:-} == up ]]; then limit=(timeout --foreground 240s); fi
+  "${limit[@]}" podman-compose -p "$LAB_PROJECT" -f "$root/labs/common/compose.yml" -f "$root/labs/$name/compose.yml" "$@" 9>&-
+}
+urls() {
+  if [[ ! -f $state/port-base ]]; then echo "Run just up $name first." >&2; return 1; fi
+  if [[ ${1:-} == --json ]]; then
+    jq -n --arg app "http://127.0.0.1:$APP_PORT" --arg console "http://127.0.0.1:$CONSOLE_PORT" --arg admin "http://127.0.0.1:$ADMIN_PORT" --arg proxy "http://127.0.0.1:$PROXY_PORT" --arg project "$LAB_PROJECT" '{app:$app,console:$console,admin:$admin,proxy:$proxy,project:$project}'
+  else
+    printf '%s app: http://127.0.0.1:%s\nConsole: http://127.0.0.1:%s\nAdmin: http://127.0.0.1:%s\nHTTP Proxy: http://127.0.0.1:%s\nKafka: 127.0.0.1:%s\nProject: %s\n' "$name" "$APP_PORT" "$CONSOLE_PORT" "$ADMIN_PORT" "$PROXY_PORT" "$KAFKA_PORT" "$LAB_PROJECT"
+  fi
+}
+wait_ready() {
+  local path=$1 predicate=$2 deadline=$((SECONDS+180))
+  until curl -fsS --max-time 3 "$path" | jq -e "$predicate" >/dev/null; do
+    if (( SECONDS >= deadline )); then echo "Readiness timed out: $path. Containers remain; inspect logs or use down." >&2; return 1; fi
+    sleep 1
+  done
+}
+case "$command" in
+  up)
+    if [[ ! -f $state/port-base ]]; then
+      available=0
+      for _attempt in {1..20}; do
+        if node --input-type=module - "$base" <<'JS'
+import net from 'node:net';
+const servers=[];
+try { for(let i=0;i<5;i++){const server=net.createServer();servers.push(server);await new Promise((resolve,reject)=>server.once('error',reject).listen(Number(process.argv[2])+i,'127.0.0.1',resolve));} }
+catch {process.exitCode=1;}
+finally {for(const server of servers)server.close();}
+JS
+        then available=1; break; fi
+        [[ -z ${LAB_PORT_BASE:-} ]] || break
+        base=$((49152 + RANDOM % 16000)); ports
+      done
+      (( available )) || { echo 'No free port block found; select another LAB_PORT_BASE.' >&2; exit 1; }
+      printf '%s\n' "$base" > "$state/port-base"
+    fi
+    image=$(nix build --no-update-lock-file --no-link --print-out-paths "path:$root#$name-image")
+    podman load -i "$image" 9>&-
+    # Compose must see immutable identity changes, not a reused local tag.
+    LAB_APP_IMAGE=$(podman image inspect --format '{{.Id}}' "$LAB_APP_IMAGE")
+    if [[ $name == agent-chat || $name == agent-messaging ]]; then
+      model_image=$(nix build --no-update-lock-file --no-link --print-out-paths "path:$root#model-image")
+      podman load -i "$model_image" 9>&-
+      LAB_MODEL_IMAGE=$(podman image inspect --format '{{.Id}}' "$LAB_MODEL_IMAGE")
+    fi
+    compose up -d redpanda console
+    wait_ready "http://127.0.0.1:$ADMIN_PORT/v1/cluster/health_overview" '.is_healthy'
+    case "$name" in
+      trading) topic=trading.exchange.v1 ;;
+      sports) topic=sports.events ;;
+      agent-chat) topic=agent-chat-events ;;
+      agent-messaging) topic=agent-messaging.events.v1 ;;
+      bitcoin) topic=bitcoin.paper.v1 ;;
+    esac
+    if ! compose exec -T redpanda rpk topic describe "$topic" -X brokers=redpanda:9092 >/dev/null 2>&1; then
+      compose exec -T redpanda rpk topic create "$topic" -p 1 -r 1 -c retention.ms=86400000 -X brokers=redpanda:9092
+    fi
+    compose up -d
+    wait_ready "http://127.0.0.1:$APP_PORT/health" '.ready'
+    deadline=$((SECONDS+120))
+    until curl -fsS --max-time 3 "http://127.0.0.1:$CONSOLE_PORT/admin/health" >/dev/null; do
+      (( SECONDS < deadline )) || { echo 'Console readiness timed out; inspect logs.' >&2; exit 1; }; sleep 1
+    done
+    urls
+    ;;
+  down)
+    compose down --volumes --remove-orphans
+    [[ -z $(podman ps -a --filter "name=^${LAB_PROJECT}_" --format '{{.Names}}') ]] || { echo 'Owned containers remain; port state retained.' >&2; exit 1; }
+    for kind in volume network; do
+      podman "$kind" ls --format '{{.Name}}' | jq -R -s -e --arg prefix "${LAB_PROJECT}_" 'split("\n") | all(.[]; startswith($prefix) | not)' >/dev/null || { echo "Owned $kind remains; port state retained." >&2; exit 1; }
+    done
+    rm -f "$state/port-base"
+    echo "Disposed of $LAB_PROJECT. Nix outputs and reusable images remain cached."
+    ;;
+  urls) urls "$@" ;;
+  status) compose ps; if [[ -f $state/port-base ]]; then urls; fi ;;
+  logs) compose logs --tail=100 "$@" ;;
+  exec) compose exec -T "$@" ;;
+  rpk) compose exec -T redpanda rpk -X brokers=redpanda:9092 "$@" ;;
+  restart)
+    [[ $# == 1 ]] || { echo 'restart requires one service name' >&2; exit 2; }
+    compose restart "$1"
+    if [[ $1 == app ]]; then wait_ready "http://127.0.0.1:$APP_PORT/health" '.ready'; fi
+    ;;
+  *) echo 'Unknown lifecycle command.' >&2; exit 2 ;;
+esac

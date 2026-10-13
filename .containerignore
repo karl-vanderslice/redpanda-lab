@@ -1,0 +1,5 @@
+*
+!LICENSE
+!app/
+!app/**
+app/node_modules/

@@ -1,0 +1,282 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+umask 077
+lab=$(realpath "$(dirname "${BASH_SOURCE[0]}")")
+root=$(realpath "$lab/../..")
+identity=$(printf '%s' "$root" | sha256sum)
+identity=${identity:0:12}
+project="rplab-tf-$identity"
+state=$(realpath -m "${LAB_TF_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/redpanda-lab/terraform/$identity}")
+case "$state/" in "$root/"*) printf 'State must be outside checkout: %s\n' "$state" >&2; exit 1;; esac
+# shellcheck source=images.env
+source "$lab/images.env"
+fail() { printf 'terraform lab: %s\n' "$*" >&2; exit 1; }
+podman_local() { podman --remote=false "$@"; }
+usage() {
+  cat <<'USAGE'
+Usage: ./labs/terraform/lab COMMAND [OPTIONS]
+  plan [--destroy] [--json]          save and display an exact plan
+  apply [--destroy] --reviewed HASH apply only that saved reviewed plan
+  up | down                        plan, review, type project to apply/destroy
+  status | urls [--json] | rpk ARGS cluster inspection
+  health                           bounded three-broker and Console health check
+  drift                            stop only Terraform-owned Console (drift exercise)
+  show [--destroy] [--json]         inspect the saved plan; JSON can contain secrets
+  check                            Terraform fmt/validate and Bash shellcheck
+  test                             destructive full E2E; requires an empty owned state
+USAGE
+}
+command=${1:-help}
+shift || true
+case "$command" in help|-h|--help) usage; exit 0;; esac
+case "$command" in plan|apply|up|down|status|urls|rpk|health|drift|show|check|test) ;; *) usage >&2; exit 2;; esac
+mkdir -p "$state"
+chmod 700 "$state"
+# One host wrapper at a time; Terraform additionally locks its local backend.
+# The E2E driver invokes child wrappers, each with its own lock.
+if [[ "$command" == test ]]; then exec bash "$lab/e2e.sh" "$@"; fi
+exec 9>"$state/wrapper.lock"
+flock -w 5 9 || fail "another lab operation owns $state/wrapper.lock"
+settings="$state/settings.json"
+default_base=$((49152 + (16#${identity:0:6} % 1200) * 13))
+if [[ -f "$settings" ]]; then
+  jq -e --arg p "$project" '.project==$p and (.port_base|type)=="number" and (.port_base|floor)==.port_base and .port_base>=49152 and .port_base<=65520 and (.console_enabled|type)=="boolean"' "$settings" >/dev/null || fail 'settings do not match checkout identity or port contract'
+  base=$(jq -r .port_base "$settings")
+  enabled=$(jq -r .console_enabled "$settings")
+else
+  base=${LAB_TF_PORT_BASE:-$default_base}
+  enabled=${LAB_TF_CONSOLE_ENABLED:-true}
+  if [[ ! $base =~ ^[0-9]{5}$ ]] || ((base < 49152 || base > 65520)); then fail 'LAB_TF_PORT_BASE must be 49152..65520'; fi
+  [[ "$enabled" == true || "$enabled" == false ]] || fail 'LAB_TF_CONSOLE_ENABLED must be true or false'
+  # Inspection/validation may show proposed defaults, but only planning fixes the target.
+  if [[ "$command" == plan || "$command" == up || "$command" == down ]]; then
+    jq -n --arg project "$project" --argjson port_base "$base" --argjson console_enabled "$enabled" \
+      '{project:$project,port_base:$port_base,console_enabled:$console_enabled}' > "$settings"
+  fi
+fi
+[[ -z ${LAB_TF_PORT_BASE:-} || "$LAB_TF_PORT_BASE" == "$base" ]] || fail 'port base is persisted; destroy before changing it'
+[[ -z ${LAB_TF_CONSOLE_ENABLED:-} || "$LAB_TF_CONSOLE_ENABLED" == "$enabled" ]] || fail 'Console setting is persisted; complete a reviewed empty destroy before changing it'
+urls() {
+  jq -n --arg project "$project" --arg state "$state" --argjson base "$base" --argjson enabled "$enabled" \
+    '{project:$project,state:$state,app:null,console:(if $enabled then "http://127.0.0.1:\($base+12)" else null end),admin:"http://127.0.0.1:\($base+3)",proxy:"http://127.0.0.1:\($base+6)",schema:"http://127.0.0.1:\($base+9)",brokers:[range(0;3)|{name:"broker-\(.)",container:"\($project)-broker-\(.)",kafka:"127.0.0.1:\($base+.)",admin:"http://127.0.0.1:\($base+3+.)",proxy:"http://127.0.0.1:\($base+6+.)",schema:"http://127.0.0.1:\($base+9+.)"}]}'
+}
+if [[ "$command" == urls ]]; then
+  if [[ ${1:-} == --json ]]; then urls; else urls | jq -r '"Project: \(.project)\nState: \(.state)\nConsole: \(.console // "disabled")", (.brokers[] | "\(.name): Kafka \(.kafka), Admin \(.admin), Proxy \(.proxy), Schema \(.schema)")'; fi
+  exit 0
+fi
+[[ $(id -u) != 0 ]] || fail 'rootful Podman is forbidden'
+[[ -z ${CONTAINER_HOST:-} && -z ${CONTAINER_CONNECTION:-} ]] || fail 'unset CONTAINER_HOST and CONTAINER_CONNECTION; this lab only uses local rootless Podman'
+host_info=$(podman_local info --format json)
+jq -e '.host.security.rootless == true' <<<"$host_info" >/dev/null || fail 'Podman must be rootless'
+owner_label="io.redpanda.lab.project=$project"
+if [[ "$command" == status ]]; then
+  printf 'Project: %s\nState: %s\n' "$project" "$state"
+  podman_local ps -a --filter "label=$owner_label" --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+  [[ ! -f "$state/last-operation.json" ]] || jq . "$state/last-operation.json"
+  exit 0
+fi
+rpk() {
+  podman_local exec -i "$project-broker-0" rpk --ignore-profile \
+    -X brokers=broker-0:9092,broker-1:9092,broker-2:9092 \
+    -X admin.hosts=broker-0:9644,broker-1:9644,broker-2:9644 "$@"
+}
+health() {
+  local deadline=$((SECONDS + ${LAB_TF_HEALTH_TIMEOUT:-120})) report broker ok
+  while ((SECONDS < deadline)); do
+    ok=true
+    for broker in 0 1 2; do
+      report=$(curl --fail --silent --show-error --max-time 3 "http://127.0.0.1:$((base + 3 + broker))/v1/cluster/health_overview" 2>/dev/null) || { ok=false; break; }
+      jq -e '.is_healthy==true and (.all_nodes|length)==3 and (.nodes_down|length)==0 and (.leaderless_partitions|length)==0 and (.under_replicated_partitions|length)==0' <<<"$report" >/dev/null || { ok=false; break; }
+    done
+    if [[ "$ok" == true && "$enabled" == true ]]; then
+      curl --fail --silent --show-error --max-time 3 "http://127.0.0.1:$((base + 12))/admin/startup" >/dev/null 2>&1 || ok=false
+    fi
+    if [[ "$ok" == true ]]; then printf 'Healthy: three brokers, no down/leaderless/under-replicated partitions%s\n' "$(if [[ "$enabled" == true ]]; then printf ', Console ready'; fi)"; return; fi
+    sleep 2
+  done
+  podman_local ps -a --filter "label=$owner_label" >&2
+  fail 'readiness deadline reached; inspect status/logs and state before planning again (no automatic apply retry)'
+}
+case "$command" in
+  rpk) rpk "$@"; exit;;
+  health) health; exit;;
+  drift)
+    [[ "$enabled" == true ]] || fail 'drift exercise requires Console'
+    podman_local inspect "$project-console" | jq -e --arg p "$project" '.[0].Config.Labels["io.redpanda.lab.project"]==$p and .[0].Config.Labels["io.redpanda.lab.role"]=="console"' >/dev/null || fail 'Console ownership does not match'
+    podman_local stop --time 10 "$project-console"
+    printf 'Console is stopped. Terraform plan must now detect must_run drift.\n'; exit;;
+esac
+runtime="${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}}/redpanda-lab-terraform-$(id -u)-$identity"
+mkdir -p "$runtime"
+chmod 700 "$runtime"
+socket=${LAB_PODMAN_SOCKET:-$runtime/podman.sock}
+service_pid=''
+stop_owned_service() {
+  local status=$?
+  trap - EXIT
+  if [[ -n $service_pid ]]; then
+    kill "$service_pid" 2>/dev/null || true
+    wait "$service_pid" 2>/dev/null || true
+    rm -f "$socket"
+  fi
+  exit "$status"
+}
+trap stop_owned_service EXIT
+if [[ ! -S $socket && -z ${LAB_PODMAN_SOCKET:-} ]]; then
+  podman_local system service --time=0 "unix://$socket" 9>&- >"$runtime/service.log" 2>&1 &
+  service_pid=$!
+  deadline=$((SECONDS+15))
+  until [[ -S $socket ]]; do
+    kill -0 "$service_pid" 2>/dev/null || fail "owned Podman API service exited; inspect $runtime/service.log"
+    (( SECONDS < deadline )) || fail "owned Podman API service readiness timed out; inspect $runtime/service.log"
+    sleep 0.1
+  done
+fi
+[[ -S $socket ]] || fail "explicit Podman socket missing: $socket"
+[[ $(stat -Lc %u "$socket") == "$(id -u)" ]] || fail 'socket is not owned by the current user'
+socket=$(realpath "$socket")
+socket_info=$(curl --fail --silent --show-error --max-time 5 --unix-socket "$socket" http://localhost/v5.0.0/libpod/info)
+jq -e --arg graph "$(jq -r .store.graphRoot <<<"$host_info")" '.host.security.rootless==true and .store.graphRoot==$graph' <<<"$socket_info" >/dev/null || fail 'socket does not address the selected local rootless store'
+host_fingerprint=$(printf '%s\n' "$(id -u)" "$socket" "$(jq -r '.store.graphRoot,.store.runRoot' <<<"$host_info")" | sha256sum)
+host_fingerprint=${host_fingerprint%% *}
+if [[ -f "$state/host-fingerprint" ]]; then
+  [[ $(cat "$state/host-fingerprint") == "$host_fingerprint" ]] || fail 'state belongs to a different Podman store/socket; restore that context, never reuse state blindly'
+else
+  printf '%s\n' "$host_fingerprint" > "$state/host-fingerprint"
+fi
+image=${LAB_TERRAFORM_IMAGE:-}
+if [[ -z "$image" ]]; then
+  archive=$(nix build --no-update-lock-file --no-link --print-out-paths "path:$root#terraform-image")
+  [[ -f "$archive" ]] || fail 'terraform-image must be a dockerTools archive'
+  archive_hash=$(sha256sum "$archive"); archive_hash=${archive_hash%% *}
+  if [[ ! -f "$state/tool-archive.sha256" || $(cat "$state/tool-archive.sha256") != "$archive_hash" ]] || ! podman_local image exists localhost/redpanda-lab-terraform:tf-1.16.4-docker-4.6.0; then
+    podman_local load -i "$archive" >&2
+    printf '%s\n' "$archive_hash" > "$state/tool-archive.sha256"
+  fi
+  image=localhost/redpanda-lab-terraform:tf-1.16.4-docker-4.6.0
+fi
+image_id=$(podman_local image inspect --format '{{.Id}}' "$image")
+# No host home, credentials, checkout write access, host network or extra socket.
+# Socket authority still equals the host user: read-only mount is NOT an API ACL.
+tf() {
+  podman_local run --rm --name "$project-tool" --network none --read-only \
+    --cap-drop ALL --security-opt no-new-privileges --security-opt label=disable \
+    --tmpfs /tmp:rw,nosuid,nodev,size=64m --pids-limit 256 --memory 768m \
+    --mount "type=bind,src=$lab,target=/workspace,ro=true" \
+    --mount "type=bind,src=$state,target=/state" \
+    --mount "type=bind,src=$socket,target=/run/podman.sock,ro=true" \
+    "$image_id" "$@"
+}
+inputs="$state/inputs.tfvars.json"
+jq -n --arg project "$project" --argjson port_base "$base" --argjson console_enabled "$enabled" \
+  --arg redpanda_image "$REDPANDA_IMAGE" --arg console_image "$CONSOLE_IMAGE" \
+  '{project:$project,port_base:$port_base,console_enabled:$console_enabled,redpanda_image:$redpanda_image,console_image:$console_image}' > "$inputs.next"
+if [[ ! -f "$inputs" ]] || ! cmp -s "$inputs.next" "$inputs"; then mv "$inputs.next" "$inputs"; else rm "$inputs.next"; fi
+initialize() { tf init -input=false -lockfile=readonly -backend-config=path=/state/terraform.tfstate >&2; }
+fingerprint() {
+  { sha256sum "$lab/main.tf" "$lab/.terraform.lock.hcl" "$lab/default.nix" "$lab/images.env" "$inputs"; printf '%s\n' "$image_id" "$host_fingerprint"; } | sha256sum | cut -d ' ' -f 1
+}
+kind=apply
+json=false
+reviewed=
+while (($#)); do
+  case "$1" in
+    --destroy) kind=destroy; shift;;
+    --json) json=true; shift;;
+    --reviewed) [[ $# -ge 2 ]] || fail '--reviewed needs the displayed SHA256'; reviewed=$2; shift 2;;
+    *) fail "unknown option: $1";;
+  esac
+done
+[[ "$command" != down ]] || kind=destroy
+plan="$state/$kind.tfplan"
+metadata="$state/$kind-plan.json"
+port_preflight() {
+  local resources ports n all_ports
+  # Existing state is not permission to ignore collisions from unrelated objects.
+  # Only running containers own their listening ports; stopped ones cannot waive a collision.
+  resources=$(podman_local ps --filter "label=$owner_label" --format '{{.ID}}')
+  ports='[]'
+  if [[ -n "$resources" ]]; then
+    while IFS= read -r n; do
+      ports=$(podman_local inspect "$n" | jq --argjson prior "$ports" '$prior + [.[0].HostConfig.PortBindings // {} | .[]?[]? | .HostPort|tonumber]')
+    done <<<"$resources"
+  fi
+  all_ports=$(ss -H -ltn)
+  for ((n=base; n<=base+12; n++)); do
+    [[ "$enabled" == true || $n -ne $((base+12)) ]] || continue
+    if jq -e --argjson n "$n" 'index($n)!=null' <<<"$ports" >/dev/null; then continue; fi
+    if printf '%s\n' "$all_ports" | jq -Rse --arg n ":$n" 'split("\n")|any(.[]; (split(" ")|map(select(length>0))|.[3] // "")|endswith($n))' >/dev/null; then
+      fail "port $n is occupied outside this project's published-port set; choose LAB_TF_PORT_BASE before the first plan"
+    fi
+  done
+}
+make_plan() {
+  local result=0 digest config
+  local -a options=()
+  [[ "$kind" != destroy ]] || options+=(-destroy)
+  [[ "$kind" == destroy ]] || port_preflight
+  initialize
+  rm -f "$plan" "$metadata"
+  tf plan -input=false -lock-timeout=5s -parallelism=3 -detailed-exitcode \
+    -var-file=/state/inputs.tfvars.json -out="/state/$kind.tfplan" \
+    "${options[@]}" >&2 || result=$?
+  [[ $result == 0 || $result == 2 ]] || fail 'planning failed; no plan is approved'
+  digest=$(sha256sum "$plan"); digest=${digest%% *}
+  config=$(fingerprint)
+  jq -n --arg sha256 "$digest" --arg fingerprint "$config" --arg project "$project" --arg kind "$kind" --arg plan "$plan" --argjson changed "$([[ $result == 2 ]] && printf true || printf false)" \
+    '{project:$project,kind:$kind,sha256:$sha256,fingerprint:$fingerprint,changed:$changed,plan:$plan}' > "$metadata"
+  if [[ "$json" == true ]]; then cat "$metadata"; else
+    tf show -no-color "/state/$kind.tfplan"
+    printf '\nSaved %s plan, review SHA256: %s\nApply this exact artifact: ./labs/terraform/lab apply %s--reviewed %s\n' "$kind" "$digest" "$(if [[ "$kind" == destroy ]]; then printf '%s ' '--destroy'; fi)" "$digest"
+  fi
+}
+apply_plan() {
+  local digest expected config result=0 remaining
+  [[ -f "$plan" && -f "$metadata" ]] || fail 'no saved plan; run plan (or plan --destroy) first'
+  [[ "$reviewed" =~ ^[a-f0-9]{64}$ ]] || fail 'supply --reviewed with the SHA256 of the plan you inspected'
+  digest=$(sha256sum "$plan"); digest=${digest%% *}
+  expected=$(jq -r .sha256 "$metadata")
+  [[ "$reviewed" == "$digest" && "$expected" == "$digest" ]] || fail 'reviewed hash differs from saved plan'
+  config=$(fingerprint)
+  [[ $(jq -r .fingerprint "$metadata") == "$config" ]] || fail 'configuration, inputs, tool image or socket changed since review; make and review a fresh plan'
+  [[ "$kind" == destroy ]] || port_preflight
+  tf apply -input=false -lock-timeout=5s -parallelism=3 "/state/$kind.tfplan" || result=$?
+  # Consume even a failed artifact: inspect partial state and create a new reviewed plan.
+  mv "$plan" "$state/$kind.last.tfplan"
+  mv "$metadata" "$state/$kind-last-plan.json"
+  jq -n --arg kind "$kind" --argjson exit "$result" --arg time "$(date -u +%FT%TZ)" '{operation:$kind,exit:$exit,time:$time}' > "$state/last-operation.json"
+  [[ $result == 0 ]] || fail 'apply failed; inspect partial state/status; saved artifact consumed, no blind retry'
+  if [[ "$kind" == destroy ]]; then
+    remaining=$(tf state list)
+    [[ -z "$remaining" ]] || fail 'destroy left resources in Terraform state'
+    remaining=$(podman_local ps -a --filter "label=$owner_label" --format '{{.ID}}')
+    [[ -z "$remaining" ]] || fail 'destroy left owned containers'
+    remaining=$(podman_local volume ls --filter "label=$owner_label" --format '{{.Name}}')
+    [[ -z "$remaining" ]] || fail 'destroy left owned volumes'
+    remaining=$(podman_local network ls --filter "label=$owner_label" --format '{{.Name}}')
+    [[ -z "$remaining" ]] || fail 'destroy left owned networks'
+    rm -f -- "$settings"
+    printf 'Destroyed: state empty, no owned containers/volumes/network. Shared images retained.\n'
+  else health; fi
+}
+case "$command" in
+  plan) make_plan;;
+  apply) apply_plan;;
+  up|down)
+    [[ "$json" == false && -z "$reviewed" ]] || fail 'up/down are interactive; automation must plan then apply --reviewed HASH'
+    make_plan
+    [[ -t 0 ]] || fail 'up/down require a terminal for review; saved plan remains available'
+    printf 'Review ALL actions above. Type %s to %s the saved plan: ' "$project" "$kind" >&2
+    read -r answer
+    [[ "$answer" == "$project" ]] || fail 'not approved; saved plan was not applied'
+    reviewed=$(jq -r .sha256 "$metadata")
+    apply_plan;;
+  show)
+    [[ -f "$plan" ]] || fail 'no saved plan'
+    if [[ "$json" == true ]]; then tf show -json "/state/$kind.tfplan"; else tf show -no-color "/state/$kind.tfplan"; fi;;
+  check)
+    initialize
+    tf fmt -check -diff
+    tf validate
+    shellcheck --external-sources --source-path "$lab" "$lab/lab" "$lab/e2e.sh";;
+esac

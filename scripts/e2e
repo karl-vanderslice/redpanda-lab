@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+if [[ ${REDPANDA_LAB_SHELL:-0} != 1 ]]; then
+  exec nix develop "path:$root" --no-update-lock-file -c bash "$root/scripts/e2e" "$@"
+fi
+name=${1:-explorer}
+if [[ $name == explorer ]]; then exec bash "$root/tests/e2e.sh"; fi
+case "$name" in trading|sports|agent-messaging|agent-chat|bitcoin|terraform) ;; *) echo 'Unknown lab.' >&2; exit 2 ;; esac
+run_id="$(date +%Y%m%dT%H%M%S)-$$"
+report_dir="${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/e2e/$name/$run_id"
+mkdir -p "$report_dir"
+touch "$report_dir/workflow.log" "$report_dir/runtime.log"
+cd -- "$root"
+shopt -s globstar nullglob dotglob
+files=("$root/flake.nix" "$root/flake.lock" "$root/LICENSE" "$root/justfile" "$root/labs/run" "$root/scripts/e2e")
+for file in "$root/labs/common/"* "$root/labs/$name/"**/*; do [[ ! -f $file ]] || files+=("$file"); done
+sha256sum "${files[@]}" > "$report_dir/source-sha256.txt"
+finish() {
+  status=$?
+  trap - EXIT
+  if [[ $name != terraform ]]; then
+    "$root/labs/run" "$name" logs >> "$report_dir/runtime.log" 2>&1 || true
+    if ! "$root/labs/run" "$name" down >> "$report_dir/runtime.log" 2>&1; then status=1; fi
+  fi
+  {
+    printf '# %s E2E\n\n' "$name"
+    printf -- '- Replay: `nix develop --no-update-lock-file -c just test %s`\n' "$name"
+    printf -- '- Source revision: %s (source hashes below capture local changes)\n' "$(git rev-parse HEAD)"
+    printf -- '- Exit status: %s\n' "$status"
+    printf -- '- Tools: %s, %s, Node %s, %s\n' "$(podman --version)" "$(nix --version)" "$(node --version)" "$(just --version)"
+    printf -- '- Inputs/assertions: the checked-in lab e2e.sh exercises its documented domain fixtures against real containers; Bitcoin uses attributed historical prices and a paper account. Scenario output is in [workflow.log](workflow.log).\n'
+    printf -- '- Setup, diagnosis, cleanup: [runtime.log](runtime.log). Terraform scenarios own their lifecycle and saved-plan evidence.\n\n'
+    printf '## Source snapshot\n\n```text\n'
+    cat "$report_dir/source-sha256.txt"
+    printf '```\n'
+  } > "$report_dir/report.md"
+  echo "Report: $report_dir/report.md"
+  exit "$status"
+}
+trap finish EXIT
+if [[ $name == terraform ]]; then
+  bash "$root/labs/terraform/lab" test 2>&1 | tee "$report_dir/workflow.log"
+else
+  # Public workflow oracles own a fresh disposable account, never an interactive ledger.
+  "$root/labs/run" "$name" down >> "$report_dir/runtime.log" 2>&1
+  "$root/labs/run" "$name" up >> "$report_dir/runtime.log" 2>&1
+  bash "$root/labs/$name/e2e.sh" 2>&1 | tee "$report_dir/workflow.log"
+fi

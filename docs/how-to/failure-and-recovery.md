@@ -9,7 +9,7 @@ This experiment destroys no volume, but interrupts one broker. Use only this lab
 5. Produce more events. The remaining two brokers elect leaders as needed. Requests can pause during election; observe actual acknowledgments and errors.
 6. Open Prometheus and Grafana. Broker availability and under-replicated-partition alerts appear after their evaluation windows, not instantly.
 7. Resume consumption. Committed lag should drain. At-least-once redelivery means consumed count can exceed produced count.
-8. Restart the same container with `podman start <container-name>`, then run `just rpk cluster health` until it reports healthy.
+8. Restart the same container with `podman start <container-name>`, then run `just rpk explorer cluster health` until it reports healthy.
 
 For a repeatable automated version, run `just test`. The E2E checks production of 24 distinct keys with a broker stopped, retained pause intent, broker-stored lag, resumed consumption, cluster recovery, and disposal. Its report lives under `${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/e2e/`.
 

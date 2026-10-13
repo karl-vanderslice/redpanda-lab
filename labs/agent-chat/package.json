@@ -1,0 +1,10 @@
+{
+  "name": "redpanda-agent-chat",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local inference and one-shot scheduling backed by an ordered Redpanda log",
+  "scripts": {
+    "start": "node server.mjs"
+  }
+}

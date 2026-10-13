@@ -9,6 +9,7 @@ mkdir -p "$cache"
 stage=$(mktemp -d "$cache/build.XXXXXXXX")
 cp "$root/zensical.toml" "$stage/zensical.toml"
 cp -R "$root/docs" "$stage/docs"
+cp -R "$root/docs-theme" "$stage/docs-theme"
 cd -- "$stage"
 case ${1:-build} in
   build)

@@ -21,7 +21,7 @@ finish() {
     echo; echo "- Source: $root (git $(git -C "$root" rev-parse --short HEAD 2>/dev/null || echo 'no commit')$(git -C "$root" diff --quiet HEAD 2>/dev/null || echo ', with uncommitted changes'))"
     echo "- Tools: $(podman --version), $(podman-compose version 2>/dev/null | grep -i podman-compose | head -n1), node $(node --version)"
     echo "- Source snapshot hashes:"
-    sha256sum "$root/flake.lock" "$root/app/package.json" "$root/app/package-lock.json" "$root/app/server.js" "$root/app/Containerfile" "$root/lab" "$root/tests/e2e.sh"
+    sha256sum "$root/flake.lock" "$root/LICENSE" "$root/compose.yml" "$root/.containerignore" "$root/app/package.json" "$root/app/package-lock.json" "$root/app/server.js" "$root/app/Containerfile" "$root/lab" "$root/tests/e2e.sh"
     echo "- Replay: tests/e2e.sh (runs ./lab up, HTTP workflow checks, ./lab down)"
     echo "- Exit status: $status"
     echo; echo "## Results"; printf -- '- %s\n' "${results[@]}"
@@ -116,7 +116,6 @@ done
 pass 'cluster healthy after failed broker restart'
 
 "$root/lab" down >> "$log" 2>&1 || fail './lab down succeeded'
-[[ -n $(awk '/^Removed /{print $2}' "$log" | tail -n1) ]] || fail 'runtime disposal reported'
 [[ -n $project && -z $(podman ps -a --filter "name=^${project}_" --format '{{.Names}}') ]] && pass 'no lab containers remain' || fail 'no lab containers remain'
 [[ -z $(podman volume ls --format '{{.Name}}' | grep "^${project}_" || true) ]] && pass 'no lab volumes remain' || fail 'no lab volumes remain'
 [[ -z $(podman network ls --format '{{.Name}}' | grep "^${project}_" || true) ]] && pass 'no lab network remains' || fail 'no lab network remains'

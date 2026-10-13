@@ -77,7 +77,7 @@ services:
     ports: ["127.0.0.1:${KAFKA_2_PORT}:19092"]
     volumes: [broker-2:/var/lib/redpanda/data]
   app:
-    build: {context: ./app, dockerfile: Containerfile}
+    build: {context: ., dockerfile: app/Containerfile}
     image: localhost/${LAB_PROJECT}-app:1
     restart: unless-stopped
     init: true

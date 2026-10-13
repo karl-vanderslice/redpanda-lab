@@ -40,6 +40,7 @@ A production runbook should:
 | Sports broadcasting | Replicate score/control events separately from media origin assets, manifests, and viewer sessions. A broker is not a video CDN. |
 | Agent coordination | Fence task ownership, preserve correlation IDs, and surface uncertain tool/model effects rather than repeating them silently. |
 | Scheduled chat | Persist schedule state, use one fenced executor per job, define timezone/overdue policy, and reconcile replies generated before interruption. |
+| Bitcoin positions | Fence account ownership; restore source data, strategy version, cash, cost basis, fees, command IDs and consumed offset together. Real venue execution requires separate reconciliation. |
 | Terraform provisioning | Protect and lock state independently, retain provider pins, and reconcile actual resources before applying a recovery plan. |
 
 No multi-region failover, RPO/RTO target, production security audit, or performance benchmark is claimed by this lab.

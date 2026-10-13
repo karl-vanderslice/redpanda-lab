@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Later · local agent chat</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#conversation">Skip to conversation</a>
+  <header class="masthead">
+    <a class="brand" href="/" aria-label="Later home"><span class="brand-mark" aria-hidden="true">L.</span> later<span class="edition">A REDPANDA LAB / 04</span></a>
+    <div class="header-actions"><span class="local-label">Local model. Durable memory.</span><button id="theme" type="button" class="quiet">Dark theme</button></div>
+  </header>
+  <div class="workspace">
+    <aside class="notebook" aria-labelledby="notebook-title">
+      <p class="eyebrow">YOUR NOTEBOOK</p>
+      <h2 id="notebook-title">Conversations</h2>
+      <form id="create-form">
+        <label for="title">New conversation title</label>
+        <input id="title" name="title" maxlength="80" required placeholder="A small idea…" autocomplete="off">
+        <button class="primary" type="submit">New conversation <span aria-hidden="true">+</span></button>
+      </form>
+      <nav id="conversations" aria-label="Conversation history"><p class="muted">Connecting to your notebook…</p></nav>
+      <div class="notebook-note"><span class="tiny-rule"></span><p>Words worth keeping.<br>Prompts worth waiting for.</p><p class="muted">Messages and schedules live in one ordered Redpanda log, not in this browser.</p></div>
+    </aside>
+    <main id="conversation" tabindex="-1">
+      <div class="conversation-heading"><div><p class="eyebrow">A LITTLE SPACE TO THINK</p><h1 id="conversation-title">Now, or later.</h1></div><span class="model-tag">SmolLM2 · 135M</span></div>
+      <p id="connection" class="connection" role="status">Opening the event log…</p>
+      <p id="error" class="error" role="alert" hidden></p>
+      <div id="transcript" class="transcript" aria-label="Conversation messages">
+        <div class="empty"><span class="empty-symbol" aria-hidden="true">↗</span><h2>Leave a thought.<br>Come back to a reply.</h2><p>Create a conversation to chat with a real, small local model. Send a prompt now, or give it a time of its own.</p><p class="muted">No cloud account. No tools. Just text.</p></div>
+      </div>
+      <form id="prompt-form" class="composer">
+        <label for="prompt">Your prompt</label>
+        <textarea id="prompt" name="prompt" rows="3" maxlength="2000" required placeholder="What’s on your mind?" disabled></textarea>
+        <fieldset class="timing"><legend>When should the model reply?</legend><label><input type="radio" name="timing" value="now" checked> Send now</label><label><input type="radio" name="timing" value="later"> Schedule for later</label></fieldset>
+        <div id="schedule-fields" class="schedule-fields" hidden><label for="due">Local date and time</label><input id="due" name="due" type="datetime-local" step="1"><p id="timezone" class="muted">Converted to an exact UTC instant when submitted. Maximum seven days ahead.</p></div>
+        <div class="composer-footer"><p class="muted">Small model, imperfect answers.<br>Check anything important.</p><button id="send" class="primary" type="submit" disabled>Send prompt <span aria-hidden="true">↗</span></button></div>
+      </form>
+    </main>
+    <aside class="schedule-panel" aria-labelledby="schedule-title"><p class="eyebrow">THE WAITING ROOM</p><div class="section-heading"><h2 id="schedule-title">Prompt journal</h2><span id="job-count" class="count">0</span></div><p class="muted intro">Every prompt has a place in the log. Pending prompts can still be cancelled.</p><div id="jobs"><p class="muted">Your prompt statuses will appear here.</p></div><details class="log-note"><summary>What survives a restart?</summary><p>Conversations, replies, and pending schedules are rebuilt from Redpanda. Overdue pending prompts run after replay.</p><p>An interrupted running prompt is marked failed with an unknown outcome, never silently retried.</p><a href="/api/events" target="_blank" rel="noopener">Inspect the event log ↗</a></details></aside>
+  </div>
+  <footer class="footer"><span>One local scheduler · one ordered topic</span><span>Not a production lease or exactly-once inference system.</span></footer>
+</body>
+</html>

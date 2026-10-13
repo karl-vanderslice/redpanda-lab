@@ -6,6 +6,7 @@ Start a disposable stack, publish a record, and follow it from producer acknowle
 
 - **New to the lab?** Follow [your first event](tutorials/first-event.md).
 - **Want a failure experiment?** [Stop one broker and recover](how-to/failure-and-recovery.md).
+- **Want a domain application?** [Choose a separate lab](labs/index.md): commodity or Bitcoin paper trading, sports, coordinating agents, scheduled chat, or Terraform infrastructure.
 - **Need a command or option?** Use the [command reference](reference/commands.md).
 - **Want to understand the mechanism?** Read [architecture](explanation/architecture.md), then [delivery and telemetry](explanation/telemetry-and-delivery.md).
 - **Considering a production system?** Start with [the production boundary and recovery plan](explanation/production.md), not the local Compose file.

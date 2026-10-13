@@ -1,19 +1,22 @@
 [project]
 site_name = "Redpanda lab"
 site_description = "Learn event streaming through disposable, containerized experiments."
-repo_url = "https://github.com/karl-vanderslice/redpanda-lab"
+# Keep GitHub as a plain nav link. repo_url triggers browser-side API statistics.
 docs_dir = "docs"
 site_dir = "site"
 nav = [
   { "Start here" = "index.md" },
   { "First event" = "tutorials/first-event.md" },
+  { "Application labs" = [{ "Choose a lab" = "labs/index.md" }, { "Commodity trading" = "labs/trading.md" }, { "Sports streaming" = "labs/sports.md" }, { "Agent messaging with fx" = "labs/agent-messaging.md" }, { "Scheduled agent chat" = "labs/agent-chat.md" }, { "Bitcoin paper trading" = "labs/bitcoin.md" }, { "Terraform cluster" = "labs/terraform.md" }] },
   { "Experiments" = [{ "Broker failure and recovery" = "how-to/failure-and-recovery.md" }, { "Troubleshooting" = "how-to/troubleshooting.md" }] },
   { "Understand the stack" = [{ "Architecture" = "explanation/architecture.md" }, { "Telemetry and delivery" = "explanation/telemetry-and-delivery.md" }, { "Production and disaster recovery" = "explanation/production.md" }] },
   { "Reference" = [{ "Commands and options" = "reference/commands.md" }, { "Supply chain" = "reference/supply-chain.md" }] },
+  { "Source on GitHub" = "https://github.com/karl-vanderslice/redpanda-lab" },
 ]
 
 [project.theme]
 variant = "modern"
+custom_dir = "docs-theme"
 language = "en"
 font = false
 features = ["navigation.indexes", "navigation.top", "navigation.footer", "content.code.copy", "search.highlight"]

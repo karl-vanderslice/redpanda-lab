@@ -1,50 +1,61 @@
 # Commands and configuration
 
-Run `nix develop --no-update-lock-file` at the repository root before using `just`. `./lab` enters the pinned environment itself.
+Run `nix develop --no-update-lock-file` at the repository root before using `just`. Direct `./lab` and `./labs/run` commands enter the same environment automatically. Nix supplies the CLIs; Linux user namespaces, subordinate UID/GID mappings and cgroup delegation remain host prerequisites.
+
+`LAB` is `explorer`, `trading`, `sports`, `agent-messaging`, `agent-chat`, `bitcoin`, or `terraform`. Lifecycle commands default to `explorer` where shown. Terraform adds an explicit plan-review boundary.
 
 | Command | Effect |
 | --- | --- |
-| `just up` | Build and start the explorer; wait for readiness; print URLs. |
-| `just down` | Delete this explorer's containers, network, volumes, and saved port state; attempt app-image cleanup. |
-| `just status` | Show container state and saved URLs. |
-| `just urls` | Print URLs; fail if the lab has not been initialized. |
-| `just logs [service]` | Read the last 100 log lines, optionally from one service. |
-| `just rpk <args>` | Run `rpk` inside broker zero against all three internal brokers. |
-| `just test` | Run real producer, consumer, failover, telemetry, and disposal checks; deletes lab data. |
-| `just check` | Check source syntax and build the docs. |
-| `just docs` | Build Zensical in an external cache staging directory. |
-| `just docs-serve` | Preview the docs on a free high loopback port. |
-| `just lock` | Regenerate the app's npm lockfile against the public registry, without host installation. |
+| `just up [LAB]` | Build/start an isolated lab and wait for readiness. Terraform displays a plan and requires the project name before apply. |
+| `just down [LAB]` | Delete that lab's containers and broker data. Terraform requires destroy-plan review. Shared upstream/Nix caches remain. |
+| `just status [LAB]` | Show the selected runtime's state. |
+| `just urls [LAB]` | Print its actual loopback endpoints. Application/explorer URLs require initialized port state. |
+| `just logs [LAB] [SERVICE]` | Recent explorer/application logs; use scoped `podman logs` for Terraform containers shown by `status`. |
+| `just rpk LAB ARGS...` | Run the broker CLI against that lab, never an ambient Kafka cluster. |
+| `just exec LAB SERVICE COMMAND...` | Execute inside an application service, for example the trading CLI. Not supported for explorer or Terraform. |
+| `just restart LAB SERVICE` | Restart exactly one application service; broker volumes remain. Not supported for explorer or Terraform. |
+| `just test [LAB]` | Delete the selected application lab's existing history, run a fresh real workflow, then dispose it. Terraform instead requires empty owned state and retains failed deployments for diagnosis. |
+| `just check [LAB]` | Syntax/lint, package evaluation and domain validation, then strict docs build. No name means all labs. |
+| `just tf ARGS...` | Terraform `plan`, hash-bound `apply`, `show`, `drift`, `health` and other documented commands. |
+| `just docs` / `just docs-serve` | Build/preview Zensical outside the checkout; preview requests a free high loopback port. |
+| `just lock` | Regenerate the original explorer's public npm lockfile without host installation. Not a blanket dependency update. |
+
+See each [lab guide](../labs/index.md) before using domain-specific options. `just check` validates sources and packaging; `just test` exercises runtime behavior. Neither is a production deployment or multi-region recovery test.
+
+The sports, agent messaging, scheduled chat and Bitcoin clients use KafkaJS's built-in **uncompressed/GZIP** support. The application APIs publish uncompressed records. For deliberate manual application-record fixtures, select `rpk topic produce --compression none` and preserve the documented schema. Stock `rpk` can otherwise publish Snappy, which these minimal clients cannot decode. Unsupported codecs stop their authoritative consumers; inspect logs and reset only the disposable lab, rather than retrying against its poisoned log. Production clients need an explicit, tested codec contract across all producers. See [KafkaJS compression](https://kafka.js.org/docs/producing#compression).
 
 ## Choose ports
 
-The first startup selects an available high-port block and retains it until `down`. To choose a block yourself:
+The explorer and five application labs select an available high-port block on first startup and retain it until successful `down`. For example:
 
 ```bash
-LAB_PORT_BASE=53000 just up
+LAB_PORT_BASE=53000 just up trading
+just urls trading
 ```
 
-`LAB_PORT_BASE` must be an integer from 49152 through 65520. It only chooses the allocation when no saved state exists. Do not delete saved state while containers are running.
+The explorer permits bases 49152–65520; application labs permit 49152–65530. `LAB_PORT_BASE` only selects allocation when no saved state exists. Do not delete saved port state while containers run. Changing checkout paths changes resource identity.
 
-| Offset from base | Service |
-| --- | --- |
-| 0 | Stream app |
-| 1 | Console |
-| 2 | Grafana |
-| 3 | Prometheus |
-| 4 | Schema Registry |
-| 5 | HTTP Proxy |
-| 6 | Broker zero Admin API |
-| 10, 11, 12 | Host Kafka listeners |
+| Offset | Explorer | Five application labs |
+| --- | --- | --- |
+| 0 | App | App |
+| 1 | Console | Console |
+| 2 | Grafana | Broker Admin API |
+| 3 | Prometheus | HTTP Proxy |
+| 4 | Schema Registry | External Kafka listener |
+| 5 | HTTP Proxy | Not allocated |
+| 6 | Broker zero Admin API | Not allocated |
+| 10, 11, 12 | External Kafka listeners | Not allocated |
 
-Services are unauthenticated and loopback-only. The app has a read-only filesystem, dropped capabilities, no-new-privileges, a non-root image user, and a 256 MiB memory limit. These controls do not replace authentication or authorization.
+Terraform uses its own persisted path-derived block. Set `LAB_TF_PORT_BASE=59000` before its first plan if needed (49152–65520). Its thirteen endpoints and state/socket overrides are explained in the [Terraform guide](../labs/terraform.md). A collision fails; it does not silently reallocate an approved infrastructure target.
 
-## Inspect records
+All published ports are loopback-only and unauthenticated. Non-root app users, read-only roots, dropped capabilities and bounded input do not replace authentication. Terraform's Podman socket has broad host-user authority, not a container-isolation guarantee.
+
+## Inspect explorer records
 
 ```bash
-just rpk topic list
-just rpk topic describe lab.events -p
-just rpk group describe lab-explorer
+just rpk explorer topic list
+just rpk explorer topic describe lab.events -p
+just rpk explorer group describe lab-explorer
 ```
 
-The script's `REDPANDA_LAB_SHELL` variable is an internal recursion guard, not a supported path for supplying ambient tools. Keep commands inside the declared shell.
+The internal `REDPANDA_LAB_SHELL` recursion guard is not a supported route for supplying ambient tools. Keep commands inside the declared shell. Local cache/state paths and retained evidence may contain prompts or records; use synthetic data and manage retention deliberately.

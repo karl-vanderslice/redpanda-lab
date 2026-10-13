@@ -1,10 +1,10 @@
 ---
 id: RPLAB-3
 title: Polish and publish the initial lab
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-13 19:51'
-updated_date: '2026-10-13 20:03'
+updated_date: '2026-10-13 20:04'
 labels: []
 dependencies: []
 ordinal: 3000
@@ -20,7 +20,7 @@ Requested expansion and GitHub publication of a self-contained educational Redpa
 <!-- AC:BEGIN -->
 - [x] #1 README gives a runnable Nix quick start and disposable lifecycle
 - [x] #2 Zensical explains architecture, options, telemetry and recovery
-- [ ] #3 Existing E2E passes and signed initial publication reaches origin/master
+- [x] #3 Existing E2E passes and signed initial publication reaches origin/master
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -34,3 +34,9 @@ Inspect existing implementation and pins. Add just and Zensical via Nix. Preserv
 <!-- SECTION:NOTES:BEGIN -->
 Initial source/docs checks and full E2E passed, including broker failover and disposal. Browser inspected light/dark, navigation, clipboard, narrow layout and 200% text. Registry manifest digests verified. Preparing signed initial GitHub publication.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Signed initial commit a1a6d92 published to origin/master. Source/docs/prek checks and full broker-failure E2E passed; browser surface inspected in supported layouts/themes.
+<!-- SECTION:FINAL_SUMMARY:END -->

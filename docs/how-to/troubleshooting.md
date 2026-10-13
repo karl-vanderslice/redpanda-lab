@@ -7,7 +7,7 @@ Start with `just status` and `just logs`. A readiness timeout leaves containers 
 | Podman cannot create a user namespace or map IDs | Confirm the host permits user namespaces and has subordinate UID/GID ranges and privileged mapping helpers. Nix supplies Podman, not host policy. Do not switch silently to rootful containers. |
 | Port already in use | Keep other processes running. Dispose of this lab, then select another `LAB_PORT_BASE` on startup. |
 | Image pull returns `toomanyrequests` | Authenticate interactively with `podman login registry-1.docker.io`, or wait for the registry limit. Never put a password in command arguments. |
-| Broker or app not ready | Inspect service logs and `just rpk cluster health`. Readiness includes assignments and internal topic leaders. |
+| Broker or app not ready | Inspect service logs and `just rpk explorer cluster health` (or the selected lab name). Readiness includes assignments and internal topic leaders. |
 | Consumer lag does not drain | Check shared pause state, consumer-group assignment, and broker health. App counters are not lag. |
 | Produce request times out | Outcome is unknown. Search Console by event ID before considering a new request. |
 | `down` warns about app-image removal | Runtime disposal can still have succeeded. Read the original Podman error and remove only the named optional image later. |

@@ -6,8 +6,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 make g++ patch pkg-config libssl-dev libsasl2-dev zlib1g-dev libzstd-dev liblz4-dev libcurl4-openssl-dev \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
-COPY package.json package-lock.json ./
-COPY patches/librdkafka-coordinator-lifetime.patch /tmp/librdkafka-coordinator-lifetime.patch
+COPY app/package.json app/package-lock.json ./
+COPY app/patches/librdkafka-coordinator-lifetime.patch /tmp/librdkafka-coordinator-lifetime.patch
 RUN npm ci --registry=https://registry.npmjs.org/ --omit=dev --ignore-scripts --no-audit --no-fund \
     && patch --batch --fuzz=0 -d node_modules/@confluentinc/kafka-javascript/deps/librdkafka -p1 < /tmp/librdkafka-coordinator-lifetime.patch \
     && CKJS_LINKING=dynamic npm_config_build_from_source=true npm_config_nodedir=/usr/local npm rebuild @confluentinc/kafka-javascript --no-audit --no-fund \
@@ -19,9 +19,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=dependencies /app/node_modules ./node_modules
-COPY package.json ./
-COPY --chown=node:node server.js ./
-COPY --chown=node:node public ./public
+COPY app/package.json ./
+COPY LICENSE /usr/share/licenses/redpanda-lab/LICENSE
+COPY --chown=node:node app/server.js ./
+COPY --chown=node:node app/public ./public
 USER node
 ENV NODE_ENV=production
 EXPOSE 3000

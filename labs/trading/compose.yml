@@ -1,0 +1,19 @@
+services:
+  app:
+    image: ${LAB_APP_IMAGE:?Build the trading app image through the lab runner}
+    networks: [lab]
+    init: true
+    user: "10001:10001"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      REDPANDA_PROXY_URL: http://redpanda:8082
+    ports:
+      - "127.0.0.1:${APP_PORT:?APP_PORT is assigned by the lab runner}:3000"
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    restart: unless-stopped
