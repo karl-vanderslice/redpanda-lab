@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: lab-validation
+        name: lab source and documentation validation
+        entry: nix develop --no-update-lock-file -c just check
+        language: system
+        pass_filenames: false
+        always_run: true

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+if [[ ${REDPANDA_LAB_SHELL:-0} != 1 ]]; then
+  exec nix develop "path:$root" --no-update-lock-file -c bash "$root/scripts/docs" "$@"
+fi
+cache="${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/docs"
+mkdir -p "$cache"
+stage=$(mktemp -d "$cache/build.XXXXXXXX")
+cp "$root/zensical.toml" "$stage/zensical.toml"
+cp -R "$root/docs" "$stage/docs"
+cd -- "$stage"
+case ${1:-build} in
+  build)
+    zensical build --strict --clean
+    printf 'Documentation: %s/site/index.html\n' "$stage"
+    ;;
+  serve)
+    port=$(node --input-type=module -e 'import net from "node:net";const s=net.createServer();s.listen(0,"127.0.0.1",()=>{console.log(s.address().port);s.close()});')
+    printf 'Documentation preview: http://127.0.0.1:%s\n' "$port"
+    exec zensical serve --dev-addr "127.0.0.1:$port"
+    ;;
+  *) printf 'Usage: bash scripts/docs {build|serve}\n' >&2; exit 2 ;;
+esac

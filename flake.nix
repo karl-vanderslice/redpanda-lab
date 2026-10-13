@@ -9,8 +9,11 @@
       devShells = forAllSystems (system:
         let pkgs = import nixpkgs { inherit system; }; in {
           default = pkgs.mkShell {
-            # Rootless Podman itself must come from the host so it can use setuid newuidmap/newgidmap.
-            packages = with pkgs; [ podman-compose nodejs_22 curl jq bash coreutils util-linux ];
+            # Nix supplies the engine; the host supplies kernel namespaces and UID/GID helpers.
+            packages = with pkgs; [
+              podman podman-compose nodejs_22 curl jq bash coreutils util-linux
+              just zensical shellcheck nixfmt git skopeo prek
+            ];
             shellHook = ''
               export REDPANDA_LAB_SHELL=1
               export npm_config_cache="''${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/npm"

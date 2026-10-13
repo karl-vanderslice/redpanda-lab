@@ -1,0 +1,35 @@
+[project]
+site_name = "Redpanda lab"
+site_description = "Learn event streaming through disposable, containerized experiments."
+repo_url = "https://github.com/karl-vanderslice/redpanda-lab"
+docs_dir = "docs"
+site_dir = "site"
+nav = [
+  { "Start here" = "index.md" },
+  { "First event" = "tutorials/first-event.md" },
+  { "Experiments" = [{ "Broker failure and recovery" = "how-to/failure-and-recovery.md" }, { "Troubleshooting" = "how-to/troubleshooting.md" }] },
+  { "Understand the stack" = [{ "Architecture" = "explanation/architecture.md" }, { "Telemetry and delivery" = "explanation/telemetry-and-delivery.md" }, { "Production and disaster recovery" = "explanation/production.md" }] },
+  { "Reference" = [{ "Commands and options" = "reference/commands.md" }, { "Supply chain" = "reference/supply-chain.md" }] },
+]
+
+[project.theme]
+variant = "modern"
+language = "en"
+font = false
+features = ["navigation.indexes", "navigation.top", "navigation.footer", "content.code.copy", "search.highlight"]
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "indigo"
+accent = "indigo"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+primary = "indigo"
+accent = "indigo"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to light mode"

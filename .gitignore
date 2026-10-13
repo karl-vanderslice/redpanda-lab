@@ -1,0 +1,10 @@
+node_modules/
+result
+result-*
+site/
+.zensical/
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+.backlog/.locks/

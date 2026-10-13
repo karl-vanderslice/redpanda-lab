@@ -48,7 +48,16 @@ wait_for() { # description, seconds, jq expression on stats
 
 "$root/lab" up > "$log" 2>&1 || fail './lab up reached readiness'
 pass './lab up reached readiness'
-eval "$("$root/lab" urls | awk -F': +' '/Stream app/{print "base_url="$2} /Prometheus/{print "prom_url="$2} /Console/{print "console_url="$2} /Grafana/{print "grafana_url="$2}')"
+base_url='' prom_url='' console_url='' grafana_url=''
+while IFS= read -r line; do
+  case "$line" in
+    'Stream app:'*) base_url=${line##* } ;;
+    'Prometheus:'*) prom_url=${line##* } ;;
+    'Redpanda Console:'*) console_url=${line##* } ;;
+    'Grafana:'*) grafana_url=${line##* } ;;
+  esac
+done < <("$root/lab" urls)
+[[ -n $base_url && -n $prom_url && -n $console_url && -n $grafana_url ]] || fail 'all service URLs were discovered'
 identity=$(printf '%s' "$root" | sha256sum)
 project="rp-lab-${identity:0:10}"
 

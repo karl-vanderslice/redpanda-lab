@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+if [[ ${REDPANDA_LAB_SHELL:-0} != 1 ]]; then
+  exec nix develop "path:$root" --no-update-lock-file -c bash "$root/scripts/check" "$@"
+fi
+cd -- "$root"
+just --list >/dev/null
+shellcheck --severity=warning lab scripts/check scripts/docs tests/e2e.sh
+for file in app/server.js app/public/app.js; do node --check "$file"; done
+bash scripts/docs build

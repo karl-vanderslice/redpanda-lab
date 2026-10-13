@@ -1,5 +1,5 @@
 x-broker: &broker
-  image: registry-1.docker.io/redpandadata/redpanda:v26.2.4
+  image: registry-1.docker.io/redpandadata/redpanda:v26.2.4@sha256:c98c2f04a751e6646012cc701bac5183252cee44c88ba1dfa412e4c7124f2e89
   restart: unless-stopped
   networks: [lab]
   healthcheck:
@@ -94,7 +94,7 @@ services:
     cap_drop: [ALL]
     security_opt: [no-new-privileges]
   console:
-    image: registry-1.docker.io/redpandadata/console:v3.12.0
+    image: registry-1.docker.io/redpandadata/console:v3.12.0@sha256:9dc0cd55db172c6be9c2ff8a51f33a14395f7675fa7fbc002c277f3b96115c27
     restart: unless-stopped
     networks: [lab]
     environment: {CONFIG_FILEPATH: /etc/console.yml}
@@ -102,7 +102,7 @@ services:
     ports: ["127.0.0.1:${CONSOLE_PORT}:8080"]
     mem_limit: 512m
   prometheus:
-    image: quay.io/prometheus/prometheus:v3.2.1
+    image: quay.io/prometheus/prometheus:v3.2.1@sha256:6927e0919a144aa7616fd0137d4816816d42f6b816de3af269ab065250859a62
     restart: unless-stopped
     networks: [lab]
     command:
@@ -117,7 +117,7 @@ services:
     ports: ["127.0.0.1:${PROMETHEUS_PORT}:9090"]
     mem_limit: 512m
   grafana:
-    image: registry-1.docker.io/grafana/grafana:11.6.0
+    image: registry-1.docker.io/grafana/grafana:11.6.0@sha256:62d2b9d20a19714ebfe48d1bb405086081bc602aa053e28cf6d73c7537640dfb
     restart: unless-stopped
     networks: [lab]
     environment:
