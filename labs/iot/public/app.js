@@ -1,3 +1,7 @@
+function viewError(text) {
+  const region = document.getElementById('view-error');
+  if (region.textContent !== text) region.textContent = text;
+}
 const byId = id => document.getElementById(id);
 const form = byId('reading');
 const fields = byId('fields');
@@ -16,6 +20,12 @@ let controller;
 let stopped = false;
 let initialized = false;
 let pending = null;
+let viewGeneration = 0;
+let observedAt = null;
+const receiptSequences = new Map();
+function freshness(stale = false) {
+  byId('freshness').textContent = observedAt ? `${stale ? 'Stale view' : paused ? 'Paused view' : 'View observed'} · ${observedAt.toLocaleTimeString()}. Not a sensor timestamp.` : 'No state observed yet.';
+}
 try { pending = JSON.parse(sessionStorage.getItem('iot-pending') || 'null'); } catch { /* Storage is optional. */ }
 function savePending() {
   try {
@@ -36,7 +46,7 @@ function explainLimits() {
 }
 function nextSequence() {
   const device = chosen();
-  if (device) sequence.value = String((device.last?.sequence || 0) + 1);
+  if (device) sequence.value = String(Math.max(device.last?.sequence || 0, receiptSequences.get(device.id) || 0) + 1);
 }
 function preset(kind) {
   const device = chosen();
@@ -46,6 +56,10 @@ function preset(kind) {
 }
 function render(snapshot) {
   state = snapshot;
+  viewError(snapshot.ready ? '' : 'Gateway paused. Inspect the unresolved reading and restart to replay.');
+  observedAt = new Date();
+  freshness();
+  fields.disabled = sending || Boolean(pending) || !snapshot.ready;
   byId('connection').textContent = snapshot.ready
     ? `Gateway ready · ${paused ? 'automatic updates paused' : 'updates every 2 seconds'}`
     : 'Gateway paused · inspect the unresolved reading and restart to replay';
@@ -54,7 +68,8 @@ function render(snapshot) {
   byId('devices').replaceChildren(...snapshot.devices.map(device => {
     const card = element('article');
     card.append(element('h3', device.id), element('p', `Safe: ${device.minC} to ${device.maxC} °C · battery ≥ ${device.lowBatteryBelow}%`, 'muted'));
-    card.append(element('p', device.last ? `${device.last.temperatureC} °C · ${device.last.batteryPercent}% battery · sequence ${device.last.sequence}` : 'No reading yet'));
+    card.append(element('p', device.last ? `${device.last.temperatureC} °C · ${device.last.batteryPercent}% battery` : 'No reading yet', 'measurement'));
+    if (device.last) card.append(element('p', `Sequence ${device.last.sequence} · reading ${device.last.id}`, 'muted')); 
     const active = Object.entries(device.activeAlerts).filter(([, id]) => id).map(([type]) => type === 'battery' ? 'Low battery' : 'Temperature');
     card.append(element('p', active.length ? active.join(' · ') : device.last ? 'Within thresholds' : 'Awaiting telemetry', active.length ? 'warning' : 'status'));
     return card;
@@ -90,30 +105,42 @@ function complete(operation) {
     : `Reading ${operation.command.id} rejected at offset ${operation.offset}: ${operation.reason}`;
   pending = null;
   savePending();
-  fields.disabled = false;
+  fields.disabled = !state?.ready;
   retry.hidden = true;
   commandId.value = crypto.randomUUID();
+  const deviceId = operation.command.deviceId;
+  receiptSequences.set(deviceId, Math.max(receiptSequences.get(deviceId) || 0, operation.lastSequence));
   nextSequence();
 }
-async function refresh() {
-  if (stopped || paused || controller) return;
-  controller = new AbortController();
+async function refresh(manual = false) {
+  if (stopped || (!manual && paused) || controller) return;
+  const generation = viewGeneration;
+  const ownController = new AbortController();
+  controller = ownController;
+  byId('refresh').disabled = true;
   try {
-    const response = await fetch('/api/state', { signal: controller.signal });
+    const response = await fetch('/api/state', { cache: 'no-store', signal: AbortSignal.any([ownController.signal, AbortSignal.timeout(10000)]) });
     if (!response.ok) throw new Error(`State unavailable (${response.status}).`);
     const snapshot = await response.json();
-    if (stopped || paused) return;
+    if (stopped || generation !== viewGeneration || (!manual && paused)) return;
     render(snapshot);
     if (pending && !sending) {
       const receipt = snapshot.operations.find(operation => operation.command.id === pending.id);
       if (receipt && Object.entries(pending).every(([key, value]) => receipt.command[key] === value)) complete(receipt);
     }
   } catch (error) {
-    if (!stopped && !paused) {
-      byId('connection').textContent = `Updates unavailable: ${error.message}`;
+    if (!stopped && generation === viewGeneration && error.name !== 'AbortError') {
+      byId('connection').textContent = `Updates unavailable: ${error.message} Last observed values remain visible.`;
       byId('connection').className = 'error';
+      if (state) state = { ...state, ready: false };
+      fields.disabled = true;
+      freshness(true);
+      viewError(byId('connection').textContent);
     }
-  } finally { controller = null; }
+  } finally {
+    if (controller === ownController) controller = null;
+    byId('refresh').disabled = false;
+  }
 }
 async function send() {
   if (sending || !pending) return;
@@ -127,22 +154,14 @@ async function send() {
     if (response.status >= 500 || body.outcomeUnknown) throw new Error(body.error || 'Gateway unavailable.');
     if (body.command) {
       complete(body);
-      // An unavailable refresh cannot undo an already observed consumed receipt.
-      try {
-        const snapshotResponse = await fetch('/api/state', { signal: AbortSignal.timeout(10000) });
-        if (!snapshotResponse.ok) throw new Error(`State unavailable (${snapshotResponse.status}).`);
-        render(await snapshotResponse.json());
-        nextSequence();
-      } catch (error) {
-        byId('connection').textContent = `Reading consumed; updates unavailable: ${error.message}`;
-        byId('connection').className = 'error';
-      }
+      // Consumed receipt remains authoritative even when the view is paused or stale.
+      if (!paused) await refresh();
     } else {
       result.className = 'error';
       result.textContent = body.error || `Reading rejected (${response.status}).`;
       pending = null;
       savePending();
-      fields.disabled = false;
+      fields.disabled = !state?.ready;
       retry.hidden = true;
       commandId.value = crypto.randomUUID();
     }
@@ -152,6 +171,7 @@ async function send() {
   } finally {
     sending = false;
     if (pending) hold();
+    else fields.disabled = !state?.ready;
   }
 }
 form.addEventListener('submit', event => {
@@ -166,11 +186,16 @@ deviceInput.addEventListener('change', () => { nextSequence(); preset('normal');
 for (const [id, kind] of [['normal', 'normal'], ['hot', 'hot'], ['low', 'low']]) byId(id).addEventListener('click', () => preset(kind));
 byId('updates').addEventListener('click', () => {
   paused = !paused;
+  viewGeneration += 1;
   byId('updates').textContent = paused ? 'Resume updates' : 'Pause updates';
   byId('updates').setAttribute('aria-pressed', String(paused));
-  if (paused) { controller?.abort(); byId('connection').textContent = 'Automatic updates paused'; }
-  else void refresh();
+  if (paused) {
+    controller?.abort();
+    byId('connection').textContent = 'Automatic view updates paused. Commands and manual refresh still work.';
+    freshness();
+  } else void refresh();
 });
+byId('refresh').addEventListener('click', () => { void refresh(true); });
 if (pending) {
   commandId.value = pending.id;
   deviceInput.value = pending.deviceId;
@@ -180,10 +205,11 @@ if (pending) {
   hold();
   result.className = 'warning';
   result.textContent = `Unresolved reading ${pending.id}. Checking for a consumed receipt; keep the exact ID and payload.`;
-} else commandId.value = crypto.randomUUID();
+} else { commandId.value = crypto.randomUUID(); fields.disabled = true; }
 async function poll() {
   await refresh();
   if (!stopped) timer = setTimeout(poll, 2000);
 }
 void poll();
-window.addEventListener('pagehide', () => { stopped = true; clearTimeout(timer); controller?.abort(); });
+window.addEventListener('pagehide', () => { stopped = true; viewGeneration += 1; clearTimeout(timer); controller?.abort(); });
+window.addEventListener('pageshow', () => { if (stopped) { stopped = false; void poll(); } });

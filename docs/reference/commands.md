@@ -1,45 +1,86 @@
 # Commands and configuration
 
-Run `nix develop --no-update-lock-file` at the repository root before using `just`. Direct `./lab` and `./labs/run` commands enter the same environment automatically. Nix supplies the CLIs; Linux user namespaces, subordinate UID/GID mappings and cgroup delegation remain host prerequisites.
+Run commands from the checkout root. `just` recipes require the declared development shell:
 
-`LAB` is `explorer`, `iot`, `pos`, `logistics`, `trading`, `sports`, `agent-messaging`, `agent-chat`, `bitcoin`, `terraform`, or `jurisdictions`. Lifecycle commands default to `explorer` where shown. Terraform adds an explicit plan-review boundary.
+```bash
+nix develop --no-update-lock-file
+```
+
+Linux, Nix flakes and rootless Podman host support are prerequisites. Nix supplies the tools; user namespaces, subordinate UID/GID mappings and cgroup delegation belong to the host. Direct `./lab`, `./labs/run` and `bash scripts/docs` commands enter the same shell automatically.
+The wrappers select the local engine explicitly and reject rootful engines before lifecycle changes. They do not rewrite Podman connections or clear inherited environment variables. An invalid `CONTAINER_CONNECTION` name can still fail Podman's argument parsing; no lab action starts.
+
+## Lifecycle and inspection
+
+`LAB` is `explorer`, `iot`, `pos`, `logistics`, `event-log`, `siem`, `activity`, `inventory`, `clearing`, `trading`, `bitcoin`, `sports`, `agent-messaging`, `agent-chat`, `jurisdictions` or `terraform`. Optional names default to `explorer` below.
 
 | Command | Effect |
 | --- | --- |
-| `just up [LAB]` | Build/start an isolated lab and wait for readiness. Terraform displays a plan and requires the project name before apply. |
-| `just down [LAB]` | Delete that lab's containers and broker data. Terraform requires destroy-plan review. Shared upstream/Nix caches remain. |
+| `just up [LAB]` | Build/start the selected lab and wait for readiness. Terraform displays a plan and requires project-name approval before apply. |
+| `just urls [LAB]` | Print actual loopback endpoints. Explorer/application URLs require initialized port state. |
 | `just status [LAB]` | Show the selected runtime's state. |
-| `just urls [LAB]` | Print its actual loopback endpoints. Application/explorer URLs require initialized port state. |
-| `just logs [LAB] [SERVICE]` | Recent explorer/application logs; use scoped `podman logs` for Terraform containers shown by `status`. |
-| `just rpk LAB ARGS...` | Run the broker CLI against that lab, never an ambient Kafka cluster. For `jurisdictions`, prefix arguments with `eu`, `us`, `apac` or `global`. |
-| `just exec LAB SERVICE COMMAND...` | Execute inside an application service, for example the trading CLI. Not supported for explorer or Terraform. |
-| `just restart LAB SERVICE` | Restart exactly one application service; broker volumes remain. Not supported for explorer or Terraform. |
-| `just test [LAB]` | Delete the selected application lab's existing history, run a fresh real workflow, then dispose it. Terraform instead requires empty owned state and retains failed deployments for diagnosis. |
-| `just check [LAB]` | Syntax/lint, package evaluation and domain validation, then strict docs build. No name means all labs. |
-| `just tf ARGS...` | Terraform `plan`, hash-bound `apply`, `show`, `drift`, `health` and other documented commands. |
-| `just docs` / `just docs-serve` | Build/preview Zensical outside the checkout; preview requests a free high loopback port. |
-| `just lock` | Regenerate the original explorer's public npm lockfile without host installation. Not a blanket dependency update. |
+| `just logs [LAB] [SERVICE]` | Read recent explorer/application logs. For Terraform, use scoped `podman logs` on containers named by its `status`. |
+| `just rpk LAB ARGS...` | Run the broker CLI against that lab, not an ambient Kafka cluster. For jurisdictions, prefix arguments with `eu`, `us`, `apac` or `global`. |
+| `just exec LAB SERVICE COMMAND...` | Execute in an application service. Not supported for explorer or Terraform. |
+| `just restart LAB SERVICE` | Restart one application service without deleting broker volumes. Not supported for explorer or Terraform. |
+| `just down [LAB]` | **Delete** the selected lab's containers, network and broker data. Explorer also deletes telemetry volumes. Terraform requires destroy-plan review. Reusable upstream/Nix caches remain. |
+| `just tf ARGS...` | Terraform's saved plans, hash-bound apply, state inspection, drift and health commands; see its [guide](../labs/terraform.md). |
 
-Domain options are in the [lab guides](../labs/index.md). `check` validates sources; `test` exercises real services. Neither proves production readiness.
+For example:
 
-## Compression
+```bash
+just up clearing
+just urls clearing
+just logs clearing app
+just restart clearing app
+```
 
-KafkaJS application labs support **uncompressed/GZIP**; their APIs publish uncompressed records. Manual fixtures need the documented schema and `rpk topic produce --compression none`. Stock `rpk` can select Snappy, which these clients cannot decode.
+Outside the shell, the equivalent ordinary-lab entry point is `./labs/run clearing up`. The explorer uses `./lab up`, not `./labs/run explorer up`. Lab-specific options belong to the [guides](../labs/index.md).
 
-An unsupported codec stops the authoritative consumer. Inspect logs, then dispose only the affected lab; retrying does not repair its log. Production needs a tested producer/consumer codec contract. [KafkaJS reference](https://kafka.js.org/docs/producing#compression).
+## Checks and destructive scenarios
+
+| Command | Scope |
+| --- | --- |
+| `just check [LAB]` | Common syntax/style checks, selected source/package evaluation and domain validation, then strict docs build. No name means all labs. It does not run the real-container scenarios. |
+| `just test [LAB]` | Real-container workflow and disposal. Ordinary application labs delete existing history **before** startup and again on exit. Explorer uses its current runtime if present, then deletes it. Terraform requires empty owned state and retains failed deployments for diagnosis. |
+| `just lock` | Regenerate only the explorer's public npm lockfile, without installing host `node_modules`. Not a general dependency update. |
+
+**Do not run `just test` on history you want to keep.** Reports go under `${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/e2e/`. A lab's direct `e2e.sh` can have different preconditions and lifecycle behavior; follow its guide. Neither source checks nor a local scenario establish production readiness.
+
+## Documentation
+
+```bash
+just docs
+just docs-serve
+```
+
+`docs` stages source and theme files under `${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/docs/`, renders the blueprints, then builds the site. `docs-serve` prints an OS-assigned loopback URL. Its staged copy is a snapshot: restart the preview after changing checkout files.
+
+To copy a strict build into an explicit publication directory:
+
+```bash
+bash scripts/docs build /tmp/redpanda-lab-docs-export
+```
+
+The destination must **not exist**. It must be outside the checkout and cannot be `/`, the checkout root or any ancestor of the checkout. The wrapper copies the completed site there; it does not publish it. Use a new destination for each build. The Nix package uses this same export contract:
+
+```bash
+nix build --no-update-lock-file --no-link --print-out-paths .#documentation
+```
+
+Generated diagrams and site files remain outside the checkout. See [blueprint sources and regeneration](../blueprints/index.md#sources-and-regeneration). A build command or workflow definition is not evidence of a deployed site.
 
 ## Ports
 
-The explorer and single-broker apps allocate a free high-port block on first startup, retained until successful `down`:
+Explorer and ordinary application labs allocate a free high-port block on first startup, saved until successful `down`:
 
 ```bash
 LAB_PORT_BASE=53000 just up trading
 just urls trading
 ```
 
-The explorer permits bases 49152–65520; application labs permit 49152–65530. `LAB_PORT_BASE` only selects allocation when no saved state exists. Do not delete saved port state while containers run. Changing checkout paths changes resource identity.
+Explorer accepts bases 49152–65520; ordinary apps accept 49152–65530. `LAB_PORT_BASE` selects initial allocation only when saved state is absent. Do not remove saved port state while containers run. Initial probes cannot prevent a later bind race.
 
-| Offset | Explorer | Single-broker application labs |
+| Offset from base | Explorer | Ordinary application lab |
 | --- | --- | --- |
 | 0 | App | App |
 | 1 | Console | Console |
@@ -47,14 +88,20 @@ The explorer permits bases 49152–65520; application labs permit 49152–65530.
 | 3 | Prometheus | HTTP Proxy |
 | 4 | Schema Registry | External Kafka listener |
 | 5 | HTTP Proxy | Not allocated |
-| 6 | Broker zero Admin API | Not allocated |
+| 6 | Broker-zero Admin API | Not allocated |
 | 10, 11, 12 | External Kafka listeners | Not allocated |
 
-Terraform uses a persisted path-derived block, with thirteen endpoints. `LAB_TF_PORT_BASE=59000` selects a base before the first plan (49152–65520). A collision fails rather than changing an approved target. [Terraform state/socket options](../labs/terraform.md).
+Terraform persists a path-derived block with thirteen endpoints. `LAB_TF_PORT_BASE=59000` selects its base before the first plan, in 49152–65520. A collision fails instead of changing an approved target. Its [guide](../labs/terraform.md) owns state and socket options.
 
-Jurisdictions publishes one gateway port (49152–65535); Kafka and Admin APIs stay on container networks. `LAB_PORT_BASE` selects that port before startup. `./labs/run jurisdictions outage REGION` / `recover REGION` stop/start an owned broker (`eu`, `us`, `apac`, `global`). [Export and recovery rules](../labs/jurisdictions.md).
+Jurisdictions publishes one gateway port, in 49152–65535; Kafka and Admin APIs remain on container networks. `LAB_PORT_BASE` selects the port before startup. `./labs/run jurisdictions outage REGION` and `recover REGION` stop/start one owned broker (`eu`, `us`, `apac`, `global`). See its [export and recovery rules](../labs/jurisdictions.md).
 
-All published ports are loopback-only and unauthenticated. Non-root app users, read-only roots, dropped capabilities and bounded input do not replace authentication. Terraform's Podman socket has broad host-user authority, not a container-isolation guarantee.
+All published ports are loopback-only and unauthenticated. Nonroot app users, read-only roots and bounded inputs do not replace authorization. Terraform's Podman socket grants host-user authority. Resource identity depends on the absolute checkout path; dispose before moving it or keep the original path for cleanup.
+
+## Compression
+
+KafkaJS application labs support uncompressed records and GZIP; their APIs publish uncompressed records. Manual fixtures require the exact documented schema and `rpk topic produce --compression none`. Stock `rpk` can select Snappy, which these clients cannot decode without an extension.
+
+An unsupported codec stops the authoritative consumer. Inspect logs and preserve evidence. If you can discard the history, dispose of only the affected lab and start over; retrying does not repair its log. Production needs a tested producer/consumer codec contract. See [KafkaJS compression](https://kafka.js.org/docs/producing#compression) and [client-specific tuning](tuning.md#client-knobs-belong-to-their-client).
 
 ## Inspect explorer records
 
@@ -64,4 +111,4 @@ just rpk explorer topic describe lab.events -p
 just rpk explorer group describe lab-explorer
 ```
 
-`REDPANDA_LAB_SHELL` is an internal recursion guard, not an ambient-tool override. Commands use the declared Nix shell. Caches and evidence can contain prompts or records; use synthetic data and retain it deliberately.
+`REDPANDA_LAB_SHELL` is an internal recursion guard. `REDPANDA_LAB_PODMAN` is the Nix-owned absolute path to the local-engine adapter; neither is a tuning knob. Caches and reports can contain prompts or records: use synthetic data and choose retention deliberately.

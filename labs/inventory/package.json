@@ -1,0 +1,7 @@
+{
+  "name": "redpanda-lab-inventory",
+  "private": true,
+  "type": "module",
+  "scripts": { "start": "node server.mjs" },
+  "engines": { "node": ">=22" }
+}

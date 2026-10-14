@@ -1,10 +1,12 @@
 # Redpanda Lab
 
-Local applications with real event logs. The explorer includes three brokers, a browser producer/consumer, Console, Prometheus and Grafana.
+Learn event logs through local applications. Start with Signal Harbor Works, the three-broker explorer, then choose a domain workflow.
 
-## Run
+## Run the explorer
 
-Linux, Nix flakes and rootless Podman host support are required. Nix supplies the tools; user namespaces, subordinate UID/GID mappings and cgroup delegation belong to the host. Allow several GiB of RAM. First startup downloads dependencies.
+You need Linux, Nix flakes and host support for rootless Podman. Nix supplies the tools, not user-namespace policy, subordinate UID/GID mappings or cgroup delegation. Allow several GiB of free RAM; the first startup downloads dependencies.
+
+From the checkout root:
 
 ```bash
 nix develop --no-update-lock-file
@@ -12,20 +14,21 @@ just up
 just urls
 ```
 
-Open the app URL. Publish a record, inspect its offset in Console, then pause consumption and watch lag in Grafana.
+Open **Stream app**. The [first-event tutorial](tutorials/first-event.md) takes you from a published record to a drained consumer backlog.
 
-**`just down` deletes the selected lab's data.** All ports are loopback-only and unauthenticated. Use synthetic data.
+**`just down` erases this lab's records and telemetry volumes.** Leave it running to keep exploring. Use synthetic data: the loopback endpoints have no authentication.
 
-## Guides
+## Choose a route
 
-| Goal | Guide |
+| You want to… | Read |
 | --- | --- |
-| Follow a record | [First event](tutorials/first-event.md) |
-| Try an application | [Lab chooser](labs/index.md) |
-| Stop a broker | [Failure and recovery](how-to/failure-and-recovery.md) |
-| Find a command | [Commands and ports](reference/commands.md) |
-| Diagnose a failure | [Troubleshooting](how-to/troubleshooting.md) |
-| Understand delivery | [Architecture](explanation/architecture.md), [telemetry](explanation/telemetry-and-delivery.md) |
-| Assess production gaps | [Production and recovery](explanation/production.md) |
+| Operate a domain application | [Choose a lab](labs/index.md) |
+| Interrupt a broker without deleting its data | [Failure and recovery](how-to/failure-and-recovery.md) |
+| Find commands, ports or build options | [Command reference](reference/commands.md) |
+| Diagnose startup or uncertain delivery | [Troubleshooting](how-to/troubleshooting.md) |
+| Understand the explorer | [Architecture](explanation/architecture.md) and [delivery and telemetry](explanation/telemetry-and-delivery.md) |
+| Change a resource or client setting | [Tuning and operating limits](reference/tuning.md) |
+| Plan beyond a single-host lab | [Production and recovery](explanation/production.md) and [proposed blueprints](blueprints/index.md) |
+| Review artifact identity and licenses | [Supply chain](reference/supply-chain.md) |
 
-`just docs` builds this site outside the checkout. `just docs-serve` prints a local preview URL. Theme and search work without browser storage; persistence requires it.
+`just docs` builds this site outside the checkout. `just docs-serve` prints a local preview URL. The site uses local fonts and assets. Browser storage is optional; saved theme/search state depends on it.

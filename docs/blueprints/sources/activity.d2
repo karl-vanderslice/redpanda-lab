@@ -1,0 +1,58 @@
+# Every component and relationship below is proposed production infrastructure.
+# Evidence: labs/activity/model.mjs; labs/activity/server.mjs.
+# activity.clicks.v1 is a proposed topic name, not an implemented lab topic.
+...@../profiles/schematic
+**.class: component
+(** -> **)[*].class: relationship
+direction: down
+title: "COMMONFIELD DISPATCH\nProposed production architecture" {
+  shape: text
+  style.font-size: 26
+}
+
+public: "PUBLIC FEED + ARTICLE CLIENT\npublic content /\nexplicit read events"
+entry: "IDENTITY + POLICY BOUNDARY" {
+  style.stroke-dash: 4
+  identity: "IDENTITY + PROFILE SERVICE\nauthenticated actor scope"
+  writer: "FENCED FEED\nCOMMAND OWNER\npublic publish /\nfollow / like"
+  clicks: "CLICKSTREAM ADMISSION\nconsent / minimization / stable IDs"
+}
+redpanda: "PROPOSED REDPANDA CLUSTER\nRF3 / replicas: AZ A, B, C" {
+  style.stroke: "#526f83"
+  events: "activity.events.v1\nauthoritative feed outcomes\n1 partition / feed ownership" {
+    shape: cylinder
+    style.stroke: "#526f83"
+  }
+  telemetry: "activity.clicks.v1\nproposed clickstream topic\nsession-keyed partitions" {
+    shape: cylinder
+    style.stroke: "#526f83"
+  }
+}
+feed: "FEED MATERIALIZER\nbounded public read model" {shape: cylinder}
+analytics: "ANALYTICS CONSUMER\nseparate counts /\nexpiry-aware store" {shape: cylinder}
+privacy: "PRIVACY + EXPIRY OWNER\nidentifier deletion /\nretention policy"
+
+public -> entry: "publish / follow / like\nto feed owner"
+entry.identity -> entry.writer: actor scope
+public -> entry: "article open\nto click admission"
+entry.identity -> entry.clicks: "session\nref."
+entry -> redpanda: "activity.events.v1\nimmutable feed outcomes"
+entry <- redpanda: "activity.events.v1\nauthority / receipts"
+redpanda -> feed: "activity.events.v1\npublic feed"
+public <- feed: serve public view
+entry -> redpanda: "activity.clicks.v1\nminimized reads"
+redpanda -> analytics: "activity.clicks.v1\nseparate clickstream"
+privacy -> entry: consent / identifiers
+privacy -> redpanda: "activity.clicks.v1\nretention policy"
+privacy -> analytics: "erase / expire\nidentifiers"
+
+
+# Layout-only edge: the title is a caption, not a service or data source.
+title -> public: {style.opacity: 0}
+title -> privacy: {style.opacity: 0}
+# Layout-only topic ordering; the streams remain separate.
+redpanda.events -> redpanda.telemetry: {style.opacity: 0}
+# Layout-only ordering of distinct responsibilities; no semantic coupling.
+public -> privacy: {style.opacity: 0}
+entry.writer -> entry.clicks: {style.opacity: 0}
+feed -> analytics: {style.opacity: 0}

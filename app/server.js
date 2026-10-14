@@ -62,7 +62,7 @@ function createClients() {
 }
 
 client.collectDefaultMetrics();
-const producedTotal = new client.Counter({ name: 'lab_produced_total', help: 'Records acknowledged by all in-sync replicas.', labelNames: ['source'] });
+const producedTotal = new client.Counter({ name: 'lab_produced_total', help: 'Broker-acknowledged records.', labelNames: ['source'] });
 const consumedTotal = new client.Counter({ name: 'lab_consumed_total', help: 'Records processed by the lab consumer.' });
 const errorsTotal = new client.Counter({ name: 'lab_errors_total', help: 'Failed lab operations.', labelNames: ['operation'] });
 const pausedGauge = new client.Gauge({ name: 'lab_consumer_paused', help: '1 when the shared lab consumer is paused.' });

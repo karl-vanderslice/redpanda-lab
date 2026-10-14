@@ -1,7 +1,7 @@
 const root = document.documentElement;
 const button = document.getElementById('theme');
 const preference = matchMedia('(prefers-color-scheme: dark)');
-const storageKey = `redpanda-${location.pathname}-theme`;
+const storageKey = root.dataset.themeKey || 'redpanda-/-theme';
 try {
   const saved = localStorage.getItem(storageKey);
   if (saved === 'light' || saved === 'dark') root.dataset.theme = saved;

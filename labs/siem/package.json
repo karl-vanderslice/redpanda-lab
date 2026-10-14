@@ -1,0 +1,6 @@
+{
+  "name": "redpanda-siem",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" }
+}

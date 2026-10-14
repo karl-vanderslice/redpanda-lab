@@ -3,66 +3,50 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cold-chain sensors · Redpanda lab</title>
+  <title>Cryowell Instruments · Sensor bench</title>
   <link rel="stylesheet" href="/lab.css">
+  <link rel="stylesheet" href="/cryowell.css">
   <script type="module" src="/lab-theme.js"></script>
   <script type="module" src="/app.js"></script>
 </head>
-<body>
-  <a class="skip" href="#main">Skip to readings</a>
-  <header class="shell">
-    <div class="toolbar"><p class="eyebrow">REDPANDA · IOT</p><button id="theme" type="button">Toggle theme</button></div>
-    <h1>Cold-chain sensors</h1>
-    <p class="muted">Send a reading. Watch alerts open and clear from the log.</p>
+<body class="cryowell">
+  <a class="skip" href="#main">Skip to sensor bench</a>
+  <header class="shell masthead">
+    <div><p class="wordmark">Cryowell <span>Instruments</span></p><h1>Sensor bench</h1></div>
+    <div class="actions"><button id="updates" type="button" aria-pressed="false">Pause updates</button><button id="refresh" type="button">Refresh view</button><button id="theme" type="button">Use dark theme</button></div>
   </header>
-  <main id="main" class="shell stack">
-    <div class="toolbar">
-      <p id="connection" class="status" role="status">Connecting to the gateway…</p>
-      <button id="updates" type="button" aria-pressed="false">Pause updates</button>
-    </div>
-    <section class="panel" aria-labelledby="send-title">
-      <h2 id="send-title">Send telemetry</h2>
+  <main id="main" class="shell bench">
+    <div class="connection-strip"><p id="connection" class="status">Connecting to the gateway…</p><p id="freshness" class="muted">No state observed yet.</p><p id="view-error" class="error" role="status"></p></div>
+    <section class="device-deck" aria-labelledby="devices-title">
+      <div class="toolbar"><h2 id="devices-title">Device readings</h2><span id="offset" class="badge">Offset —</span></div>
+      <div id="devices" class="device-grid"><p class="muted">Waiting for sensor state.</p></div>
+    </section>
+    <section class="panel reading-workbench" aria-labelledby="send-title">
+      <p class="eyebrow">Fixture input</p><h2 id="send-title">Record a reading</h2>
       <form id="reading">
         <fieldset id="fields" class="stack">
-          <legend>Fixture reading</legend>
-          <div class="grid">
-            <label>Device<select id="device" name="deviceId"><option value="freezer-1">Freezer · freezer-1</option><option value="cooler-1">Cooler · cooler-1</option><option value="dock-1">Loading dock · dock-1</option></select></label>
+          <legend>Telemetry values</legend>
+          <label>Device<select id="device" name="deviceId"><option value="freezer-1">Freezer · freezer-1</option><option value="cooler-1">Cooler · cooler-1</option><option value="dock-1">Loading dock · dock-1</option></select></label>
+          <div class="reading-values">
             <label>Sequence<input id="sequence" name="sequence" type="number" min="1" max="9007199254740991" step="1" required value="1"></label>
             <label>Temperature (°C)<input id="temperature" name="temperatureC" type="number" min="-100" max="100" step="any" value="-20" required></label>
             <label>Battery (%)<input id="battery" name="batteryPercent" type="number" min="0" max="100" step="any" value="90" required></label>
           </div>
-          <div class="actions" aria-label="Reading presets">
-            <button id="normal" type="button">Normal</button><button id="hot" type="button">High temperature</button><button id="low" type="button">Low battery</button>
-          </div>
+          <div class="actions" aria-label="Reading presets"><button id="normal" type="button">Normal</button><button id="hot" type="button">High temperature</button><button id="low" type="button">Low battery</button></div>
           <p id="limits" class="muted">Thresholds are owned by the gateway.</p>
-          <label>Stable reading ID<input id="command-id" name="id" pattern="[a-zA-Z0-9_-]{1,80}" maxlength="80" required aria-describedby="id-help"></label>
-          <p id="id-help" class="muted">Retries keep the same ID and exact values. New readings use new IDs.</p>
+          <label>Stable reading ID<input id="command-id" name="id" pattern="[a-zA-Z0-9_-]{1,80}" maxlength="80" required autocomplete="off" spellcheck="false" aria-describedby="id-help"></label>
+          <p id="id-help" class="muted">Retries keep this ID and exact values.</p>
           <button class="primary" type="submit">Send reading</button>
         </fieldset>
       </form>
-      <p id="result" role="status"></p>
-      <button id="retry" type="button" hidden>Retry exact reading</button>
+      <p id="result" role="status"></p><button id="retry" type="button" hidden>Retry exact reading</button>
     </section>
-    <section class="panel" aria-labelledby="devices-title">
-      <h2 id="devices-title">Latest devices</h2>
-      <div id="devices" class="grid"></div>
-    </section>
-    <section class="panel" aria-labelledby="alerts-title">
-      <h2 id="alerts-title">Alerts</h2>
-      <p id="alert-summary" class="muted">No readings yet.</p>
-      <ul id="alerts"></ul>
-    </section>
-    <section class="panel" aria-labelledby="history-title">
-      <div class="toolbar"><h2 id="history-title">Reading history</h2><span id="offset" class="badge">Offset —</span></div>
-      <p class="muted">Newest 20 accepted readings. The API retains the complete disposable history.</p>
-      <ol id="history"></ol>
-      <details><summary>Log and retry rules</summary>
-        <p>An HTTP ingestion gateway writes <code>iot.events.v1</code>. A direct KafkaJS consumer rebuilds readings, receipts and alerts. This is not MQTT.</p>
-        <p>One gateway writer, one partition. Sequence numbers must increase per device; gaps are allowed. Temperature outside the inclusive safe range opens an alert; a safe reading clears it. Battery below 20% opens an alert; 20% or more clears it. No timer clears alerts.</p>
-        <p>Unknown completion blocks new writes. Keep the exact ID and payload, inspect its receipt, then restart the app to replay before retrying. Replay requires intact topic history.</p>
-      </details>
+    <section class="alert-rail" aria-labelledby="alerts-title"><div class="toolbar"><h2 id="alerts-title">Alert register</h2><p id="alert-summary" class="muted">No state observed.</p></div><ul id="alerts"><li>Waiting for alert state.</li></ul></section>
+    <section class="history-sheet" aria-labelledby="history-title">
+      <h2 id="history-title">Reading history</h2><p class="muted">Newest 20 accepted readings, ordered by log offset.</p><ol id="history"><li>No state observed yet.</li></ol>
+      <details><summary>Thresholds and recovery</summary><p>Temperature limits are inclusive. Battery below the device threshold opens an alert. Only a subsequent safe reading clears an alert; elapsed time does not.</p><p>Sequences must increase per device; gaps are allowed. Unknown completion blocks new writes. Keep the exact ID and values, inspect state, then restart the app to replay before retrying. Topic history must remain intact.</p><p>The HTTP gateway writes <code>iot.events.v1</code>; KafkaJS rebuilds state. No MQTT, physical sensor calibration or notification service is connected.</p></details>
     </section>
   </main>
-  <footer class="shell">Synthetic sensors only. No physical devices, notifications or external providers.</footer>
+  <footer class="shell">Synthetic sensor readings. View observation time is not device measurement time.</footer>
 </body>
 </html>

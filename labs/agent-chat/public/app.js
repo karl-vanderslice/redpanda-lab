@@ -1,20 +1,21 @@
 const $ = selector => document.querySelector(selector);
 const root = document.documentElement;
 const themeButton = $('#theme');
-let theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-try { theme = localStorage.getItem('later-theme') || theme; } catch { /* Storage is optional. */ }
-function setTheme(value) {
-  theme = value === 'dark' ? 'dark' : 'light';
+const preference = matchMedia('(prefers-color-scheme: dark)');
+let chosenTheme;
+try { const saved = localStorage.getItem('later-theme'); if (saved === 'dark' || saved === 'light') chosenTheme = saved; } catch { /* Storage is optional. */ }
+function setTheme() {
+  const theme = chosenTheme || (preference.matches ? 'dark' : 'light');
   root.dataset.theme = theme;
   themeButton.textContent = theme === 'dark' ? 'Light theme' : 'Dark theme';
-  themeButton.setAttribute('aria-label', `Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`);
 }
-setTheme(theme);
+setTheme();
+preference.addEventListener('change', setTheme);
 themeButton.addEventListener('click', () => {
-  setTheme(theme === 'dark' ? 'light' : 'dark');
-  try { localStorage.setItem('later-theme', theme); } catch { /* Storage is optional. */ }
+  chosenTheme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+  setTheme();
+  try { localStorage.setItem('later-theme', chosenTheme); } catch { /* Keep the choice on this page. */ }
 });
-
 let selected = null;
 let snapshot = null;
 let lastRender = '';
@@ -23,16 +24,18 @@ let focusPrompt = false;
 let uncertain = null;
 let pollTimer;
 let stopped = false;
+let paused = false;
 let pollController;
+const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const stamp = instant => new Date(instant).toLocaleString(undefined, {
-  month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit',
+  month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short',
 });
 const localDate = date => {
   const pad = value => String(value).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 };
 $('#due').value = localDate(new Date(Date.now() + 60000));
-$('#timezone').textContent = `Your timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}. Converted to UTC when submitted. Up to seven days ahead.`;
+$('#timezone').textContent = `Your timezone: ${timezone}. Converted to UTC when submitted. Up to seven days ahead.`;
 function node(tag, className, content) {
   const value = document.createElement(tag);
   if (className) value.className = className;
@@ -56,7 +59,7 @@ function controls() {
   $('#send').disabled = blocked || !selected;
   $('#due').disabled = blocked;
   for (const button of document.querySelectorAll('.cancel')) button.disabled = blocked;
-  $('#send').textContent = submitting ? 'Writing to log…' : $('input[name=timing]:checked').value === 'later' ? 'Schedule prompt ↗' : 'Send prompt ↗';
+  $('#send').textContent = submitting ? 'Writing to log…' : $('input[name=timing]:checked').value === 'later' ? 'Schedule prompt' : 'Send prompt';
 }
 function updateTiming() {
   const scheduled = $('input[name=timing]:checked').value === 'later';
@@ -65,7 +68,6 @@ function updateTiming() {
   controls();
 }
 for (const radio of document.querySelectorAll('input[name=timing]')) radio.addEventListener('change', updateTiming);
-
 async function mutation(path, fields, done) {
   if (submitting || uncertain) return;
   const requestId = crypto.randomUUID();
@@ -82,12 +84,12 @@ async function mutation(path, fields, done) {
   } catch (error) {
     if (error.outcomeUnknown || !error.status) {
       uncertain = { requestId, done };
-      showError(`Publication outcome unknown. Do not resubmit. Checking request ${requestId} in the log; forms are paused until it is observed. If it remains absent, inspect /api/operations/${requestId} and service logs before deciding what to do.`);
+      showError(`Publication outcome unknown. Do not resubmit. Checking request ${requestId} in the log; forms are blocked until it is observed. If updates are paused, use Refresh now. If it remains absent, inspect /api/operations/${requestId} and service logs before deciding what to do.`);
     } else showError(error.message);
   } finally {
     submitting = false;
     controls();
-    void poll();
+    void poll(true);
   }
 }
 $('#create-form').addEventListener('submit', event => {
@@ -106,16 +108,20 @@ $('#prompt-form').addEventListener('submit', event => {
     const local = new Date($('#due').value);
     if (!Number.isFinite(local.getTime()) || local.getTime() <= Date.now()) {
       showError('Choose a date and time in the future.');
+      $('#due').setAttribute('aria-invalid', 'true');
       $('#due').focus();
       return;
     }
     // DST gaps are normalized by Date. Reject them rather than silently moving a prompt.
     if (localDate(local) !== ($('#due').value.length === 16 ? `${$('#due').value}:00` : $('#due').value)) {
       showError('This local time does not exist (a daylight-saving transition). Choose another time.');
+      $('#due').setAttribute('aria-invalid', 'true');
+      $('#due').focus();
       return;
     }
     fields.dueAt = local.toISOString();
   }
+  $('#due').removeAttribute('aria-invalid');
   void mutation(`/api/conversations/${selected}/prompts`, fields, () => {
     $('#prompt').value = '';
     focusPrompt = true;
@@ -124,7 +130,7 @@ $('#prompt-form').addEventListener('submit', event => {
 function renderConversations() {
   const nav = $('#conversations');
   nav.replaceChildren();
-  if (!snapshot.conversations.length) nav.append(node('p', 'muted', 'A fresh notebook. Start your first conversation above.'));
+  if (!snapshot.conversations.length) nav.append(node('p', 'muted', 'No conversations observed. Create one above.'));
   for (const conversation of [...snapshot.conversations].reverse()) {
     const button = node('button', 'conversation-link', conversation.title);
     button.type = 'button';
@@ -134,26 +140,26 @@ function renderConversations() {
     button.addEventListener('click', () => {
       selected = conversation.id;
       lastRender = '';
-      void poll();
+      void poll(true);
     });
     nav.append(button);
   }
 }
 function renderConversation(conversation) {
-  $('#conversation-title').textContent = conversation?.title || 'Now, or later.';
+  $('#conversation-title').textContent = conversation?.title || 'Select a conversation';
   const transcript = $('#transcript');
-  if (!conversation) return;
   transcript.replaceChildren();
-  if (!conversation.messages.length) {
+  if (!conversation || !conversation.messages.length) {
     const empty = node('div', 'empty');
-    empty.append(node('span', 'empty-symbol', '↗'), node('h2', '', 'A thought starts here.'),
-      node('p', '', 'Try “Explain why the sky is blue in one sentence.” Send it now, or schedule a moment for later.'));
+    empty.append(node('h2', '', conversation ? 'No recorded messages' : 'No conversation selected'),
+      node('p', '', conversation ? 'Send a prompt now or choose a future local date and time. Pending prompts appear in the journal.' : 'Create a conversation from the index to begin.'));
     transcript.append(empty);
   }
+  if (!conversation) return;
   for (const message of conversation.messages) {
     const article = node('article', `message ${message.role}`);
     const meta = node('div', 'message-meta');
-    meta.append(node('span', '', message.role === 'user' ? 'YOU' : 'LOCAL ASSISTANT'), node('span', '', stamp(message.at)));
+    meta.append(node('span', '', message.role === 'user' ? 'YOUR PROMPT' : 'LOCAL MODEL'), node('span', '', stamp(message.at)));
     article.append(meta, node('p', 'message-content', message.content));
     transcript.append(article);
   }
@@ -168,14 +174,14 @@ function renderJobs(conversation) {
   region.replaceChildren();
   const jobs = conversation?.jobs || [];
   $('#job-count').textContent = String(jobs.length);
-  if (!jobs.length) region.append(node('p', 'muted', 'No prompts yet. Send now or choose a future date and time.'));
+  if (!jobs.length) region.append(node('p', 'muted', 'No prompts observed. Send now or choose a future date and time.'));
   for (const job of [...jobs].reverse()) {
     const card = node('article', 'job');
     const top = node('div', 'job-top');
     top.append(node('span', `badge ${job.status}`, job.status), node('span', 'job-mode', job.mode === 'scheduled' ? 'SCHEDULED' : 'SEND NOW'));
     card.append(top, node('p', 'job-prompt', job.prompt));
     card.append(node('p', 'job-time', `${job.mode === 'scheduled' ? 'Due' : 'Submitted'} ${stamp(job.dueAt)}`));
-    if (job.status === 'running') card.append(node('p', 'muted', 'The local model is writing. This attempt is already in the log.'));
+    if (job.status === 'running') card.append(node('p', 'muted', 'Inference is running. The attempt start is recorded in the log.'));
     if (job.status === 'pending' && Date.parse(job.dueAt) <= Date.now()) card.append(node('p', 'muted', 'Due · queued for the single model slot.'));
     if (job.error) card.append(node('p', 'job-error', job.error));
     if (job.status === 'cancelled') card.append(node('p', 'muted', 'Cancelled before start. No inference was requested.'));
@@ -187,14 +193,17 @@ function renderJobs(conversation) {
       card.append(cancel);
     }
     const detail = node('details');
-    detail.append(node('summary', '', 'Log details'), node('p', '', `Job ${job.id}`));
+    detail.dataset.jobId = job.id;
+    const summary = node('summary', '', 'Log details');
+    summary.dataset.focusId = `details-${job.id}`;
+    detail.append(summary, node('p', '', `Job ${job.id}`), node('p', '', `Due UTC ${job.dueAt}`));
     for (const transition of job.transitions) detail.append(node('p', '', `${transition.status} · ${stamp(transition.at)} · offset ${transition.offset}`));
     card.append(detail);
     region.append(card);
   }
 }
-async function poll() {
-  if (stopped) return;
+async function poll(force = false) {
+  if (stopped || (paused && !force)) return;
   clearTimeout(pollTimer);
   // A new selection/mutation invalidates the previous snapshot request.
   pollController?.abort();
@@ -203,7 +212,7 @@ async function poll() {
   const deadline = setTimeout(() => controller.abort(), 10000);
   try {
     const next = await request('/api/state', { signal: controller.signal });
-    if (controller !== pollController || stopped) return;
+    if (controller !== pollController || stopped || (paused && !force)) return;
     snapshot = next;
     if (!selected && next.conversations.length) selected = next.conversations.at(-1).id;
     if (uncertain) {
@@ -221,20 +230,16 @@ async function poll() {
     const key = `${next.owner}:${next.revision}:${selected}`;
     if (key !== lastRender) {
       const conversation = selected ? await request(`/api/conversations/${selected}`, { signal: controller.signal }) : null;
-      if (controller !== pollController || selected !== selectedAtRequest || stopped) return;
+      if (controller !== pollController || selected !== selectedAtRequest || stopped || (paused && !force)) return;
       const focused = document.activeElement?.dataset.focusId;
-      const openDetails = [...document.querySelectorAll('.job details')].filter(value => value.open).map(value => value.querySelector('p')?.textContent);
+      const openDetails = [...document.querySelectorAll('.job details')].filter(value => value.open).map(value => value.dataset.jobId);
       renderConversations();
       renderConversation(conversation);
       renderJobs(conversation);
-      for (const detail of document.querySelectorAll('.job details')) if (openDetails.includes(detail.querySelector('p')?.textContent)) detail.open = true;
+      for (const detail of document.querySelectorAll('.job details')) if (openDetails.includes(detail.dataset.jobId)) detail.open = true;
       if (focused) {
         const target = [...document.querySelectorAll('[data-focus-id]')].find(value => value.dataset.focusId === focused);
-        if (target) target.focus();
-        else {
-          $('#schedule-title').setAttribute('tabindex', '-1');
-          $('#schedule-title').focus();
-        }
+        (target || $('#schedule-title')).focus();
       }
       lastRender = key;
     }
@@ -242,7 +247,7 @@ async function poll() {
     const pending = next.jobs.filter(job => job.status === 'pending').length;
     const failed = next.jobs.filter(job => job.status === 'failed').length;
     $('#connection').textContent = next.ready
-      ? `Log connected · ${pending} pending · ${active} running · ${failed} failed · ${next.revision} events observed`
+      ? `Log connected · ${pending} pending · ${active} running · ${failed} failed · ${next.revision} events observed${paused ? ' · display paused' : ''}`
       : next.scheduler.error || 'Replaying the log and warming the local model…';
     controls();
     if (focusPrompt && !$('#prompt').disabled) {
@@ -250,15 +255,30 @@ async function poll() {
       focusPrompt = false;
     }
   } catch (error) {
-    if (controller !== pollController || stopped) return;
-    $('#connection').textContent = 'Connection interrupted. Your durable history stays in Redpanda; reconnecting…';
+    if (controller !== pollController || stopped || (paused && !force)) return;
+    $('#connection').textContent = paused ? 'Refresh failed. Display remains paused. Check the service logs.' : 'Connection interrupted. Reconnecting to the service…';
     if (snapshot) snapshot.ready = false;
     controls();
   } finally {
     clearTimeout(deadline);
-    if (controller === pollController && !stopped) pollTimer = setTimeout(() => { void poll(); }, 1000);
+    if (controller === pollController && !stopped && !paused) pollTimer = setTimeout(() => { void poll(); }, 1000);
   }
 }
+$('#pause').addEventListener('click', () => {
+  paused = !paused;
+  $('#pause').setAttribute('aria-pressed', String(paused));
+  $('#pause').textContent = paused ? 'Resume updates' : 'Pause updates';
+  if (paused) {
+    clearTimeout(pollTimer);
+    pollController?.abort();
+    $('#connection').textContent = 'Display paused · scheduled prompts continue running';
+  } else void poll();
+});
+$('#refresh').addEventListener('click', async () => {
+  $('#refresh').disabled = true;
+  try { await poll(true); }
+  finally { $('#refresh').disabled = false; }
+});
 window.addEventListener('pagehide', () => { stopped = true; clearTimeout(pollTimer); pollController?.abort(); });
 window.addEventListener('pageshow', () => { if (stopped) { stopped = false; void poll(); } });
 updateTiming();

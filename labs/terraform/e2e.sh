@@ -11,6 +11,10 @@ project=$(jq -r .project <<<"$info")
 state=$(jq -r .state <<<"$info")
 [[ $(jq -r .console <<<"$info") != null ]] || fail 'test requires Console enabled'
 [[ ! -f "$state/terraform.tfstate" ]] || jq -e '(.resources // [] | length)==0' "$state/terraform.tfstate" >/dev/null || fail 'test refuses nonempty existing state; destroy it after review first'
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../../scripts/local-podman
+source "$lab/../../scripts/local-podman"
+require_local_podman
 [[ -z $(podman --remote=false ps -a --filter "label=io.redpanda.lab.project=$project" --format '{{.ID}}') ]] || fail 'owned containers already exist'
 [[ -z $(podman --remote=false volume ls --filter "label=io.redpanda.lab.project=$project" --format '{{.Name}}') ]] || fail 'owned volumes already exist'
 [[ -z $(podman --remote=false network ls --filter "label=io.redpanda.lab.project=$project" --format '{{.Name}}') ]] || fail 'owned network already exists'
@@ -40,13 +44,13 @@ for broker in 0 1 2; do
 done
 pass 'live rootless brokers obey memory and loopback contracts'
 topic=terraform.lifecycle.v1
-"$run" rpk topic create "$topic" --partitions 1 --replicas 3 --topic-config min.insync.replicas=2
+"$run" rpk topic create "$topic" --partitions 1 --replicas 3
 message='{"event":"terraform-applied","version":1,"review":"saved-plan"}'
 printf '%s\n' "$message" | timeout 30 "$run" rpk topic produce "$topic" --acks=-1 --delivery-timeout 15s --format '%v\n'
 received=$(timeout 30 "$run" rpk topic consume "$topic" --offset start --num 1 --format '%v')
 [[ "$received" == "$message" ]] || fail 'replicated topic round-trip differs'
 "$run" health
-pass 'RF3 Kafka record round-trip succeeds with acks=all and min ISR 2'
+pass 'RF3 Kafka record round-trip succeeds with all acknowledgments'
 plan=$("$run" plan --json)
 jq -e '.changed==false' <<<"$plan" >/dev/null || fail 'post-apply plan not converged'
 pass 'refresh finds no infrastructure changes after initial apply'

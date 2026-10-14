@@ -1,25 +1,24 @@
-# Multi-jurisdiction lab
+# Meridian Ledger Alliance
 
-Explore jurisdiction sharding separately from Kafka partitioning. EU, US and APAC use independent home clusters with three tenant-keyed partitions each. A fourth cluster receives only explicitly constructed aggregate snapshots. The operator web page shows placement, raw regional fixtures, export progress and the global projection.
+A fictional regional-record desk. Three resident EU/US/APAC raw logs feed a fourth allowlisted summary log. Four RF1 brokers run on one host; region labels do not establish geographic isolation, compliance, tenant authorization or disaster recovery. Use synthetic records only.
 
-From the repository root:
-
-```bash
-nix develop --no-update-lock-file
-just up jurisdictions
-just urls jurisdictions
-```
-
-Open the printed loopback URL and publish a synthetic tenant record. The server-owned registry determines its home region. Inspect its private note in the regional view, then compare the global table, which has no tenant IDs or notes.
+From the repository root, use the [common prerequisites](../../docs/reference/commands.md):
 
 ```bash
+./labs/run jurisdictions up
+./labs/run jurisdictions urls
 ./labs/run jurisdictions outage eu
 ./labs/run jurisdictions recover eu
-just rpk jurisdictions eu topic describe jurisdictions.records.v1 -p
-just rpk jurisdictions global topic describe jurisdictions.summaries.v1 -p
-just down jurisdictions
 ```
 
-`down` deletes this lab's four broker volumes. `just test jurisdictions` also deletes existing history before its real workflow. `just check jurisdictions` runs source, packaging and documentation gates.
+The [scenario guide](../../docs/labs/jurisdictions.md) describes fixture residency, fixed tenant hashing, exact raw/export fields, synthetic units, receipts, global outages, replay, tuning and the proposed production blueprint. Home-region outage never reroutes private writes. Summaries cannot recover lost resident raw data. The operator gateway can inspect private fixtures and is not tenant access control.
 
-Read the [architecture walkthrough](../../docs/labs/jurisdictions.md) for fixture residency, hash placement, export schema, API usage, global outages, acknowledgement uncertainty and replay. All containers run on one host with development settings and replication factor 1. This is not geographic isolation, a compliance guarantee, tenant authorization or disaster recovery. Use synthetic data only.
+```bash
+just check jurisdictions
+just test jurisdictions
+./labs/run jurisdictions down
+```
+
+`test` deletes existing history before its fresh workflow; `down` deletes all four broker volumes. The [specialized topic policy](../../docs/reference/tuning.md#topic-policy) retains replay history until disposal but does not reconcile existing-topic settings. After acknowledgment uncertainty, keep the original ID/input and inspect its home operation before retrying. Copy unresolved IDs before reloading the browser.
+
+Node, KafkaJS and Redpanda retain their upstream licensing. No privacy or compliance certification is claimed.

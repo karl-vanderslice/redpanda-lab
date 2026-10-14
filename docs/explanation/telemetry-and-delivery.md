@@ -1,42 +1,50 @@
 # Delivery and telemetry
 
-Acknowledgment, consumption, and offset commit are separate stages.
+A producer acknowledgment, consumer processing and offset commit are separate events. The explorer exposes each so you can observe the difference.
 
 ## Delivery promises
 
-The explorer uses `@confluentinc/kafka-javascript` 1.11.0 with bundled librdkafka 2.16.0, producer idempotence, and `acks=all`. Native retries do not duplicate the same delivery; another HTTP request creates a new operation. This is not end-to-end exactly-once processing.
+The explorer uses `@confluentinc/kafka-javascript` 1.11.0 with bundled librdkafka 2.16.0. Its producer enables idempotence, permits one in-flight request and requests `acks=all` (`-1`). Protocol retries within that producer's idempotent session do not create a new application operation. Another HTTP request does: the server assigns a new event ID. This is not end-to-end exactly-once processing.
 
-A produce timeout means **outcome unknown**. Inspect Console before resubmitting; search by event ID if available. HTTP mutations are not automatically retried.
+A produce timeout means **outcome unknown**. Inspect `lab.events` in Console before resubmitting; search by event ID when the response provides one. Browser mutations are not automatically retried. A missing record in the latest-100 app view does not establish that publication failed.
 
-Group `lab-explorer` processes at-least-once and commits successful offsets every second. Failover or interruption can redeliver records: `Consumed` may exceed `Produced`. App counters reset on restart.
+Native delivery has a 30-second budget and a 10-second broker acknowledgment timeout. Elections and reassignment can stall requests. The browser can time out before native delivery finishes. These deadlines do not cancel a broker append.
 
-Native delivery has a 30-second budget and 10-second broker acknowledgment timeout. Elections and reassignment can stall requests. Pause intent survives reassignment.
+Consumer group `lab-explorer` processes at least once and commits successful offsets every second. Failover or interruption can redeliver records, so **Consumed** can exceed **Produced**. Both counters reset on app restart. Shared pause intent is reapplied after reassignment; an in-progress read or commit can still finish.
 
-Readiness requires six replicated partitions with leaders, three broker IDs in metadata, and actual six-partition consumer assignment, not merely `consumer.run()`. Startup also waits for a healthy three-node Admin API overview and web services.
+`acks=all` is the client request, not a promise that every replica or stable disk acknowledged. Redpanda uses Raft majority commitment, and these brokers use development-mode storage settings. See [delivery versus stable storage](../reference/tuning.md#delivery-is-not-stable-storage) before drawing durability conclusions.
+
+## Readiness
+
+The app waits for six partitions with leaders and three replicas each, three broker IDs in metadata, and an actual six-partition consumer assignment. Merely calling `consumer.run()` is insufficient. The wrapper also waits for a healthy three-node Admin API overview, Console, Grafana and Prometheus before reporting startup complete.
+
+Readiness establishes a starting condition, not continuing health. Inspect errors, current broker state and lag during an experiment.
 
 ## What the charts mean
 
-A separate admin client queries watermarks and broker-stored committed offsets for lag. Counter subtraction is not lag; processed records can remain uncommitted.
+A separate admin client queries partition watermarks and broker-stored group offsets. **Committed lag** is their difference, using the retained low offset when no commit exists. Counter subtraction is not lag; processed records may still be uncommitted.
 
-Prometheus scrapes every five seconds. Grafana covers production, consumption, committed lag, creation-to-consumption latency (including backlog time), broker availability, requests, and resource use.
+Prometheus scrapes and evaluates rules every five seconds. Grafana shows production, consumption, committed lag, creation-to-consumption latency, broker availability, requests and resource use. Latency includes time spent in a paused backlog; it is not broker append latency.
 
-Provisioned alerts have delays:
-
-- Broker scrape unavailable: 30 seconds; not Kafka readiness.
-- Under-replication: live lagging replicas for one minute, not unreachable replicas. Missing series leaves the rule inactive, not proof of health.
-- Paused-consumer lag: positive and increasing over the last minute, sustained for 30 seconds.
+| Alert | Condition and limit |
+| --- | --- |
+| Broker unavailable | A failed metrics scrape for 30 seconds. Scrape reachability is not Kafka readiness. |
+| Under-replication | Reported live, lagging replicas for one minute. Unreachable replicas are not counted; a missing series leaves the rule inactive. |
+| Paused-consumer lag | Shared consumer paused, positive lag and growth across the last minute, sustained for 30 seconds. A short demonstration may not fire it. |
 
 No Alertmanager or notification delivery is configured.
 
-## Useful endpoints
+## Explorer HTTP endpoints
 
-| Endpoint | Result |
+| Endpoint | Contract |
 | --- | --- |
-| `GET /api/stats` | Readiness, counters, recent records, lag, generator state. |
-| `POST /api/produce` | Keyed event; 201 includes ID, partition, string offset. |
-| `POST /api/consumer` | Shared boolean pause state. |
-| `POST /api/generator` | One bounded generator; concurrent starts rejected. |
-| `POST /api/generator/stop` | Stop generator; in-flight sends can complete. |
-| `GET /metrics` | Prometheus app metrics with `lab_*` names. |
+| `GET /api/stats` | Readiness, broker/partition readings, counters, recent records, lag and generator state. |
+| `POST /api/produce` | `{key, kind, payload}`; 201 returns event ID, partition and string offset. |
+| `POST /api/consumer` | `{paused}` with a boolean; changes shared consumer pause intent. |
+| `POST /api/generator` | `{rate, duration}`; starts one bounded generator, rejects concurrent starts. |
+| `POST /api/generator/stop` | Stops future generator sends; in-flight sends can complete. |
+| `GET /metrics` | Prometheus process and `lab_*` application metrics. |
 
-Payloads must be JSON objects. Generator limit: 100 events/second. Rejected input does not enter the topic; the UI reports validation errors.
+Send JSON with `Content-Type: application/json`; the body limit is 64 KiB. Event keys contain 1–200 characters. Kinds are `order.created`, `payment.received` or `sensor.reading`, and payloads must be JSON objects. Generator rate is an integer from 1–100 events/second; duration is an integer from 1–300 seconds. Rejected input does not enter the topic.
+
+These are explorer contracts. Domain applications have separate receipt, reconstruction and uncertain-effect rules in their [lab guides](../labs/index.md).

@@ -1,6 +1,42 @@
 "use strict";
 
 (() => {
+  const button = document.getElementById("theme");
+  const root = document.documentElement;
+  const system = window.matchMedia("(prefers-color-scheme: dark)");
+  const modes = ["system", "light", "dark"];
+  const storageKey = "signal-harbor-theme";
+  let preference = "system";
+  try {
+    const saved = localStorage.getItem(storageKey);
+    if (modes.includes(saved)) preference = saved;
+  } catch {
+    // Storage is optional; the in-memory preference still works.
+  }
+  function applyTheme() {
+    const appearance = preference === "system" ? (system.matches ? "dark" : "light") : preference;
+    root.dataset.theme = appearance;
+    button.textContent = `Theme: ${preference}${preference === "system" ? ` (${appearance})` : ""}`;
+    button.title = `Switch to ${modes[(modes.indexOf(preference) + 1) % modes.length]} theme`;
+  }
+  button.addEventListener("click", () => {
+    preference = modes[(modes.indexOf(preference) + 1) % modes.length];
+    applyTheme();
+    try {
+      localStorage.setItem(storageKey, preference);
+    } catch {
+      // Continue without persistence when storage is denied.
+    }
+  });
+  system.addEventListener("change", () => {
+    if (preference === "system") applyTheme();
+  });
+  applyTheme();
+})();
+
+"use strict";
+
+(() => {
   const byId = (id) => document.getElementById(id);
   const number = new Intl.NumberFormat();
   const time = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -232,7 +268,7 @@
     setText("produced-value", number.format(snapshot.produced));
     setText("consumed-value", number.format(snapshot.consumed));
     setText("lag-value", snapshot.lag === null ? "Unavailable" : number.format(snapshot.lag));
-    setText("lag-caption", snapshot.lag === null ? "Committed offsets could not be read" : "Broker offsets minus committed offsets");
+    setText("lag-caption", snapshot.lag === null ? "Committed offsets could not be read" : "High offsets minus group positions");
     notice("lag-error", snapshot.lagError ? `Committed lag unavailable: ${snapshot.lagError} Check broker health and group offsets in Redpanda Console, then refresh stats.` : "");
     notice("backend-error", snapshot.lastError ? `Last backend error: ${snapshot.lastError} Check the app and broker logs before repeating an action; a failed send may have reached the brokers.` : "");
     const paused = Boolean(snapshot.paused);

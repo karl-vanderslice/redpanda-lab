@@ -1,16 +1,12 @@
-# Logistics
+# Wayline Dispatch
 
-A three-driver dispatch board backed by real Redpanda events. Positions are synthetic coordinates in a 20 km square, not live GPS or Uber data.
+A fictional three-driver dispatch board on a synthetic 20 × 20 km grid. Request a trip, explicitly report the driver's pickup position, confirm pickup, report the destination, then complete it. Cancellation before pickup releases the driver. No GPS, routing provider or physical delivery is connected.
 
 ```bash
-just up logistics
-just urls logistics
+labs/run logistics up
+labs/run logistics urls
 ```
 
-Request a trip, report its driver's pickup position, confirm pickup, report the destination, then complete it. Cancellation before pickup releases the driver. Assignment chooses the nearest available driver; ties use driver id.
+[Commands, assignment and recovery](../../docs/labs/logistics.md) · [Shared setup](../../docs/labs/index.md)
 
-One writer waits for consumed events before replying. Restart replays recorded assignments and positions. Keep mutation ids after uncertain responses; missing receipts do not prove failure.
-
-[API, recovery and limits](../../docs/labs/logistics.md) · [Shared lifecycle](../../docs/labs/index.md)
-
-`just test logistics` and `just down logistics` destroy this lab's history.
+Keep the exact command ID/input after uncertain completion. `just test logistics` recreates and disposes owned data; `labs/run logistics down` deletes the log. `bash labs/logistics/e2e.sh` requires a fresh running fleet and checks dispatch transitions, duplicate records and restart replay.

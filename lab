@@ -5,20 +5,27 @@ if [[ ${REDPANDA_LAB_SHELL:-0} != 1 ]]; then
   command -v nix >/dev/null || { echo 'Nix with flakes is required. The locked development shell supplies all user-space tools.' >&2; exit 1; }
   exec nix develop "path:$root" --no-update-lock-file -c env REDPANDA_LAB_SHELL=1 bash "$root/lab" "$@"
 fi
-for tool in podman podman-compose node npm curl jq flock sha256sum; do
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=scripts/local-podman
+source "$root/scripts/local-podman"
+command=${1:-help}
+tools=(node npm curl jq flock sha256sum)
+case "$command" in up|down|status|logs|rpk) tools+=(podman podman-compose redpanda-local-podman) ;; esac
+for tool in "${tools[@]}"; do
   command -v "$tool" >/dev/null || { echo "Missing tool: $tool" >&2; exit 1; }
 done
+case "$command" in up|down|status|logs|rpk) require_local_podman ;; esac
 identity=$(printf '%s' "$root" | sha256sum)
 export LAB_PROJECT="rp-lab-${identity:0:10}"
+export LAB_APP_IMAGE="localhost/$LAB_PROJECT-app:1"
 state="${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/${identity:0:10}"
 mkdir -p "$state"
-command=${1:-help}
 if [[ $command == up || $command == down ]]; then
   # Containers outlive this script; never let their conmon processes inherit the lock descriptor.
   exec 9>"$state/lifecycle.lock"
   flock -n 9 || { echo 'Another ./lab up or ./lab down is running.' >&2; exit 1; }
 fi
-compose() { podman-compose -p "$LAB_PROJECT" -f "$root/compose.yml" "$@" 9>&-; }
+compose() { podman-compose --podman-path="$REDPANDA_LAB_PODMAN" -p "$LAB_PROJECT" -f "$root/compose.yml" "$@" 9>&-; }
 ports() {
   export APP_PORT=$((base)) CONSOLE_PORT=$((base+1)) GRAFANA_PORT=$((base+2)) PROMETHEUS_PORT=$((base+3))
   export REGISTRY_PORT=$((base+4)) PROXY_PORT=$((base+5)) ADMIN_PORT=$((base+6))
@@ -63,7 +70,10 @@ JS
       printf '%s\n' "$base" > "$state/port-base"
     fi
     echo "Starting $LAB_PROJECT (rootless Podman, loopback only)."
-    compose up -d --build
+    compose build app
+    # A reused tag does not change Compose's configuration hash.
+    LAB_APP_IMAGE=$(podman --remote=false image inspect --format '{{.Id}}' "$LAB_APP_IMAGE")
+    compose up -d --no-build
     deadline=$((SECONDS+240))
     until curl -fs --max-time 3 "http://127.0.0.1:$APP_PORT/api/stats" | jq -e '.ready and (.brokers | length == 3)' >/dev/null &&
           curl -fs --max-time 3 "http://127.0.0.1:$ADMIN_PORT/v1/cluster/health_overview" | jq -e '.is_healthy and (.all_nodes | length == 3)' >/dev/null &&
@@ -81,10 +91,15 @@ JS
     ;;
   down)
     compose down --volumes --remove-orphans
+    remaining=$(podman --remote=false ps -a --filter "name=^${LAB_PROJECT}_" --format '{{.Names}}') || { echo 'Cannot verify owned containers; port state retained.' >&2; exit 1; }
+    [[ -z $remaining ]] || { echo 'Owned containers remain; port state retained.' >&2; exit 1; }
+    for kind in volume network; do
+      podman --remote=false "$kind" ls --format '{{.Name}}' | jq -R -s -e --arg prefix "${LAB_PROJECT}_" 'split("\n") | all(.[]; startswith($prefix) | not)' >/dev/null || { echo "Owned $kind remains or inventory verification failed; port state retained." >&2; exit 1; }
+    done
     # Port state belongs to the disposed runtime, not to the optional build cache.
     rm -f "$state/port-base"
     echo "Removed $LAB_PROJECT containers, network and volumes; released saved port state. Pulled upstream images stay cached."
-    if podman image rm --ignore "localhost/$LAB_PROJECT-app:1"; then
+    if podman --remote=false image rm --ignore "localhost/$LAB_PROJECT-app:1"; then
       echo "Removed $LAB_PROJECT app image (if present)."
     else
       echo "WARNING: $LAB_PROJECT runtime disposal completed, but its optional app image could not be removed. See the Podman error above; remove that exact image later if desired." >&2

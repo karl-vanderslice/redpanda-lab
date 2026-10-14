@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Sourced by engine consumers; engine-free commands never call this preflight.
+require_local_podman() {
+  if [[ ! -x ${REDPANDA_LAB_PODMAN:-} ]]; then
+    printf 'Local Podman adapter is unavailable; enter the locked Nix development shell.\n' >&2
+    return 1
+  fi
+  local host_info
+  if ! host_info=$(podman --remote=false info --format json 9>&-); then
+    printf 'Cannot inspect local Podman; no lab engine action was started.\n' >&2
+    return 1
+  fi
+  if ! jq -e '.host.security.rootless == true' <<<"$host_info" >/dev/null; then
+    printf 'This lab requires local rootless Podman; rootful engines are forbidden.\n' >&2
+    return 1
+  fi
+}

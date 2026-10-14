@@ -78,7 +78,7 @@ services:
     volumes: [broker-2:/var/lib/redpanda/data]
   app:
     build: {context: ., dockerfile: app/Containerfile}
-    image: localhost/${LAB_PROJECT}-app:1
+    image: ${LAB_APP_IMAGE}
     restart: unless-stopped
     init: true
     networks: [lab]
@@ -102,7 +102,7 @@ services:
     ports: ["127.0.0.1:${CONSOLE_PORT}:8080"]
     mem_limit: 512m
   prometheus:
-    image: quay.io/prometheus/prometheus:v3.2.1@sha256:6927e0919a144aa7616fd0137d4816816d42f6b816de3af269ab065250859a62
+    image: quay.io/prometheus/prometheus:v3.13.4@sha256:87861b8cf91579109319ebc300f3f1060e6da9c05d6ae8ad15a20c879e84e32e
     restart: unless-stopped
     networks: [lab]
     command:
@@ -117,7 +117,7 @@ services:
     ports: ["127.0.0.1:${PROMETHEUS_PORT}:9090"]
     mem_limit: 512m
   grafana:
-    image: registry-1.docker.io/grafana/grafana:11.6.0@sha256:62d2b9d20a19714ebfe48d1bb405086081bc602aa053e28cf6d73c7537640dfb
+    image: registry-1.docker.io/grafana/grafana:12.4.13@sha256:41bbc1b5e04416f81891806076db2a2ff60a5d4da5f78d36a88b033a8c199185
     restart: unless-stopped
     networks: [lab]
     environment:

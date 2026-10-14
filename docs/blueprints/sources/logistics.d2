@@ -1,0 +1,46 @@
+# Every component and relationship below is proposed production infrastructure.
+# Evidence: labs/logistics/engine.mjs; labs/logistics/server.mjs.
+...@../profiles/schematic
+**.class: component
+(** -> **)[*].class: relationship
+direction: down
+title: "WAYLINE DISPATCH\nProposed production architecture" {
+  shape: text
+  style.font-size: 26
+}
+
+devices: "DRIVER DEVICES\npositions / trip transitions"
+entry: "DISPATCH TRUST BOUNDARY" {
+  style.stroke-dash: 4
+  identity: "DRIVER + DISPATCH IDENTITY\nrole / fleet scope"
+  positions: "POSITION INGRESS\nsource sequence / freshness guards"
+  dispatch: "FENCED DISPATCH OWNER\ndriver + trip exclusivity"
+}
+redpanda: "PROPOSED REDPANDA CLUSTER\nRF3 / replicas: AZ A, B, C" {
+  style.stroke: "#526f83"
+  events: "logistics.events.v1\nassignments + transitions\n1 partition / fleet scope" {
+    shape: cylinder
+    style.stroke: "#526f83"
+  }
+}
+consumer: "TRIP LOG CONSUMER\napply recorded assignment"
+read: "FLEET + TRIP READ MODEL\nspatial index / consumed frontier" {shape: cylinder}
+maps: "EXTERNAL MAP BOUNDARY" {
+  style.stroke-dash: 8
+  routing: "MAPS + ROUTING SERVICE\nadvisory routes / provider budget"
+}
+
+devices -> entry: positions to ingress
+entry.identity -> entry.positions: verify device scope
+entry.identity -> entry.dispatch: authorize trip commands
+entry.positions -> entry.dispatch: validated positions
+entry.dispatch -> redpanda: append decided transition
+redpanda -> consumer: ordered trip history
+entry <- consumer: consumed fleet / receipt
+consumer -> read: trip / spatial state
+read -> maps: "route\nrequest"
+read <- maps: "advisory /\nprovenance"
+
+
+# Layout-only edge: the title is a caption, not a service or data source.
+title -> devices: {style.opacity: 0}

@@ -1,9 +1,12 @@
 [project]
 site_name = "Redpanda lab"
 site_description = "Learn event streaming through disposable, containerized experiments."
+site_url = "https://karl-vanderslice.github.io/redpanda-lab/"
 # Keep GitHub as a plain nav link. repo_url triggers browser-side API statistics.
 docs_dir = "docs"
 site_dir = "site"
+extra_css = ["assets/site.css"]
+extra_javascript = ["assets/site-controls.js", "assets/blueprint-viewer.js"]
 nav = [
   { "Start here" = "index.md" },
   { "First event" = "tutorials/first-event.md" },
@@ -12,6 +15,11 @@ nav = [
     { "IoT monitoring" = "labs/iot.md" },
     { "Point of Sale" = "labs/pos.md" },
     { "Logistics dispatch" = "labs/logistics.md" },
+    { "Append-only ledger" = "labs/event-log.md" },
+    { "Network SIEM" = "labs/siem.md" },
+    { "Activity and clickstream" = "labs/activity.md" },
+    { "Retail inventory" = "labs/inventory.md" },
+    { "Fraud and clearing" = "labs/clearing.md" },
     { "Commodity trading" = "labs/trading.md" },
     { "Bitcoin paper trading" = "labs/bitcoin.md" },
     { "Sports streaming" = "labs/sports.md" },
@@ -20,9 +28,28 @@ nav = [
     { "Multi-jurisdiction sharding" = "labs/jurisdictions.md" },
     { "Terraform cluster" = "labs/terraform.md" },
   ] },
+  { "Production blueprints" = [
+    { "Scope and assumptions" = "blueprints/index.md" },
+    { "Event explorer" = "blueprints/explorer.md" },
+    { "IoT monitoring" = "blueprints/iot.md" },
+    { "Point of Sale" = "blueprints/pos.md" },
+    { "Logistics dispatch" = "blueprints/logistics.md" },
+    { "Append-only ledger" = "blueprints/event-log.md" },
+    { "Network SIEM" = "blueprints/siem.md" },
+    { "Activity and clickstream" = "blueprints/activity.md" },
+    { "Retail inventory" = "blueprints/inventory.md" },
+    { "Fraud and clearing" = "blueprints/clearing.md" },
+    { "Commodity trading" = "blueprints/trading.md" },
+    { "Bitcoin paper trading" = "blueprints/bitcoin.md" },
+    { "Sports streaming" = "blueprints/sports.md" },
+    { "Agent messaging" = "blueprints/agent-messaging.md" },
+    { "Scheduled agent chat" = "blueprints/agent-chat.md" },
+    { "Multi-jurisdiction" = "blueprints/jurisdictions.md" },
+    { "Terraform cluster" = "blueprints/terraform.md" },
+  ] },
   { "Experiments" = [{ "Broker failure and recovery" = "how-to/failure-and-recovery.md" }, { "Troubleshooting" = "how-to/troubleshooting.md" }] },
   { "Understand the stack" = [{ "Architecture" = "explanation/architecture.md" }, { "Telemetry and delivery" = "explanation/telemetry-and-delivery.md" }, { "Production and disaster recovery" = "explanation/production.md" }] },
-  { "Reference" = [{ "Commands and options" = "reference/commands.md" }, { "Supply chain" = "reference/supply-chain.md" }] },
+  { "Reference" = [{ "Commands and options" = "reference/commands.md" }, { "Tuning and Linux" = "reference/tuning.md" }, { "Supply chain" = "reference/supply-chain.md" }] },
   { "Source on GitHub" = "https://github.com/karl-vanderslice/redpanda-lab" },
 ]
 
@@ -36,15 +63,15 @@ features = ["navigation.indexes", "navigation.top", "navigation.footer", "conten
 [[project.theme.palette]]
 media = "(prefers-color-scheme: light)"
 scheme = "default"
-primary = "indigo"
-accent = "indigo"
+primary = "custom"
+accent = "custom"
 toggle.icon = "lucide/sun"
 toggle.name = "Switch to dark mode"
 
 [[project.theme.palette]]
 media = "(prefers-color-scheme: dark)"
 scheme = "slate"
-primary = "indigo"
-accent = "indigo"
+primary = "custom"
+accent = "custom"
 toggle.icon = "lucide/moon"
 toggle.name = "Switch to light mode"

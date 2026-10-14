@@ -1,48 +1,23 @@
-# Sports Portal
+# Courtside Assembly
 
-A local multi-sport web application with basketball, ice hockey, soccer, and football fixtures. The browser plays original synthetic MP4 loops. Redpanda carries scores, follow/watchlist changes, and playback events.
+A fictional portal for the original Crosswater Assembly exhibition slate. Silent synthetic H.264 loops come from the Nix image; Redpanda carries scores, preferences and playback telemetry, not video. No film footage, real event or third-party stream is included.
 
-Media and application events take different paths. The server delivers video bytes over HTTP, including byte-range requests for seeking. The broker stores the events that update the scoreboard and viewer state. Sending video through Kafka would obscure that distinction without helping this application.
-
-## Run it
-
-From the repository root:
+From the repository root, use the [shared setup](../../README.md), then:
 
 ```bash
-nix develop --no-update-lock-file
-just up sports
-just urls sports
+./labs/run sports up
+./labs/run sports urls --json
 ```
 
-Open the app URL, choose a match, and use the native video controls. Save a match to the watchlist, follow a team, or change the score from its control room. The event wire shows consumed records and their offsets.
+Open a match, play/seek its native media, change a score, add a watchlist entry or follow a club. Following Elmreach Surveyors covers its basketball and football fixtures. Pause freezes the displayed score/event view only; telemetry and consumption continue. Refresh reads one snapshot without resuming.
 
-```bash
-just rpk sports topic describe sports.events
-just rpk sports topic consume sports.events --offset start --num 1
-```
+[Guide: fixtures, media/API, rights, replay and recovery](../../docs/labs/sports.md). Viewer IDs are not accounts; anyone with local access can score. Keep ports private. Preserve uncertain operation IDs and inspect receipts/topic rather than blindly creating another ID. Broker failure does not by itself remove local media playback.
 
-The first Nix build generates four silent, 18-second videos with the pinned FFmpeg toolchain. They are geometric field animations, not movie clips or licensed sports broadcasts. Air Bud, Tune Squad/Monstars, and Mighty Ducks references are text-only fictional fixtures. The [research and rights section](../../docs/labs/sports.md#source-research-rights-and-pinning) explains the source choices and their limits.
-
-## State and replay
-
-Score, preference, and playback updates become authoritative when the consumer applies their records. An HTTP or producer acknowledgement alone does not establish that the scoreboard changed. Stable operation IDs suppress duplicate updates; optional revision checks reject stale score changes.
-
-```bash
-just restart sports app
-```
-
-An app-only restart rebuilds the projection from the retained `sports.events` log. Media delivery does not depend on broker availability, so a control-plane failure can leave the clip playing while telemetry is stopped. The page distinguishes that condition from successful event delivery.
-
-This lab uses one partition and replication factor one. Its 24-hour retention is suitable for a disposable experiment, not lifetime scores, durable accounts, or audience billing.
-
-## Check and remove
+The fictional catalog uses `sports.events.v2`; the previous `sports.events` topic remains intact and unread/unwritten by this app. There are no old-ID aliases or record rewrites. Retain old records and their original source catalog before disposal, which deletes both histories. The [full-prefix policy](../../docs/reference/tuning.md#topic-policy) has no snapshots; viewer state and receipts also grow without bounds.
 
 ```bash
 just check sports
 just test sports
-just down sports
 ```
 
-The E2E checks all four media files, range bytes, codec properties, frame decoding, score/preference transitions, telemetry, and restart replay against real services. Browser playback is a separate check, not inferred from a successful HTTP response. `down` removes the lab's data and containers.
-
-The [full guide](../../docs/labs/sports.md) includes API examples, recovery rules, metrics, and the additional rights, ingest, CDN, entitlement, and regional-recovery work a production service would require.
+`bash labs/sports/e2e.sh` needs a running stack and pinned Node/curl/jq/FFmpeg. It checks generated media/ranges, scores, preferences, telemetry and exact replay; API proof does not establish native playback. Public/commercial media delivery needs separate rights and codec review, not an assumption of clearance from this lab.

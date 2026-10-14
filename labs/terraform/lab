@@ -278,5 +278,5 @@ case "$command" in
     initialize
     tf fmt -check -diff
     tf validate
-    shellcheck --external-sources --source-path "$lab" "$lab/lab" "$lab/e2e.sh";;
+    shellcheck --severity=style --external-sources --source-path "$lab" "$lab/lab" "$lab/e2e.sh";;
 esac

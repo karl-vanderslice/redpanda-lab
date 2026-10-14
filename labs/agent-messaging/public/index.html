@@ -1,24 +1,58 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Relay: agent messaging lab</title>
-  <link rel="stylesheet" href="/styles.css"><script src="/app.js" defer></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Relay Loom Cooperative · task transcript desk</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
 </head>
 <body>
-<a class="skip" href="#main">Skip to workspace</a>
-<header class="topbar"><a class="brand" href="/" aria-label="Relay home"><span class="mark" aria-hidden="true">↗</span> Relay <span class="lab-tag">REDPANDA LAB</span></a><button id="theme" type="button">Dark theme</button></header>
+<a class="skip" href="#main">Skip to task desk</a>
+<header class="topbar">
+  <a class="brand" href="/">Relay Loom <span>Cooperative</span></a>
+  <div class="header-actions"><span class="lab-tag">Agent messaging / Redpanda lab</span><button id="theme" type="button">Dark theme</button></div>
+</header>
 <main id="main">
-  <section class="intro"><div><p class="eyebrow">MULTI-AGENT WORKSPACE / 01</p><h1>One task. Two perspectives.</h1><p class="lede">A planner proposes. A reviewer challenges. The planner brings it together.<br>Independent fx agents, connected by an event log.</p></div><div class="connection"><span class="dot" aria-hidden="true"></span><span id="connection" role="status">Connecting to the log…</span></div></section>
+  <section class="intro" aria-labelledby="desk-heading">
+    <div><p class="eyebrow">Task desk</p><h1 id="desk-heading">Workflow transcripts</h1><p class="lede">Submit a task, then inspect the proposal, critique and synthesis recorded by the two local agents.</p></div>
+    <p id="connection" class="connection" role="status">Connecting to the log…</p>
+  </section>
   <div class="workspace">
-    <aside>
-      <section class="panel composer"><p class="eyebrow">START A CONVERSATION</p><h2>What should we work on?</h2><form id="task-form"><label for="task">Task for the agents</label><textarea id="task" name="task" rows="6" maxlength="1200" required aria-describedby="task-hint form-error" placeholder="Plan a small community book swap in three steps."></textarea><p id="task-hint" class="hint">Keep it focused. The tiny local model is here to demonstrate coordination, not expert reasoning.</p><p id="form-error" class="error" role="alert"></p><button class="primary" id="submit" type="submit">Send to planner <span aria-hidden="true">↗</span></button></form><p id="submission" class="hint" role="status"></p><button id="lookup" type="button" hidden>Check uncertain submission</button></section>
-      <section class="panel roster"><p class="eyebrow">THE AGENTS</p><div class="agent"><span class="avatar">P</span><div><h3>Planner</h3><p>Proposal + synthesis</p><code>agent / planner</code></div></div><div class="agent"><span class="avatar reviewer">R</span><div><h3>Reviewer</h3><p>Risk + improvement</p><code>agent / reviewer</code></div></div><div class="local-note"><span aria-hidden="true">⌂</span><p>Local inference only<br><strong>SmolLM2 · 135M · Q8_0</strong></p></div></section>
-      <section class="history"><div class="section-heading"><h2>Conversations</h2><span id="count">0</span></div><div id="history"><p class="hint">Your tasks will appear here.</p></div></section>
+    <aside class="task-desk" aria-label="Task submission and history">
+      <section class="composer">
+        <p class="eyebrow">01 / Intake</p><h2>New task</h2>
+        <form id="task-form">
+          <label for="task">Task for the agents</label>
+          <textarea id="task" name="task" rows="5" maxlength="1200" required aria-describedby="task-hint form-error" placeholder="Plan a small community book swap in three steps."></textarea>
+          <p id="task-hint" class="hint">Up to 1,200 characters. Model output is not reviewed advice.</p>
+          <p id="form-error" class="error" role="alert"></p>
+          <button class="primary" id="submit" type="submit">Send to planner</button>
+        </form>
+        <p id="submission" class="hint" role="status"></p>
+        <button id="lookup" type="button" hidden>Check uncertain submission</button>
+      </section>
+      <section class="roster" aria-labelledby="agents-heading">
+        <h2 id="agents-heading">Agent roles</h2>
+        <dl><dt>Planner</dt><dd>Proposal, then synthesis</dd><dt>Reviewer</dt><dd>Critique of the proposal</dd></dl>
+        <p class="local-note">Local fx inference<br><strong>SmolLM2 · 135M · Q8_0</strong></p>
+      </section>
+      <section class="history" aria-labelledby="history-heading">
+        <div class="section-heading"><h2 id="history-heading">Tasks</h2><span id="count" class="count">0</span></div>
+        <div id="history"><p class="hint">No tasks observed.</p></div>
+      </section>
     </aside>
-    <section class="panel transcript" aria-labelledby="transcript-heading"><div class="transcript-top"><div><p class="eyebrow">LIVE EVENT TRANSCRIPT</p><h2 id="transcript-heading">The conversation starts here.</h2></div><button id="pause" type="button" aria-pressed="false">Pause updates</button></div><p id="task-summary" class="task-summary">Send a task to watch the handoff between two separate agent containers.</p><div class="flow" aria-label="Workflow"><span>01 Proposal</span><span aria-hidden="true">→</span><span>02 Critique</span><span aria-hidden="true">→</span><span>03 Synthesis</span></div><div id="messages" class="messages"><div class="empty"><span class="empty-glyph" aria-hidden="true">↔</span><h3>Good work travels in both directions.</h3><p>Every handoff passes through Redpanda.<br>Answers appear here only after real local fx inference completes.</p></div></div><p id="task-status" class="footer-status" role="status">No task selected.</p></section>
+    <section class="transcript" aria-labelledby="transcript-heading">
+      <div class="transcript-top"><div><p class="eyebrow">02 / Recorded handoffs</p><h2 id="transcript-heading" tabindex="-1">Select or submit a task</h2></div><div class="update-actions"><button id="pause" type="button" aria-pressed="false">Pause updates</button><button id="refresh" type="button">Refresh now</button></div></div>
+      <p class="hint">Pause affects this display only. Agents continue running. Refresh reads the latest transcript, including while paused.</p>
+      <p id="task-summary" class="task-summary">No task selected.</p>
+      <div class="flow" aria-label="Workflow order"><span>01 Proposal</span><span>02 Critique</span><span>03 Synthesis</span></div>
+      <div id="messages" class="messages"><p class="empty">Recorded steps appear in separate planner, reviewer and result lanes.</p></div>
+      <p id="task-status" class="footer-status" role="status">No task selected.</p>
+    </section>
   </div>
-  <footer><span>ONE PARTITION · ORDERED HANDOFFS · REPLAYABLE TRANSCRIPT</span><code id="position">agent-messaging.events.v1</code></footer>
+  <footer><span>Transcript position</span><code id="position">agent-messaging.events.v1</code></footer>
 </main>
 </body>
 </html>

@@ -1,23 +1,31 @@
 # Explorer architecture
 
-Redpanda owns records and committed offsets. App counters and recent records are process-local, not a durable database.
+Redpanda owns the explorer's records and committed consumer offsets. The app owns process-local counters and a latest-100 consumed-record view; neither is a durable business database.
 
-Browser commands reach the app over HTTP; the app produces and consumes Kafka records. Console inspects Redpanda. Prometheus scrapes the brokers and app. Grafana queries Prometheus.
+The browser sends HTTP commands to the app. Its native Kafka client publishes and consumes `lab.events`. Redpanda Console inspects the cluster; Prometheus scrapes the brokers and app; Grafana queries Prometheus. Schema Registry and HTTP Proxy are exposed separately through broker zero. The explorer does not route its Kafka traffic through the HTTP Proxy.
 
-## Brokers
+## Brokers and ordering
 
-`lab.events` has six partitions with replication factor three: one leader and two followers per partition. One broker can stop while a majority remains. All brokers share one host failure domain, not independent zones.
+`lab.events` has six partitions and replication factor three: a leader and two followers per partition. Ordering is partition-local. With a majority available, the cluster can elect new leaders after one broker process stops. This is the mechanism exercised by [failure and recovery](../how-to/failure-and-recovery.md).
 
-Each runs `--mode=dev-container --smp=1 --memory=1G --reserve-memory=0M`. These are lab settings, not production sizing.
+All three brokers share one host. Each starts with `--mode=dev-container --smp=1 --memory=1G --reserve-memory=0M`. These are demonstration settings, not capacity guidance or independent failure domains. A successful acknowledgment under this mode is not proof of stable storage; see [delivery versus storage](../reference/tuning.md#delivery-is-not-stable-storage).
 
-## Listeners
+The explorer requests a six-hour event retention window when creating its topic. Prometheus has separate six-hour/256 MB retention limits. Application restart resets the app counters and recent view; committed group offsets remain in the broker. This differs from ordinary application labs, which reconstruct domain state from a complete prefix. [Topic policy](../reference/tuning.md#topic-policy) describes both.
 
-Container clients use `redpanda-0:9092` through `redpanda-2:9092`; host clients use printed loopback ports. Advertised addresses must be reachable from the client. Publishing a port does not resolve internal names on the host.
+## Addresses depend on the client
 
-Schema Registry and HTTP Proxy are exposed through broker zero. Console inspects topics, groups, schemas, and the Admin API. Grafana's dashboard is provisioned; [telemetry](telemetry-and-delivery.md) describes scrapes and alerts.
+Container clients use `redpanda-0:9092` through `redpanda-2:9092`. Host clients use the printed loopback ports. Advertised Kafka addresses must be reachable from the client: publishing a port does not make internal container names resolvable on the host.
 
-## Ownership
+Use `just urls` rather than assuming a port. Console can inspect topics, groups, schemas and the Admin API. The provisioned Grafana dashboard has no login requirement; [delivery and telemetry](telemetry-and-delivery.md) explains its measurements.
 
-`lab` derives the Compose project from the checkout's absolute path. Port allocation and lifecycle locks live under `${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/`; data lives in named container volumes, not the repository. Dispose before moving a checkout, or retain its original path for cleanup.
+## Runtime ownership
 
-`up` and `down` serialize with `flock`; containers must not inherit its descriptor. Port probes cannot prevent a later bind race. Diagnose collisions without stopping unrelated processes. See [commands](../reference/commands.md).
+The `lab` wrapper derives a Compose project name from the checkout's absolute path. Named volumes hold broker and telemetry data, outside the repository. Port state and lifecycle locks live under `${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/`.
+
+`up` and `down` serialize through `flock`. Containers must not inherit that lock descriptor. Initial port probes reduce collisions but cannot prevent another process binding before startup. Diagnose collisions without stopping unrelated processes.
+
+Dispose of a lab before moving its checkout, or retain the original path for cleanup. `down` removes the owned runtime and volumes; it is not a reversible stop. [Commands and ports](../reference/commands.md) covers the wrapper interface.
+
+## Beyond the explorer
+
+[Domain labs](../labs/index.md) have their own decision owners, replay and effect contracts. A single ordered partition is not distributed writer fencing. Their [production blueprints](../blueprints/index.md), including [Signal Harbor Works](../blueprints/explorer.md), propose separate operational responsibilities; they do not describe deployed infrastructure.

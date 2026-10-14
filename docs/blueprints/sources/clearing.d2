@@ -1,0 +1,50 @@
+# Every component / relationship is PROPOSED. Lab clearing is internal only, not a bank transfer.
+...@../profiles/schematic
+**.class: component
+(** -> **)[*].class: relationship
+direction: down
+title: "NORTHBRIDGE LEDGERWORKS\nProposed production architecture\nInternal clearing is not bank settlement" {shape: text; style.font-size: 26}
+identity: "OPERATOR / REVIEW IDENTITY" {
+  style.stroke-dash: 4
+  entry: "AUTHENTICATED TRANSFER ENTRY\nExact cents\nImmutable command ID"
+  review: "EXPLICIT HUMAN REVIEW\nScoped reviewer\nRecorded reason"
+  # Invisible role placement only; no transfer-to-review data path.
+  entry -> review: {style.opacity: 0}
+}
+policy: "RISK POLICY / TIME OWNER\nVersioned rules\nMonotonic decisionAt\nAmount / watchlist / velocity evidence"
+obligations: "FENCED OBLIGATION OWNER\nImmutable from / to / amount\nSerialize screen / review / clear"
+log: "REDPANDA OBLIGATION LOG\nclearing.events.v1 · ordered p0\nScreen / review / clearing outcomes\nRF3 · replicas in AZ A / B / C" {
+  shape: cylinder
+  style.stroke: "#526f83"
+  style.fill: "#eef2f4"
+}
+ledger: "RESERVED FUNDS LEDGER CONSUMER\nAvailable balances / reservations\nDouble entries; conserved cents\nExact replay + receipt read model"
+clearing: "FENCED CLEARING OWNER\nApproved obligations only\nConsume own clear outcome\nOne reservation release\nInternal paired debit / credit"
+effects: "EXTERNAL EFFECT BOUNDARY\nNo Kafka + bank atomic transaction" {
+  style.stroke-dash: 8
+  reconcile: "BANK ADAPTER / RECONCILIATION\nStable effect ID\nUncertain stays unknown"
+  bank: "AUTHORIZED BANK INTERFACE\nExternal receipts\nSettlement statements"
+}
+recovery: "INDEPENDENT RECOVERY OWNER\nObligations + ledger frontier + effect IDs"
+# Invisible consumer row placement only; the log carries clearing outcomes.
+clearing -> ledger: {style.opacity: 0}
+# Invisible policy row placement only; not an identity admission path.
+title -> policy: {style.opacity: 0}
+policy -> identity: {style.opacity: 0}
+# Invisible title placement only; not a service or data relationship.
+title -> identity: {style.opacity: 0}
+identity.entry -> obligations: "immutable transfer"
+policy -> obligations: "policy + recorded time"
+obligations <- ledger: "consumed\nfunds" {class: relationship}
+obligations -> log: "screen / review /\ninternal clear outcome"
+log -> ledger: "consume exact replay"
+identity <- log: "held item + evidence\nHuman review only" {class: relationship}
+identity.review -> obligations: "approve / reject\nReviewer + reason"
+identity <- ledger: "receipt / balances\nNever infer settlement" {class: relationship}
+log -> clearing: "approved\noutcomes"
+obligations <- clearing: "serialize\nclear request" {class: relationship}
+clearing -> effects: "instruction only after\nconsumed clear outcome"
+effects.reconcile <-> effects.bank: "send / query original effect ID\nReturn receipt / unknown / settlement evidence" {class: relationship}
+log <- effects: "separate proposed\nexternal observation" {class: relationship}
+log -> recovery: "immutable history\nEffect identity"
+ledger <- recovery: "validated rebuild\nNever resend bank effects" {class: relationship}

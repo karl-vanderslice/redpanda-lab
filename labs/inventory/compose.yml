@@ -1,0 +1,26 @@
+services:
+  app:
+    image: ${LAB_APP_IMAGE:?Build the inventory Nix image first}
+    networks: [lab]
+    init: true
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+    ports:
+      - "127.0.0.1:${APP_PORT:?Set APP_PORT}:3000"
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    stop_grace_period: 75s
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 2s
+      timeout: 3s
+      retries: 90
+      start_period: 5s

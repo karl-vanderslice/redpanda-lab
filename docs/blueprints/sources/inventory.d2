@@ -1,0 +1,47 @@
+# Every component and relationship below is proposed production infrastructure.
+# Evidence: labs/inventory/model.mjs; labs/inventory/server.mjs.
+...@../profiles/schematic
+**.class: component
+(** -> **)[*].class: relationship
+direction: down
+title: "CEDARLINE SUPPLY\nProposed production architecture" {
+  shape: text
+  style.font-size: 26
+}
+
+scanners: "WAREHOUSE SCANNERS\nreceipt / stock command IDs"
+warehouse: "WAREHOUSE TRUST BOUNDARY" {
+  style.stroke-dash: 4
+  identity: "DEVICE + OPERATOR IDENTITY\nwarehouse / action scope"
+  catalog: "VERSIONED CATALOG\nSKU / location / units"
+  commands: "STOCK COMMAND ADMISSION\nreceive / reserve\ntransfer / fulfill"
+  owner: "FENCED STOCK OWNER\nconsumed stock + reservations\nSKU-location + transfer scope"
+}
+redpanda: "PROPOSED REDPANDA CLUSTER\nRF3 / replicas: AZ A, B, C" {
+  style.stroke: "#526f83"
+  events: "inventory.events.v1\nauthoritative stock outcomes\n1 partition\ncoordinated transfers" {
+    shape: cylinder
+    style.stroke: "#526f83"
+  }
+}
+read: "STOCK READ MATERIALIZER\navailable = onHand - reserved\nnot reservation authority" {shape: cylinder}
+outbox: "FULFILLMENT OUTBOX OWNER\ncommitted intents / effect IDs"
+external: "PHYSICAL-EFFECT BOUNDARY" {
+  style.stroke-dash: 8
+  fulfillment: "WAREHOUSE FULFILLMENT\nphysical pick / dispatch evidence"
+}
+
+scanners -> warehouse: stock command to admission
+warehouse.identity -> warehouse.commands: "device /\noperator"
+warehouse.catalog -> warehouse.commands: "version /\nunits"
+warehouse.commands -> warehouse.owner: admit immutable command
+warehouse.owner -> redpanda: coordinated outcome
+warehouse <- redpanda: stock / reservation state
+redpanda -> read: stock / receipts
+redpanda -> outbox: committed fulfillment intent
+outbox -> external: stable physical-effect ID
+warehouse <- external: acknowledgment to admission
+
+
+# Layout-only edge: the title is a caption, not a service or data source.
+title -> scanners: {style.opacity: 0}

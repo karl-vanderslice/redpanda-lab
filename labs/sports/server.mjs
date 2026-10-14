@@ -7,7 +7,7 @@ import { connectLog } from '../common/log.mjs';
 import { readJson, sendJson, serveFile, assertLocalMutation } from '../common/http.mjs';
 import { fixtures, sports } from './fixtures.mjs';
 
-const topic = 'sports.events';
+const topic = 'sports.events.v2';
 const publicRoot = fileURLToPath(new URL('./public/', import.meta.url));
 const matches = new Map(fixtures.map((match) => [match.id, { ...match }]));
 const operations = new Map();
@@ -73,6 +73,10 @@ function notify() {
   }
 }
 function apply(raw, metadata) {
+  // Never reinterpret retained outcomes against a different fixture catalog.
+  if (raw?.schema === 1 && typeof raw.matchId === 'string' && !matches.has(raw.matchId)) {
+    throw new Error('Sports fixture catalog does not match retained history. Preserve prior evidence, then dispose only this lab before using the new catalog. No records were migrated or deleted.');
+  }
   let event;
   try {
     if (raw?.schema !== 1 || !Number.isSafeInteger(raw.at) || raw.at < 0) throw new Error('Invalid schema or timestamp.');

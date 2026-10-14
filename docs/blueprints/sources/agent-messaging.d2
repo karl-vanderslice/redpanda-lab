@@ -1,0 +1,39 @@
+# Every component and edge is PROPOSED. No autonomous external-action path.
+...@../profiles/schematic
+**.class: component
+(** -> **)[*].class: relationship
+direction: down
+title: "RELAY LOOM COOPERATIVE\nProposed production architecture\nRecorded start before inference" {shape: text; style.font-size: 26}
+identity: "TASK IDENTITY BOUNDARY" {
+  style.stroke-dash: 4
+  submit: "AUTHENTICATED TASK SUBMIT\nStable task ID\nPrompt access + quotas"
+}
+log: "REDPANDA TASK LOG\nagent-messaging.events.v1\nOrdered p0 · submission / start\nResult / interruption\nRF3 · replicas in AZ A / B / C" {
+  shape: cylinder
+  style.stroke: "#526f83"
+  style.fill: "#eef2f4"
+}
+workers: "FENCED ROLE OWNERS" {
+  style.stroke-dash: 4
+  planner: "PLANNER\nProposal + synthesis"
+  reviewer: "REVIEWER\nCritique after consumed proposal"
+  # Invisible role row placement only; the log carries the actual dependencies.
+  planner -> reviewer: {style.opacity: 0}
+}
+models: "ISOLATED INFERENCE BOUNDARY" {
+  style.stroke-dash: 8
+  gateway: "MODEL GATEWAY\nAllowlisted model; no tools\nToken budget"
+}
+results: "TASK CONSUMER / READ STORE\nOrdered stages + recorded outputs\nRebuild; never regenerate"
+policy: "INDETERMINATE RESULT POLICY\nUnconfirmed start: replay first\nInterruption / authorized disposition\nPreserve attempt ID; no inference retry"
+# Invisible ancillary row placement only; no model/read-store/policy data paths.
+models -> results: {style.opacity: 0}
+results -> policy: {style.opacity: 0}
+# Invisible title placement only; not a service or data relationship.
+title -> identity: {style.opacity: 0}
+identity -> log: "task.submitted"
+log <-> workers: "consume dependencies\n+ role-owned start; append\nstart / result + attempt ID" {class: relationship}
+workers <-> models: "infer after consumed owned start\nReturn role output / uncertainty" {class: relationship}
+log -> results: "recorded outputs"
+identity <- results: "task / result lookup" {class: relationship}
+log <-> policy: "replay starts\nRecord disposition" {class: relationship}

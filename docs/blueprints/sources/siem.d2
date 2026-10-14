@@ -1,0 +1,64 @@
+# Every component and relationship below is proposed production infrastructure.
+# Evidence: labs/siem/model.mjs; labs/siem/server.mjs; domain tuning matrix, SIEM.
+# telemetry.ingress.v1 and telemetry.correlation.v1 are proposed topic names, not lab topics.
+...@../profiles/schematic
+**.class: component
+(** -> **)[*].class: relationship
+direction: down
+title: "VESPER LANTERN NETWORKS\nProposed production architecture" {
+  shape: text
+  style.font-size: 26
+}
+
+entry: "SECURITY TRUST BOUNDARY" {
+  style.stroke-dash: 4
+  identity: "SOURCE + ANALYST IDENTITY\ntenant / role / credential scope"
+  collectors: "AUTHENTICATED COLLECTORS\nauthorized sources / disk spool"
+  normalize: "NORMALIZE + REPARTITION\nschema / provenance / rule entity"
+}
+redpanda: "PROPOSED REDPANDA CLUSTER\nRF3 / replicas: AZ A, B, C" {
+  style.stroke: "#526f83"
+  ingress: "telemetry.ingress.v1\nproposed raw ingress topic" {
+    shape: cylinder
+    style.stroke: "#526f83"
+  }
+  keyed: "telemetry.correlation.v1\nproposed rule-entity\npartitions" {
+    shape: cylinder
+    style.stroke: "#526f83"
+  }
+  events: "siem.events.v1\nincident + case outcomes\n1 partition / case authority" {
+    shape: cylinder
+    style.stroke: "#526f83"
+  }
+}
+correlation: "FENCED CORRELATION\nOWNER\nrule / window state /\ncheckpoints"
+archive: "RESTRICTED EVIDENCE\nARCHIVE\nindependent custody\n+ restore owner" {shape: cylinder}
+cases: "ANALYST CASE WORKFLOW\nconsume revisions /\nsubmit actions"
+search: "SEARCH MATERIALIZER\nquery index /\nnot evidence authority" {shape: cylinder}
+
+entry.identity -> entry.collectors: source scope
+entry -> redpanda: "telemetry.ingress.v1\ncollector source IDs"
+entry <- redpanda: "telemetry.ingress.v1\nto normalizer"
+entry -> redpanda: "telemetry.correlation.v1\nnormalizer rule keys"
+redpanda.keyed -> correlation: ordered entity evidence
+redpanda <- correlation: "siem.events.v1\nimmutable outcomes"
+redpanda.events -> correlation: case revisions
+redpanda.ingress -> archive: raw evidence / offsets
+redpanda.keyed -> search: normalized evidence
+redpanda.events -> search: incident revisions
+redpanda.events -> cases: incident / action history
+entry.identity -> cases: "authorize\nanalyst role"
+correlation <- cases: action / expected revision
+
+
+# Layout-only edge: the title is a caption, not a service or data source.
+title -> entry: {style.opacity: 0}
+# Layout-only ordering inside compound boundaries; no data movement.
+entry.collectors -> entry.normalize: {style.opacity: 0}
+redpanda.ingress -> redpanda.keyed: {style.opacity: 0}
+redpanda.keyed -> redpanda.events: {style.opacity: 0}
+# Layout-only ordering of distinct output owners; no evidence transfer.
+correlation -> archive: {style.opacity: 0}
+archive -> search: {style.opacity: 0}
+# Layout-only ordering keeps case workflow separate from evidence custody.
+cases -> archive: {style.opacity: 0}

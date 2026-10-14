@@ -1,0 +1,50 @@
+# Every component and relationship below is proposed production infrastructure.
+# Evidence: labs/pos/server.mjs; labs/pos/providers.mjs; docs/labs/pos.md.
+...@../profiles/schematic
+**.class: component
+(** -> **)[*].class: relationship
+direction: down
+title: "COUNTERLANE MARKET\nProposed production architecture" {
+  shape: text
+  style.font-size: 26
+}
+
+terminal: "MERCHANT TERMINAL\nbasket / exact cents /\noperation ID"
+merchant: "MERCHANT TRUST\nBOUNDARY" {
+  style.stroke-dash: 4
+  identity: "MERCHANT IDENTITY\noperator scope /\nsecret delivery"
+  owner: "FENCED PAYMENT\nORCHESTRATOR\nconsumed attempt /\nbefore effects"
+}
+redpanda: "PROPOSED REDPANDA CLUSTER\nRF3 / replicas: AZ A, B, C" {
+  style.stroke: "#526f83"
+  events: "pos.events.v1\nrequested / bound\nattempt / observed\n1 partition / effect owner" {
+    shape: cylinder
+    style.stroke: "#526f83"
+  }
+}
+ledger: "PAYMENT LEDGER\nCONSUMER\nreceipts / attempts /\nunknowns" {shape: cylinder}
+provider: "EXTERNAL PAYMENT\nBOUNDARY" {
+  style.stroke-dash: 8
+  service: "PAYMENT SERVICE\npay / refund /\nstatus lookup"
+}
+recovery: "PROVIDER\nRECONCILIATION\noriginal account /\nobject IDs"
+webhooks: "WEBHOOK INBOX\nverify signatures /\ndeduplicate"
+
+terminal -> merchant: "checkout / refund\nto owner"
+merchant.identity -> merchant.owner: merchant scope
+merchant -> redpanda: immutable phases
+redpanda -> ledger: consume payment history
+merchant <- ledger: "consumed\nattempt\nfrontier"
+merchant -> provider: "stable key /\nscoped effect"
+provider -> webhooks: async observation
+webhooks -> recovery: verified observation
+ledger -> recovery: "unresolved\nattempt IDs"
+provider <- recovery: scoped status lookup
+provider -> recovery: observed status
+merchant <- recovery: "reconciled\nobservation"
+
+
+# Layout-only edge: the title is a caption, not a service or data source.
+title -> terminal: {style.opacity: 0}
+# Layout-only ordering of webhook and ledger views; no ledger mutation.
+webhooks -> ledger: {style.opacity: 0}

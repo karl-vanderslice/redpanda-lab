@@ -4,22 +4,51 @@ root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
 if [[ ${REDPANDA_LAB_SHELL:-0} != 1 ]]; then
   exec nix develop "path:$root" --no-update-lock-file -c bash "$root/scripts/docs" "$@"
 fi
+mode=${1:-build}
+output=''
+case $mode in
+  build)
+    if (( $# > 2 )); then printf 'Usage: bash scripts/docs build [EXTERNAL-OUTPUT-DIRECTORY]\n' >&2; exit 2; fi
+    if [[ $# == 2 ]]; then
+      output=$(realpath -m -- "$2")
+      if [[ $output == / || $output == "$root" || $output == "$root/"* || $root == "$output/"* ]]; then
+        printf 'Documentation output must be outside the checkout, not its root or an ancestor: %s\n' "$output" >&2
+        exit 2
+      fi
+      if [[ -e $2 || -L $2 || -e $output || -L $output ]]; then
+        printf 'Documentation output already exists: %s\n' "$2" >&2
+        exit 2
+      fi
+    fi
+    ;;
+  serve)
+    if (( $# > 1 )); then printf 'Usage: bash scripts/docs serve\n' >&2; exit 2; fi
+    ;;
+  *) printf 'Usage: bash scripts/docs {build [EXTERNAL-OUTPUT-DIRECTORY]|serve}\n' >&2; exit 2 ;;
+esac
 cache="${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/docs"
-mkdir -p "$cache"
+mkdir -p -- "$cache"
 stage=$(mktemp -d "$cache/build.XXXXXXXX")
-cp "$root/zensical.toml" "$stage/zensical.toml"
-cp -R "$root/docs" "$stage/docs"
-cp -R "$root/docs-theme" "$stage/docs-theme"
+cp --no-preserve=mode -- "$root/zensical.toml" "$stage/zensical.toml"
+cp -R --no-preserve=mode -- "$root/docs" "$stage/docs"
+cp -R --no-preserve=mode -- "$root/docs-theme" "$stage/docs-theme"
+bash "$root/scripts/diagrams" "$stage/docs/assets/blueprints"
 cd -- "$stage"
-case ${1:-build} in
+case $mode in
   build)
     zensical build --strict --clean
-    printf 'Documentation: %s/site/index.html\n' "$stage"
+    if [[ -n $output ]]; then
+      mkdir -p -- "$(dirname -- "$output")"
+      mkdir -- "$output"
+      cp -R -- "$stage/site/." "$output/"
+    else
+      output="$stage/site"
+    fi
+    printf 'Documentation: %s/index.html\n' "$output"
     ;;
   serve)
     port=$(node --input-type=module -e 'import net from "node:net";const s=net.createServer();s.listen(0,"127.0.0.1",()=>{console.log(s.address().port);s.close()});')
     printf 'Documentation preview: http://127.0.0.1:%s\n' "$port"
     exec zensical serve --dev-addr "127.0.0.1:$port"
     ;;
-  *) printf 'Usage: bash scripts/docs {build|serve}\n' >&2; exit 2 ;;
 esac

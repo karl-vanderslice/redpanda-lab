@@ -1,50 +1,76 @@
-# Logistics
+# Logistics: Wayline Dispatch
 
-A dispatch board with three synthetic drivers, explicit location observations and durable trip assignments. Redpanda stores the fleet fixture, locations, decisions and rejected domain commands. There is no Uber integration, map service, live GPS, rider account or delivery effect.
+Wayline Dispatch is a fictional three-driver dispatch board. Redpanda retains the fleet fixture, explicit location observations, trip assignments and rejected commands. The plotted 20 × 20 km grid is synthetic: no GPS receiver, road map, rider account, routing provider or physical delivery is connected.
+
+## Run
+
+Use the [shared setup and lifecycle](./index.md). From the repository root:
 
 ```bash
-just up logistics
-just urls logistics
+labs/run logistics up
+labs/run logistics urls
 ```
 
-Open the app URL. The default pickup `(2, 2)` assigns Alex. Enter the trip id in **Progress trip**, confirm pickup, report Alex at the destination `(6, 6)`, then complete the trip. For another pickup, report the driver's position there first. **Cancel before pickup** releases an assigned driver. **Pause updates** freezes background refresh without discarding form inputs; action responses still refresh state.
+Request a trip, report the assigned driver's pickup position, confirm pickup, report the destination, then complete the trip. Cancellation before pickup releases capacity. Background updates can be paused without discarding form input.
 
-See the [shared lifecycle](index.md) for logs, inspection and disposal.
+## Dispatch and location contracts
 
-## Dispatch
+The logged `synthetic-grid-v1` fixture starts Alex (`driver-1`) at `(2,2)`, Blair (`driver-2`) at `(8,2)` and Casey (`driver-3`) at `(5,8)`, all available. Coordinates are finite numbers in the inclusive range 0–20 km on each axis, not geographic latitude/longitude.
 
-The fixture starts Alex at `(2, 2)`, Blair at `(8, 2)` and Casey at `(5, 8)`. Coordinates are finite numbers from 0 to 20 kilometers on each axis. The SVG plots these local coordinates, not geographic streets.
+Requests choose the available driver with minimum squared Euclidean distance from the recorded position to pickup. Ties use ascending driver ID. A driver can own only one active trip; no capacity is a retained rejection, not an unassigned booking or automatic retry.
 
-A request selects the available driver with the smallest squared Euclidean distance to pickup. Equal distances use ascending driver id. Each driver owns at most one active trip. No capacity returns a retained HTTP 409 rejection, not an unassigned booking or automatic retry.
+Trips follow `assigned → picked-up → completed`, or `assigned → cancelled`. Pickup requires exact coordinate equality with pickup, and completion requires exact equality with destination. Only an assigned trip can be cancelled. Location commands explicitly change the recorded position, including while busy; status changes never move a driver, and location arrival never advances trip status. There is no speed, ETA, route feasibility, freshness deadline or GPS sequence guard.
 
-Trips follow `assigned → picked-up → completed`. An assigned trip can instead become `cancelled`. Pickup requires the driver's recorded position to equal pickup; completion requires destination. Position reports are manual synthetic observations. Status changes never move drivers, and reaching a coordinate never advances a trip automatically. There is no speed, road, ETA or route-feasibility model.
-
-## Log and API
-
-`logistics.events.v1` has one partition. Each schema-1 record contains `fixtureId`, `command`, observation time `at`, and `result: {accepted, reason, effect}`; its key is the mutation id. Assignment effects include the chosen driver and both endpoints.
-
-One app process serializes commands through consumer application, not merely producer acknowledgment. Startup reads from offset zero before readiness. Replay applies the saved driver choice rather than dispatching again; incompatible records and expired history fail closed. This is a single-writer lab, not a distributed lock or production dispatch coordinator.
+## HTTP API
 
 | Route | Result |
 | --- | --- |
-| `GET /health` | `{ready}` and fault details. |
-| `GET /api/state` | Fleet, trips, receipts, availability and `lastOffset`. |
-| `POST /api/commands` | Consumed receipt; 409 for domain rejection. |
-| `GET /api/commands/ID` | Original receipt and exact broker record. |
-| `GET /metrics` | Fleet, trip, command and duplicate counters. |
+| `GET /health` | Readiness and fault; 503 while unavailable. |
+| `GET /api/state` | Drivers, trips, availability, command summaries, uncertain ID, duplicates and last offset. |
+| `POST /api/commands` | Consumed receipt: 200 accepted, 409 retained domain rejection. |
+| `GET /api/commands/ID` | Original receipt including the exact record; 404 if not consumed. |
+| `GET /metrics` | Available drivers, trip/command totals and duplicates. |
 
-Commands require a stable `id`. Kinds and extra fields:
+All commands require `id` and `kind`:
 
-- `request`: `tripId`, `pickup:{x,y}`, `destination:{x,y}`.
-- `location`: `driverId`, `position:{x,y}`.
-- `pickup`, `complete`, `cancel`: `tripId`.
+| Kind | Other fields |
+| --- | --- |
+| `location` | `driverId`, `position:{x,y}` |
+| `request` | `tripId`, `pickup:{x,y}`, `destination:{x,y}` |
+| `pickup`, `complete`, `cancel` | `tripId` |
 
-Identical ids and payloads return the original result, including rejection. Conflicting payloads return 409. Invalid shapes return 400; foreign origins return 403. Infrastructure failures return 5xx.
+Identifiers use 1–80 ASCII letters, digits, underscores or hyphens; `synthetic-grid-v1` is reserved for internal initialization. Extra fields or malformed coordinates return 400 before append. Unknown drivers/trips and illegal lifecycle transitions are valid commands with retained 409 outcomes. POST requires `application/json`, a body no larger than 16 KiB and same-origin HTTP when Origin is supplied. This is a local operator interface without authentication.
 
-## Recovery
+An identical ID and command returns its original receipt without appending, including an old rejection after capacity changes. Conflicting input returns 409 before publication. Receipts contain `id`, canonical `command`, original offset and audit timestamp, complete `result` and `record`.
 
-An uncertain append or projection timeout stops new mutations. A later consumed event resolves that uncertainty. The browser retains the pending id and command when storage works and offers receipt lookup, never automatic resubmission.
+## Log and recovery
 
-A missing receipt proves nothing about an in-flight append. Stop the old writer and reconcile the broker before retrying an absent command with its **original id and payload**. A consumed id returns its saved receipt after restart; do not invent a replacement id. Rejected ids remain rejected even after capacity becomes available.
+`logistics.events.v1` has one partition and replication factor 1. Its keyed schema-1 record contains `fixtureId`, `command`, `at` and `result:{accepted,reason,effect}`. Assignment effects retain the chosen driver and endpoints. Replay applies that saved assignment rather than rerunning nearest-driver selection, validates its consistency with available fleet state, and recomputes other transitions. Exact duplicate records cannot apply an effect twice; conflicting records fail the consumer.
 
-`just test logistics` deletes existing lab data and exercises real HTTP/broker dispatch, concurrent exclusion, transitions, stable ids, duplicate records and exact restart replay. `just down logistics` deletes its event history. Neither is safe against data worth keeping.
+One owner holds its command queue through consumption, not just producer acknowledgment. `at` is server wall-clock audit metadata in Unix milliseconds, not physical arrival time or a monotonic location clock. Ordering comes from Kafka offsets. All fleet, trips and receipts are in memory; restart reconstructs them through a fresh consumer group and the captured startup high watermark. A nonzero low watermark or additional partition prevents readiness.
+
+Unknown completion blocks new writes. Inspect the original command ID; an absent receipt is not evidence of failure. A later consumed record can restore readiness. Otherwise use `labs/run logistics restart app`, wait for readiness, inspect the receipt and only then retry the exact original input. Do not replace the ID or retry while the old writer can publish. Graceful close waits for pending KafkaJS sends before disconnect; forced termination leaves uncertainty.
+
+The browser keeps pending input in memory and attempts local storage, offers receipt lookup and never automatically resubmits. If storage is denied, copy the visible ID/input before leaving the page. A missing receipt leaves new actions blocked rather than silently replacing the command.
+
+The [full-prefix policy](../reference/tuning.md#topic-policy) retains dispatch history until disposal; trips and receipts also grow without bounds in memory. Keep one process owner: its queue is not a dispatch lease or distributed fence.
+
+## Workload tuning
+
+| Supported environment | Default | Owner |
+| --- | --- | --- |
+| `KAFKA_BROKERS` | `redpanda:9092` | Comma-separated KafkaJS broker list; Compose supplies it. |
+
+Container port 3000, fixture, grid bounds, dispatch selection and exact-position rules are code-owned. Shared KafkaJS request/append deadlines are 30 seconds, with another 30-second consumption deadline. No dispatch radius, routing provider, GPS window, batching or retention environment option exists.
+
+Measure candidate scans/sorting, queue wait and state serialization. Any spatial index must leave assignment under exclusive authority; geographic sharding needs driver fencing and cross-zone handoff. Do not parallelize assignments to the same driver or discard location/lifecycle commands. See [client and host limits](../reference/tuning.md).
+
+## Proposed production architecture
+
+[Production blueprint](../blueprints/logistics.md).
+
+Production would add authenticated device observations, freshness checks and a dispatch lease/fence before commands reach the authoritative log. Routing and spatial read projections would support decisions without becoming independent assignment writers; driver notifications and proof of delivery would require their own reconciled workflows. Those components do not run here, and a consumed `completed` trip is not evidence that a person or parcel arrived.
+
+## Scenario and disposal
+
+`just test logistics` recreates owned data, exercises real HTTP/Kafka dispatch, busy-driver exclusion, ties, location-gated transitions, ID races, broker duplicates and exact restart replay, then disposes the lab. `labs/logistics/e2e.sh` requires a fresh running fixture. `labs/run logistics down` deletes all owned event history; neither command is safe for dispatch data worth retaining.

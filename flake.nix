@@ -15,6 +15,22 @@
           inherit system;
           config.allowUnfreePredicate = pkg: (nixpkgs.lib.getName pkg) == "terraform";
         };
+      toolsFor =
+        system:
+        let
+          pkgs = pkgsFor system;
+          routed-gothic = pkgs.callPackage ./nix/routed-gothic.nix { };
+        in
+        {
+          inherit routed-gothic;
+          diagram-render = pkgs.callPackage ./nix/diagrams.nix { inherit routed-gothic; };
+          local-podman = pkgs.writeShellApplication {
+            name = "redpanda-local-podman";
+            text = ''
+              exec ${pkgs.podman}/bin/podman --remote=false "$@"
+            '';
+          };
+        };
       labsFor =
         system:
         let
@@ -31,6 +47,11 @@
           "iot"
           "pos"
           "logistics"
+          "event-log"
+          "siem"
+          "activity"
+          "inventory"
+          "clearing"
         ] (name: import (./labs + "/${name}/default.nix") { inherit pkgs common; });
     in
     {
@@ -39,12 +60,27 @@
         let
           pkgs = pkgsFor system;
           labs = labsFor system;
+          tools = toolsFor system;
           model = import ./labs/common/model.nix { inherit pkgs; };
           terraform = import ./labs/terraform/default.nix { inherit pkgs; };
         in
         nixpkgs.lib.mapAttrs (_: lab: lab.app) labs
         // nixpkgs.lib.mapAttrs' (name: lab: nixpkgs.lib.nameValuePair "${name}-image" lab.image) labs
         // {
+          inherit (tools) diagram-render;
+          documentation = pkgs.callPackage ./nix/docs.nix {
+            src = nixpkgs.lib.fileset.toSource {
+              root = ./.;
+              fileset = nixpkgs.lib.fileset.unions [
+                ./docs
+                ./docs-theme
+                ./zensical.toml
+                ./scripts/docs
+                ./scripts/diagrams
+              ];
+            };
+            inherit (tools) diagram-render;
+          };
           model-image = model.image;
           small-model = model.model;
           terraform-image = terraform.image;
@@ -56,10 +92,12 @@
         system:
         let
           pkgs = pkgsFor system;
+          tools = toolsFor system;
         in
         {
           default = pkgs.mkShell {
             # Nix supplies the engine; the host supplies kernel namespaces and UID/GID helpers.
+            REDPANDA_LAB_PODMAN = "${tools.local-podman}/bin/redpanda-local-podman";
             packages = with pkgs; [
               podman
               podman-compose
@@ -72,8 +110,10 @@
               just
               zensical
               shellcheck
+              actionlint
               nixfmt
               git
+              gh
               skopeo
               prek
               iproute2
@@ -84,6 +124,8 @@
               pkg-config
               openssl
               ffmpeg
+              tools.diagram-render
+              tools.local-podman
             ];
             shellHook = ''
               export REDPANDA_LAB_SHELL=1

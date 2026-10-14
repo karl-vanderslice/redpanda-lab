@@ -2,56 +2,33 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Dispatch · Redpanda Logistics</title>
+  <title>Wayline Dispatch · Dispatch board</title>
   <link rel="stylesheet" href="/lab.css"><link rel="stylesheet" href="/style.css">
   <script type="module" src="/lab-theme.js"></script><script type="module" src="/app.js"></script>
 </head>
-<body>
-<a class="skip" href="#main">Skip to dispatch</a>
+<body class="wayline">
+<a class="skip" href="#main">Skip to dispatch board</a>
 <div class="shell">
-  <header class="toolbar"><div><p class="eyebrow">Redpanda · Logistics</p><h1>Dispatch a trip</h1><p class="muted">Synthetic fleet, real event log, no live rides.</p></div><button id="theme" type="button">Switch theme</button></header>
-  <main id="main" class="stack">
-    <div class="toolbar"><p id="connection" class="status" role="status">Connecting to the event log…</p><button id="updates" type="button" aria-pressed="false">Pause updates</button></div>
-    <div class="grid">
-      <section class="panel" aria-labelledby="request-title">
-        <h2 id="request-title">Request trip</h2>
-        <form id="request" class="stack">
-          <label>Trip id <input name="tripId" id="trip-id" required pattern="[a-zA-Z0-9_-]{1,80}" maxlength="80"></label>
-          <fieldset><legend>Pickup · km</legend><div class="coordinates"><label>X <input name="px" type="number" min="0" max="20" step="any" value="2" required></label><label>Y <input name="py" type="number" min="0" max="20" step="any" value="2" required></label></div></fieldset>
-          <fieldset><legend>Destination · km</legend><div class="coordinates"><label>X <input name="dx" type="number" min="0" max="20" step="any" value="6" required></label><label>Y <input name="dy" type="number" min="0" max="20" step="any" value="6" required></label></div></fieldset>
-          <button class="primary" type="submit" data-mutation>Assign nearest driver</button>
-        </form>
-        <p class="muted">Available driver only; equal distances use driver id order.</p>
-      </section>
-      <section class="panel" aria-labelledby="location-title">
-        <h2 id="location-title">Report driver position</h2>
-        <form id="location" class="stack">
-          <label>Driver <select name="driverId"><option value="driver-1">Alex · driver-1</option><option value="driver-2">Blair · driver-2</option><option value="driver-3">Casey · driver-3</option></select></label>
-          <div class="coordinates"><label>X · km <input name="x" type="number" min="0" max="20" step="any" value="2" required></label><label>Y · km <input name="y" type="number" min="0" max="20" step="any" value="2" required></label></div>
-          <button type="submit" data-mutation>Record position</button>
-        </form>
-        <p class="muted">Manual synthetic location observations. Pickup and completion never move a driver.</p>
-      </section>
+  <header class="masthead"><div><p class="wordmark">Wayline <span>Dispatch</span></p><h1>Dispatch board</h1></div><div class="actions"><button id="updates" type="button" aria-pressed="false">Pause updates</button><button id="refresh" type="button">Refresh view</button><button id="theme" type="button">Use dark theme</button></div></header>
+  <main id="main" class="dispatch-board">
+    <div class="connection-strip"><p id="connection" class="status">Connecting to the event log…</p><p id="freshness" class="muted">No state observed yet.</p><p id="view-error" class="error" role="status"></p></div>
+    <section class="coordinate-board" aria-labelledby="map-title"><div class="toolbar"><h2 id="map-title">Fleet grid</h2><p id="fleet-count" class="muted">Waiting for fleet state.</p></div><div class="map-viewport" role="region" aria-label="Fleet grid, scrollable" tabindex="0"><svg id="map" viewBox="0 0 460 460" role="img" aria-labelledby="map-title map-caption"></svg></div><p id="map-caption" class="muted">Synthetic 0–20 km coordinates, not GPS or a street map. Solid circles: reported drivers. Rings: pickups. Squares: destinations. Dashed connectors join active trip endpoints, not road paths or measured travel.</p></section>
+    <div class="workbench">
+      <section aria-labelledby="request-title"><p class="eyebrow">Assignment</p><h2 id="request-title">Request trip</h2><form id="request" class="stack">
+        <label>Trip ID<input name="tripId" id="trip-id" required pattern="[a-zA-Z0-9_-]{1,80}" maxlength="80" autocomplete="off" spellcheck="false"></label>
+        <fieldset><legend>Pickup · km</legend><div class="coordinates"><label>X<input name="px" type="number" min="0" max="20" step="any" value="2" required></label><label>Y<input name="py" type="number" min="0" max="20" step="any" value="2" required></label></div></fieldset>
+        <fieldset><legend>Destination · km</legend><div class="coordinates"><label>X<input name="dx" type="number" min="0" max="20" step="any" value="6" required></label><label>Y<input name="dy" type="number" min="0" max="20" step="any" value="6" required></label></div></fieldset>
+        <button class="primary" type="submit" data-mutation>Assign nearest driver</button>
+      </form><p class="muted">Available drivers only. Equal distances use driver ID order.</p></section>
+      <details><summary>Report driver position</summary><form id="location" class="stack"><label>Driver<select name="driverId"><option value="driver-1">Alex · driver-1</option><option value="driver-2">Blair · driver-2</option><option value="driver-3">Casey · driver-3</option></select></label><div class="coordinates"><label>X · km<input name="x" type="number" min="0" max="20" step="any" value="2" required></label><label>Y · km<input name="y" type="number" min="0" max="20" step="any" value="2" required></label></div><button type="submit" data-mutation>Record position</button></form><p class="muted">Manual synthetic observations. Pickup and completion never move a driver.</p></details>
+      <details open><summary>Progress trip</summary><form id="progress" class="stack"><label>Trip ID<input name="tripId" required pattern="[a-zA-Z0-9_-]{1,80}" maxlength="80" autocomplete="off" spellcheck="false"></label><div class="actions"><button type="submit" value="pickup" data-mutation>Confirm pickup</button><button type="submit" value="complete" data-mutation>Complete trip</button><button type="submit" value="cancel" data-mutation>Cancel before pickup</button></div></form><p class="muted">Report the pickup position before pickup; report the destination before completion.</p></details>
     </div>
-    <section class="panel" aria-labelledby="progress-title">
-      <h2 id="progress-title">Progress trip</h2>
-      <form id="progress" class="actions">
-        <label>Trip id <input name="tripId" required pattern="[a-zA-Z0-9_-]{1,80}" maxlength="80" placeholder="Trip to update"></label>
-        <button type="submit" value="pickup" data-mutation>Confirm pickup</button>
-        <button type="submit" value="complete" data-mutation>Complete trip</button>
-        <button type="submit" value="cancel" data-mutation>Cancel before pickup</button>
-      </form>
-      <p class="muted">Report the pickup position before pickup; report the destination before completion.</p>
-      <p id="feedback" class="status" role="status" aria-live="polite">Each action gets a stable mutation id.</p>
-      <button id="lookup" type="button" hidden>Look up pending mutation</button>
-    </section>
-    <section class="panel" aria-labelledby="fleet-title"><div class="toolbar"><h2 id="fleet-title">Fleet</h2><p id="fleet-count" class="muted"></p></div><div class="table-wrap"><table><caption class="muted">Grid coordinates in kilometers</caption><thead><tr><th scope="col">Driver</th><th scope="col">Position</th><th scope="col">Availability</th><th scope="col">Active trip</th></tr></thead><tbody id="drivers"></tbody></table></div></section>
-    <div class="grid">
-      <section class="panel" aria-labelledby="trips-title"><h2 id="trips-title">Trips</h2><p id="trip-empty" class="muted">No trips yet.</p><div class="table-wrap"><table><thead><tr><th scope="col">Trip</th><th scope="col">Driver</th><th scope="col">Status</th><th scope="col">Pickup → destination</th></tr></thead><tbody id="trips"></tbody></table></div></section>
-      <section class="panel" aria-labelledby="map-title"><h2 id="map-title">Local grid</h2><svg id="map" viewBox="0 0 440 440" role="img" aria-labelledby="map-caption"></svg><p id="map-caption" class="muted">Synthetic 0–20 km grid, not a geographic map. Circles are drivers; dashed lines join active pickup and destination.</p></section>
-    </div>
-    <section class="panel" aria-labelledby="log-title"><h2 id="log-title">Event receipts</h2><p id="offset" class="muted"></p><ol id="receipts" class="stack"></ol></section>
+    <section class="recovery-desk" aria-labelledby="recovery-title"><h2 id="recovery-title">Command receipt</h2><p id="feedback" class="status" role="status">Each action retains its original mutation ID until resolved.</p><pre id="pending-command" hidden></pre><button id="lookup" type="button" hidden>Look up pending mutation</button><div id="retry-panel" hidden><p class="warning">An absent receipt does not prove the write failed. Stop the old writer, reconcile the broker and restart the app to replay before retrying.</p><label class="acknowledgement"><input id="reconciled" type="checkbox">I stopped the old writer, reconciled the broker and replayed the app.</label><button id="retry" type="button" disabled>Retry exact original command</button></div></section>
+    <section class="fleet-sheet" aria-labelledby="fleet-title"><h2 id="fleet-title">Fleet positions</h2><div class="table-wrap"><table><caption>Reported coordinates in kilometers. Availability comes from recorded assignments.</caption><thead><tr><th scope="col">Driver</th><th scope="col">Position</th><th scope="col">Availability</th><th scope="col">Active trip</th></tr></thead><tbody id="drivers"></tbody></table></div></section>
+    <section class="trip-sheet" aria-labelledby="trips-title"><h2 id="trips-title">Assignment ledger</h2><p id="trip-empty" class="muted">Waiting for trip state.</p><div class="table-wrap"><table><caption>Recorded trip statuses and endpoints</caption><thead><tr><th scope="col">Trip</th><th scope="col">Driver</th><th scope="col">Status</th><th scope="col">Pickup → destination</th></tr></thead><tbody id="trips"></tbody></table></div></section>
+    <section class="event-strip" aria-labelledby="log-title"><h2 id="log-title">Event receipts</h2><p id="offset" class="muted">No offset observed.</p><ol id="receipts"></ol></section>
   </main>
+  <footer>Synthetic fleet · consumed events only · no live rides or notifications.</footer>
 </div>
 </body>
 </html>

@@ -1,13 +1,26 @@
 'use strict';
 const $ = id => document.getElementById(id);
-let dark = matchMedia('(prefers-color-scheme: dark)').matches;
-try { const saved = localStorage.getItem('relay-theme'); if (saved) dark = saved === 'dark'; } catch { /* Theme remains usable without storage. */ }
-function theme() { document.documentElement.dataset.theme = dark ? 'dark' : 'light'; $('theme').textContent = dark ? 'Light theme' : 'Dark theme'; }
+const preference = matchMedia('(prefers-color-scheme: dark)');
+let chosenTheme;
+try { const saved = localStorage.getItem('relay-theme'); if (saved === 'dark' || saved === 'light') chosenTheme = saved; } catch { /* Storage is optional. */ }
+function theme() {
+  const dark = (chosenTheme || (preference.matches ? 'dark' : 'light')) === 'dark';
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  $('theme').textContent = dark ? 'Light theme' : 'Dark theme';
+}
 theme();
-$('theme').addEventListener('click', () => { dark = !dark; theme(); try { localStorage.setItem('relay-theme', dark ? 'dark' : 'light'); } catch { /* No persistence available. */ } });
+preference.addEventListener('change', theme);
+$('theme').addEventListener('click', () => {
+  chosenTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  theme();
+  try { localStorage.setItem('relay-theme', chosenTheme); } catch { /* Keep the choice on this page. */ }
+});
 let data = { tasks: [] }; let selectedId; let paused = false; let pendingId; let pendingTask;
-let lastHistory = ''; let lastTranscript = '';
+let lastHistory = ''; let lastTranscript = ''; let connected = false;
 function element(tag, text, className) { const node = document.createElement(tag); if (text !== undefined) node.textContent = text; if (className) node.className = className; return node; }
+function connection() {
+  $('connection').textContent = paused ? 'Display paused · agents continue running' : !connected ? 'Connection interrupted · reconnecting' : data.ready ? 'Connected to Redpanda' : 'Rebuilding from the log…';
+}
 function render() {
   const tasks = data.tasks || [];
   if (!selectedId && tasks[0]) selectedId = tasks[0].id;
@@ -25,57 +38,65 @@ function render() {
       button.addEventListener('click', () => { selectedId = task.id; render(); });
       return button;
     });
-    $('history').replaceChildren(...(nodes.length ? nodes : [element('p', 'Your tasks will appear here.', 'hint')]));
-    if (focusedId) nodes.find(node => node.dataset.taskId === focusedId)?.focus();
+    $('history').replaceChildren(...(nodes.length ? nodes : [element('p', 'No tasks observed.', 'hint')]));
+    if (focusedId) {
+      const target = nodes.find(node => node.dataset.taskId === focusedId);
+      (target || $('transcript-heading')).focus();
+    }
   }
   const task = tasks.find(item => item.id === selectedId);
   if (!task) return;
   const transcriptKey = JSON.stringify(task);
   if (transcriptKey === lastTranscript) return;
   lastTranscript = transcriptKey;
-  $('transcript-heading').textContent = task.status === 'completed' ? 'Two perspectives. One final plan.' : task.status === 'failed' ? 'The conversation stopped.' : 'The agents are working.';
+  $('transcript-heading').textContent = task.status === 'completed' ? 'Completed task' : task.status === 'failed' ? 'Failed task' : 'Task in progress';
   $('task-summary').textContent = task.task;
   const messages = task.steps.map(step => {
     const article = element('article', undefined, `message ${step.stage}`);
-    const avatar = element('span', step.agentId === 'reviewer' ? 'R' : 'P', `avatar ${step.agentId === 'reviewer' ? 'reviewer' : ''}`);
-    avatar.setAttribute('aria-hidden', 'true');
-    const content = element('div'); const heading = element('div', undefined, 'message-heading');
-    heading.append(element('strong', step.agentId === 'reviewer' ? 'Reviewer' : 'Planner'), element('span', step.stage), element('span', step.status, 'status'));
-    content.append(heading);
+    const heading = element('div', undefined, 'message-heading');
+    const lane = step.stage === 'synthesis' ? 'Result / Planner' : step.agentId === 'reviewer' ? 'Reviewer' : 'Planner';
+    heading.append(element('strong', lane), element('span', step.stage, 'stage'), element('span', step.status, 'status'));
+    article.append(heading);
     if (step.status === 'completed') {
-      content.append(element('pre', step.text));
-      content.append(element('code', `${step.agentId} · fx ${step.inference.harnessVersion} · ${step.inference.model} · ${(step.inference.durationMs / 1000).toFixed(1)}s`));
-    } else if (step.status === 'failed') content.append(element('p', step.error, 'failed'));
-    else content.append(element('p', step.status === 'running' ? 'Local fx inference is running. The answer will appear after its result is recorded.' : task.status === 'failed' ? 'Not run: an earlier step failed.' : 'Waiting for the preceding handoff.', 'hint'));
-    content.append(element('code', step.id));
-    article.append(avatar, content); return article;
+      article.append(element('pre', step.text));
+      article.append(element('code', `${step.agentId} · fx ${step.inference.harnessVersion} · ${step.inference.model} · ${(step.inference.durationMs / 1000).toFixed(1)}s`));
+    } else if (step.status === 'failed') article.append(element('p', step.error, 'failed'));
+    else article.append(element('p', step.status === 'running' ? 'Local fx inference is running. Output appears after its result is recorded.' : task.status === 'failed' ? 'Not run: an earlier step failed.' : 'Waiting for the preceding handoff.', 'hint'));
+    article.append(element('code', step.id));
+    return article;
   });
   $('messages').replaceChildren(...messages);
-  $('task-status').textContent = task.status === 'completed' ? `Completed · ${task.id} · 3 real inference results recorded` : task.status === 'failed' ? `Failed · ${task.id} · No automatic retry. Inspect logs, then submit a new task if desired.` : `${task.status === 'pending' ? 'Queued' : 'In progress'} · ${task.id}`;
+  const completed = task.steps.filter(step => step.status === 'completed').length;
+  $('task-status').textContent = task.status === 'completed' ? `Completed · ${task.id} · ${completed} inference results recorded` : task.status === 'failed' ? `Failed · ${task.id} · No automatic retry. Inspect logs before submitting a new task.` : `${task.status === 'pending' ? 'Queued' : 'In progress'} · ${task.id}`;
 }
-async function refresh() {
+async function refresh(force = false) {
   const response = await fetch('/api/tasks');
   if (!response.ok) throw new Error('Could not read the transcript. Check the service logs.');
-  data = await response.json(); if (!paused) render();
+  data = await response.json(); if (!paused || force) render();
 }
 let events;
 function connect() {
   events?.close();
-  $('connection').textContent = 'Connecting to Redpanda…';
+  $('connection').textContent = paused ? 'Display paused · agents continue running' : 'Connecting to Redpanda…';
   events = new EventSource('/api/events');
   events.addEventListener('snapshot', event => {
-    data = JSON.parse(event.data);
-    $('connection').textContent = paused ? 'Updates paused' : data.ready ? 'Connected to Redpanda' : 'Rebuilding from the log…';
-    if (!paused) render();
+    data = JSON.parse(event.data); connected = true;
+    if (!paused) { connection(); render(); }
   });
-  events.onerror = () => { $('connection').textContent = 'Connection lost · reconnecting'; };
+  events.onerror = () => { connected = false; if (!paused) connection(); };
 }
 connect();
 $('pause').addEventListener('click', () => {
   paused = !paused; $('pause').setAttribute('aria-pressed', String(paused));
   $('pause').textContent = paused ? 'Resume updates' : 'Pause updates';
-  $('connection').textContent = paused ? 'Updates paused' : 'Connected to Redpanda';
+  connection();
   if (!paused) render();
+});
+$('refresh').addEventListener('click', async () => {
+  $('refresh').disabled = true;
+  try { await refresh(true); connection(); }
+  catch (error) { $('connection').textContent = error.message; }
+  finally { $('refresh').disabled = false; }
 });
 $('task-form').addEventListener('submit', async event => {
   event.preventDefault(); $('form-error').textContent = ''; $('task').removeAttribute('aria-invalid');
@@ -93,10 +114,10 @@ $('task-form').addEventListener('submit', async event => {
     }
     selectedId = result.id; pendingId = undefined; pendingTask = undefined;
     $('task').value = ''; $('submission').textContent = 'Task recorded. Follow the handoffs in the transcript.';
-    await refresh();
+    await refresh(true);
   } catch (error) {
     $('form-error').textContent = error.message;
-    $('submission').textContent = pendingId ? `Outcome unknown · ${pendingId}. Check this ID before retrying.` : 'Task not submitted. Correct the error and try again.';
+    $('submission').textContent = pendingId ? `Outcome unknown · ${pendingId}. Check this ID before retrying.` : 'No uncertain submission remains. Inspect the error before submitting another task.';
   } finally { $('submit').disabled = false; $('lookup').hidden = !pendingId; }
 });
 $('lookup').addEventListener('click', async () => {
@@ -110,7 +131,7 @@ $('lookup').addEventListener('click', async () => {
     selectedId = task.id; pendingId = undefined; pendingTask = undefined;
     $('lookup').hidden = true; $('task').value = ''; $('form-error').textContent = '';
     $('submission').textContent = 'Submission found in the log. No duplicate task was created.';
-    await refresh();
+    await refresh(true);
   } catch (error) { $('form-error').textContent = error.message; }
 });
 window.addEventListener('pagehide', () => events?.close());

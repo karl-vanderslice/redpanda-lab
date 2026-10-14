@@ -6,14 +6,14 @@ if [[ ${REDPANDA_LAB_SHELL:-0} != 1 ]]; then
 fi
 name=${1:-explorer}
 if [[ $name == explorer ]]; then exec bash "$root/tests/e2e.sh"; fi
-case "$name" in trading|sports|agent-messaging|agent-chat|bitcoin|iot|pos|logistics|terraform|jurisdictions) ;; *) echo 'Unknown lab.' >&2; exit 2 ;; esac
+case "$name" in trading|sports|agent-messaging|agent-chat|bitcoin|iot|pos|logistics|event-log|siem|activity|inventory|clearing|terraform|jurisdictions) ;; *) echo 'Unknown lab.' >&2; exit 2 ;; esac
 run_id="$(date +%Y%m%dT%H%M%S)-$$"
 report_dir="${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/e2e/$name/$run_id"
 mkdir -p "$report_dir"
 touch "$report_dir/workflow.log" "$report_dir/runtime.log"
 cd -- "$root"
 shopt -s globstar nullglob dotglob
-files=("$root/flake.nix" "$root/flake.lock" "$root/LICENSE" "$root/justfile" "$root/labs/run" "$root/scripts/e2e")
+files=("$root/flake.nix" "$root/flake.lock" "$root/LICENSE" "$root/justfile" "$root/labs/run" "$root/scripts/local-podman" "$root/scripts/e2e")
 for file in "$root/labs/common/"**/* "$root/labs/$name/"**/*; do [[ ! -f $file ]] || files+=("$file"); done
 sha256sum "${files[@]}" > "$report_dir/source-sha256.txt"
 finish() {
@@ -25,10 +25,14 @@ finish() {
   fi
   {
     printf '# %s E2E\n\n' "$name"
-    printf -- '- Replay: `nix develop --no-update-lock-file -c just test %s`\n' "$name"
-    printf -- '- Source revision: %s (source hashes below capture local changes)\n' "$(git rev-parse HEAD)"
+    printf -- "- Replay: \`nix develop --no-update-lock-file -c just test %s\`\n" "$name"
+    if source_revision=$(git rev-parse HEAD 2>/dev/null); then
+      printf -- '- Source revision: %s (source hashes below capture local changes)\n' "$source_revision"
+    else
+      printf -- '- Source revision: snapshot without Git metadata (source hashes below identify this run)\n'
+    fi
     printf -- '- Exit status: %s\n' "$status"
-    printf -- '- Tools: %s, %s, Node %s, %s\n' "$(podman --version)" "$(nix --version)" "$(node --version)" "$(just --version)"
+    printf -- '- Tools: %s, %s, Node %s, %s\n' "$(podman --remote=false --version)" "$(nix --version)" "$(node --version)" "$(just --version)"
     printf -- '- Inputs/assertions: the checked-in lab e2e.sh exercises its documented domain fixtures against real containers; Bitcoin uses attributed historical prices and a paper account. Scenario output is in [workflow.log](workflow.log).\n'
     printf -- '- Setup, diagnosis, cleanup: [runtime.log](runtime.log). Terraform scenarios own their lifecycle and saved-plan evidence.\n\n'
     printf '## Source snapshot\n\n```text\n'

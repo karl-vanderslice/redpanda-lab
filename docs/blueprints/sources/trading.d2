@@ -1,0 +1,40 @@
+# Every component and relationship is PROPOSED, not deployed.
+...@../profiles/schematic
+**.class: component
+(** -> **)[*].class: relationship
+direction: down
+title: "AMBER COMMODITY EXCHANGE\nProposed production architecture\nExecution is not settlement" {shape: text; style.font-size: 26}
+access: "IDENTITY BOUNDARY" {
+  style.stroke-dash: 4
+  entry: "ORDER ENTRY\nAuthenticated account\nRisk limits"
+}
+authority: "BOOK AUTHORITY" {
+  style.stroke-dash: 4
+  matcher: "FENCED MATCHER\nSingle price-time book owner"
+  log: "REDPANDA EXECUTION LOG\ntrading.exchange.v1 · ordered p0\nRF3 · replicas in AZ A / B / C" {
+    shape: cylinder
+    style.stroke: "#526f83"
+    style.fill: "#eef2f4"
+  }
+}
+market: "MARKET DATA CONSUMER\nBook + trade projection"
+reads: "READ STORE\nRead-only book / receipts" {shape: cylinder}
+settlement: "EXTERNAL CLEARING BOUNDARY" {
+  style.stroke-dash: 8
+  clearing: "CLEARING ADAPTER\nStable fill IDs\nUncertain external effects"
+  accounts: "ACCOUNT / DELIVERY LEDGER\nReconcile external obligations" {shape: cylinder}
+}
+recovery: "INDEPENDENT RECOVERY OWNER\nArchive + validated book restore"
+# Invisible ancillary row placement only; not a clearing/recovery data path.
+market -> settlement: {style.opacity: 0}
+settlement -> recovery: {style.opacity: 0}
+# Invisible title placement only; not a service or data relationship.
+title -> access: {style.opacity: 0}
+access -> authority: "admit order / cancellation\nMatcher only"
+authority.matcher <-> authority.log: "append immutable execution\nConsume before next decision" {class: relationship}
+authority -> market: "accepted orders + fills\nfrom trading.exchange.v1"
+market -> reads: "materialize by offset"
+access <- reads: "query book / receipt" {class: relationship}
+authority -> settlement: "fills; not settled funds\nfrom trading.exchange.v1"
+settlement.clearing -> settlement.accounts: "receipts + reconciliation"
+authority <-> recovery: "retain execution history\nRestore matcher + replay\nNo external replay" {class: relationship}

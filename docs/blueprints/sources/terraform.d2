@@ -1,0 +1,51 @@
+# All services, remote state and AZ placement are PROPOSED, not the local Terraform lab.
+...@../profiles/schematic
+**.class: component
+(** -> **)[*].class: relationship
+direction: down
+title: "FOUNDRY HARBOR INFRASTRUCTURE\nProposed production architecture\nResource state is not broker backup" {shape: text; style.font-size: 26}
+control: "REVIEWED CHANGE / OPERATOR IDENTITY" {
+  style.stroke-dash: 4
+  plan: "REVIEWED PLAN\nExact plan digest\nConfiguration identity"
+  controller: "AUTHORIZED APPLY CONTROLLER\nOne writer\nShort-lived provider authority"
+  state: "LOCKED TERRAFORM STATE\nEncrypted remote backend\nVersioning" {shape: cylinder}
+  provider: "PINNED TERRAFORM PROVIDER\nSelected infrastructure API\nLeast privilege"
+  config: "NATIVE REDPANDA CONFIG OWNER\nReviewed topics / listeners\nSecurity; data-preserving\nrolling changes"
+  # Invisible owner row arrangement only; no provider/config/state data paths.
+  provider -> config: {style.opacity: 0}
+  config -> state: {style.opacity: 0}
+}
+data: "REDPANDA DATA PLANE\nProposed RF3 per partition\nOwnership-reviewed topic policy" {
+  style.stroke: "#526f83"
+  style.fill: "#eef2f4"
+  a: "AZ A" {
+    style.stroke-dash: 4
+    broker: "REDPANDA BROKER\nSupported local storage"
+  }
+  b: "AZ B" {
+    style.stroke-dash: 4
+    broker: "REDPANDA BROKER\nSupported local storage"
+  }
+  c: "AZ C" {
+    style.stroke-dash: 4
+    broker: "REDPANDA BROKER\nSupported local storage"
+  }
+  # Invisible AZ arrangement only; not a replication/data edge.
+  a -> b: {style.opacity: 0}
+  b -> c: {style.opacity: 0}
+}
+clients: "CLIENT SECURITY BOUNDARY\nAuthenticated Kafka identities\nTLS / SASL / ACLs / quotas"
+telemetry: "SEPARATE TELEMETRY\nBroker health / disk / lag\nChange audit"
+recovery: "INDEPENDENT DATA RECOVERY OWNER\nBroker archive + tested restore\nNot Terraform state replication"
+# Invisible title placement only; not a service or data relationship.
+title -> control: {style.opacity: 0}
+control.plan -> control.controller: "approve exact artifact"
+control.controller -> control.state: "lock + persist\nResource identity"
+control.controller -> control.provider: "reviewed resource lifecycle"
+control.provider -> data: "provision hosts / network\nDurable storage"
+control.controller -> control.config: "approve\nnative policy"
+control.config -> data: "broker / topic /\nsecurity configuration"
+clients -> data: "authorized produce / consume"
+data -> telemetry: "metrics + alerts"
+control -> telemetry: "apply change outcome\nPartial failure"
+data <-> recovery: "archive history + frontier\nIndependent approved restore" {class: relationship}

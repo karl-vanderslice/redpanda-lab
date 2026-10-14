@@ -1,0 +1,41 @@
+# Every component and relationship below is proposed production infrastructure.
+# Evidence: app/server.js; telemetry/prometheus.yml; compose.yml.
+...@../profiles/schematic
+**.class: component
+(** -> **)[*].class: relationship
+direction: down
+title: "Signal Harbor Works\nProposed production architecture" {
+  shape: text
+  style.font-size: 26
+}
+
+entry: "PROPOSED IDENTITY BOUNDARY" {
+  style.stroke-dash: 4
+  identity: "IDENTITY + ADMISSION\nauthentication / quotas"
+  producer: "NATIVE KAFKA PRODUCER\nstable event IDs / keys"
+}
+redpanda: "PROPOSED REDPANDA CLUSTER\nRF3 / replica placement: AZ A, B, C" {
+  style.stroke: "#526f83"
+  events: "lab.events\n6 partitions / per-partition order" {
+    shape: cylinder
+    style.stroke: "#526f83"
+  }
+}
+consumer: "KAFKA CONSUMER\npartition assignment / offsets"
+view: "BOUNDED READ PROJECTION\nrecent events / not a ledger" {shape: cylinder}
+observe: "PROPOSED OPERATOR BOUNDARY" {
+  style.stroke-dash: 4
+  prometheus: "PROMETHEUS\nlag / errors / delivery metrics"
+  grafana: "GRAFANA\noperator dashboards"
+}
+
+entry.identity -> entry.producer: authorize ingestion
+entry.producer -> redpanda: publish keyed records
+redpanda -> consumer: consume partitions
+consumer -> view: project consumed records
+entry.producer -> observe: expose app metrics
+consumer -> observe: expose lag / delivery
+redpanda -> observe: expose broker metrics
+observe.prometheus -> observe.grafana: serve metric queries
+# Layout-only edge: the title is a caption, not a service or data source.
+title -> entry.identity: {style.opacity: 0}

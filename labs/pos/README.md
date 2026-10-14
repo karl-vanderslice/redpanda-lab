@@ -1,16 +1,12 @@
-# Point of sale
+# Counterlane Market
 
-A three-item USD catalog, quantity basket, cash tender ledger, receipts and full refunds. Redpanda stores requests and outcomes; restart rebuilds the view without repeating payment effects.
+A fictional three-item USD checkout desk. Choose quantities and Cash, submit Checkout, then use Full refund on its receipt. Cash is a local ledger, not a drawer; optional Stripe test-mode and Square sandbox adapters send HTTP requests only with explicit authorization and server-side credentials; credential-dependent runtime remains unverified. Do not enter card details or use live funds.
 
-```sh
+```bash
 labs/run pos up
 labs/run pos urls
 ```
 
-Open the app URL. Set quantities, choose **Cash**, click **Checkout**, then **Full refund** on the receipt. Only completed operations affect totals.
+[API, sandbox configuration and recovery](../../docs/labs/pos.md) · [Shared setup](../../docs/labs/index.md)
 
-Stripe test mode and Square sandbox are optional, real HTTP adapters, not simulated providers. They stay disabled without explicit authorization and server-side credentials. No card numbers or live funds.
-
-[API, sandbox setup and recovery](../../docs/labs/pos.md).
-
-`labs/pos/e2e.sh` writes receipts, injects broker records and restarts the app. `labs/run pos down` deletes its ledger.
+Keep the original operation ID and input after uncertain completion; duplicate POST does not authorize another provider effect. `just test pos` recreates and disposes owned data. External checks require `POS_SANDBOX_E2E=1`, `POS_SANDBOX_ENABLED=1` and real test credentials. Resolve unknown provider operations before `labs/run pos down`: deletion removes the ledger and recovery keys, not provider objects.

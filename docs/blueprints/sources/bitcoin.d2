@@ -1,0 +1,43 @@
+# All infrastructure and relationships are PROPOSED. No live trading integration exists.
+...@../profiles/schematic
+**.class: component
+(** -> **)[*].class: relationship
+direction: down
+title: "BEACON RIDGE RESEARCH\nProposed production architecture\nPaper and venue effects are separate" {shape: text; style.font-size: 26}
+feeds: "HISTORICAL MARKET FEEDS\nCandle closes; source gaps"
+provenance: "PROVENANCE STORE\nSource digest + strategy version" {shape: cylinder}
+research: "RESEARCH IDENTITY BOUNDARY" {
+  style.stroke-dash: 4
+  entry: "AUTHORIZED RESEARCH ENTRY\nStable command IDs; account scope"
+  strategy: "FENCED STRATEGY OWNER\nPrior-close signal\nNext-close paper fill"
+}
+log: "REDPANDA ACCOUNT LOG\nbitcoin.paper.v1 · ordered p0\nRF3 · replicas in AZ A / B / C" {
+  shape: cylinder
+  style.stroke: "#526f83"
+  style.fill: "#eef2f4"
+}
+paper: "PAPER ACCOUNT CONSUMER\nCash / sats / fees; no custody"
+reads: "RESEARCH READ STORE\nConsumed receipts + positions" {shape: cylinder}
+venue: "OPTIONAL VENUE EFFECTS\nSeparate authorization required" {
+  style.stroke-dash: 8
+  adapter: "VENUE ADAPTER\nNever invoked by paper replay"
+  reconcile: "EXECUTION / CUSTODY\nRECONCILIATION\nStable effect IDs\nUnknown stays unknown"
+}
+recovery: "INDEPENDENT RECOVERY OWNER\nFixture + history + account restore"
+# Invisible ancillary row placement only; paper never routes venue orders.
+paper -> venue: {style.opacity: 0}
+venue -> recovery: {style.opacity: 0}
+# Invisible title placement only; not a service or data relationship.
+title -> feeds: {style.opacity: 0}
+feeds -> provenance: "validate chronology\nRetain source"
+provenance -> research: "digest-bound candles\nStrategy only"
+research.entry -> research.strategy: "scoped paper commands"
+research <-> log: "strategy appends paper outcome\n+ provenance; strategy consumes\nRestore account authority" {class: relationship}
+log -> paper: "paper outcomes only"
+paper -> reads: "materialize account"
+research <- reads: "query account / receipt" {class: relationship}
+research -> venue: "optional live mandate\nNever paper fills"
+venue.adapter -> venue.reconcile: "venue + custody evidence"
+log -> recovery: "retain paper history"
+provenance -> recovery: "immutable source material"
+paper <- recovery: "validated rebuild\nNo order routing" {class: relationship}

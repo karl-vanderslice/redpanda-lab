@@ -1,0 +1,37 @@
+# All infrastructure is PROPOSED; consumed starts are not durable reply delivery.
+...@../profiles/schematic
+**.class: component
+(** -> **)[*].class: relationship
+direction: down
+title: "CLOCKWORK CORRESPONDENCE\nProposed production architecture\nDue ownership and recorded replies" {shape: text; style.font-size: 26}
+identity: "CONVERSATION IDENTITY" {
+  style.stroke-dash: 4
+  entry: "AUTHENTICATED CHAT ENTRY\nConversation scope\nSchedule / cancel"
+}
+log: "REDPANDA SCHEDULE / REPLY LOG\nagent-chat-events · ordered p0\nSubmission / cancellation / start / result\nRF3 · replicas in AZ A / B / C" {
+  shape: cylinder
+  style.stroke: "#526f83"
+  style.fill: "#eef2f4"
+}
+time: "TIME / DUE OWNERSHIP\nUTC clock policy\ndueAt then stable ID\nFenced scheduler lease + epoch"
+executor: "FENCED EXECUTOR\nConsumed due start wins cancellation\nExact model input + attempt ID"
+models: "ISOLATED INFERENCE BOUNDARY" {
+  style.stroke-dash: 8
+  model: "MODEL GATEWAY\nNo tools\nBounded context / output"
+}
+replies: "REPLY CONSUMER\nComplete exchanges only\nUnknown attempts are not rerun"
+reads: "CONVERSATION READ STORE\nSchedules / receipts / durable replies" {shape: cylinder}
+recovery: "INDEPENDENT RECOVERY OWNER\nSchedule horizon\nLog / state frontier"
+# Invisible ancillary row placement only; inference has no recovery data path.
+models -> recovery: {style.opacity: 0}
+# Invisible title placement only; not a service or data relationship.
+title -> identity: {style.opacity: 0}
+identity -> log: "submit / cancel\nStable request ID"
+log <-> executor: "consume eligibility + owned attempt\nAppend exact-input start\nResult / unknown" {class: relationship}
+time -> executor: "clock + fenced\ndue authority"
+executor <-> models: "infer after consumed owned start\nReturn reply / usage / uncertainty" {class: relationship}
+log -> replies: "recorded replies\nAttempt state"
+replies -> reads: "materialize by offset"
+identity <- reads: "schedule / reply / receipt" {class: relationship}
+log -> recovery: "retain scheduling +\nrecovery horizon"
+executor <- recovery: "replay first\nUnfinished stays unknown" {class: relationship}

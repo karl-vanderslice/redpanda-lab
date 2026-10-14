@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ $# != 1 || -z $1 ]]; then
+  printf 'Usage: bash scripts/diagrams EXTERNAL-OUTPUT-DIRECTORY\n' >&2
+  exit 2
+fi
+root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+output=$(realpath -m -- "$1")
+if [[ $output == / || $output == "$root" || $output == "$root/"* || $root == "$output/"* ]]; then
+  printf 'Diagram output must be outside the checkout, not its root or an ancestor: %s\n' "$output" >&2
+  exit 2
+fi
+if [[ ${REDPANDA_LAB_SHELL:-0} != 1 ]]; then
+  exec nix develop "path:$root" --no-update-lock-file -c bash "$root/scripts/diagrams" "$output"
+fi
+mkdir -p -- "$output"
+output=$(realpath -e -- "$output")
+if [[ $output == / || $output == "$root" || $output == "$root/"* || $root == "$output/"* ]]; then
+  printf 'Resolved diagram output is not external to the checkout: %s\n' "$output" >&2
+  exit 2
+fi
+names=(
+  explorer iot pos logistics event-log siem activity inventory
+  trading bitcoin sports agent-messaging agent-chat jurisdictions terraform clearing
+)
+for name in "${names[@]}"; do
+  diagram-render "$root/docs/blueprints/sources/$name.d2" "$output/$name"
+done
+printf 'Blueprint exports: %s\n' "$output"

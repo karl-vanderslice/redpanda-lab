@@ -1,75 +1,97 @@
-# Bitcoin paper trading
+# Beacon Ridge Research
 
-Replay historical BTC/USD closes into one paper position. Redpanda stores observed quotes, commands and outcomes; the browser projects cash, position, fees and P&L. There is no exchange order endpoint, wallet or private key.
+Beacon Ridge Research is a fictional paper-strategy desk. One Node/KafkaJS owner replays an offline BTC/USD candle fixture, records commands and complete outcomes in Redpanda, and serves the browser's account and chart. There is no live exchange connection, order-routing endpoint, wallet or private key.
 
-## Start and watch
+## Run the replay
 
-Use the [common environment and lifecycle commands](../reference/commands.md):
+Use the [common prerequisites and lifecycle reference](../reference/commands.md). From the repository root:
 
 ```bash
-just up bitcoin
-just urls bitcoin
+./labs/run bitcoin up
+./labs/run bitcoin urls
 ```
 
-**Play replay** consumes one historical hour every two seconds. The chart shows only consumed closes/averages; source time and local observation time remain separate. Initial cash is $10,000, with no BTC.
+Play replay advances one historical hour every two seconds. The account starts with 1,000,000 USD cents, or USD 10,000, and zero BTC. The chart shows only consumed closes and averages. Pause replay stops future timer steps once its command is consumed; Consume next quote advances once. View pause holds browser presentation, not ledger replay or trading. Explicit refresh can still read state.
 
-**Pause replay** stops future timer steps once consumed. **Consume next quote** advances a paused feed once. Disable **Automatic paper trading** before **Buy with 25% of cash** or **Sell position**; manual fills use the displayed close. Only one long position exists: no shorts or pyramiding. The feed ends without wrapping. To reset, use `just down bitcoin` then `just up bitcoin`; **down deletes paper history**.
+Disable automatic trading before a manual buy or sell. A buy uses 25% of available cash; a sell closes the whole position at the displayed close. Only one long position exists, with no shorts or pyramiding. The finite feed stops at the final close and never wraps. `./labs/run bitcoin down` followed by `up` starts a fresh account and deletes the previous paper history.
 
-## What the strategy does
+## Strategy and accounting
 
-Arithmetic means of the last 3 and 8 observed hourly closes select the target: hold until eight exist; long if short mean exceeds long mean, otherwise flat (including equality). At the **next** close, a flat account enters with 25% of available cash; an open position exits fully if the prior target was flat. This prevents reading a close and claiming an earlier fill, but does not model execution quality. This capture enters at close nine and exits at close twenty-three; the workflow checks that delay.
+The strategy compares arithmetic means of the last 3 and 8 observed hourly closes. Before eight closes it is in warmup. Afterwards, fast greater than slow means long; less than or equal means flat. An automatic step uses the previous observed signal to fill at the next close, then computes the new signal. A flat account enters on a prior long signal, and an open position exits fully on a prior flat signal. This fixture's automatic entry and exit occur at closes nine and twenty-three. This is a paper execution model, not a liquidity model.
 
-Each fill charges 10 basis points (0.1%). `BigInt` products/division produce integer USD cents and satoshis (100 million/BTC):
+Fees are 10 basis points, or 0.1%, per fill. `BigInt` arithmetic determines integer USD cents and satoshis, with 100,000,000 satoshis per BTC:
 
-- Entry quantity rounds down to fit notional plus fee in budget; entry notional/fees round up to cents.
-- Sale proceeds round down; exit fee rounds up.
-- Cost basis includes entry fee; realized P&L includes both fees.
-- Unrealized P&L is last-close mark minus basis, without hypothetical exit fee. Equity is cash plus mark, not guaranteed realizable proceeds.
+- Entry quantity rounds down to fit notional plus fee within the 25% budget. Entry notional and fee round up to cents.
+- Sale notional rounds down and exit fee rounds up.
+- Cost basis includes the entry fee; realized P&L includes both fees.
+- Unrealized P&L is the consumed-close mark minus basis, without a hypothetical exit fee. Equity is cash plus that mark, not guaranteed sale proceeds.
 
-`cash + open cost basis = initial cash + realized P&L`. Recomputed outcomes must match the recorded result before projection changes.
+Every transition checks `cashCents + costCents = initialCashCents + realizedCents` and nonnegative cash, position and basis. An exhausted automatic account still consumes quotes even if it cannot fill. Changing windows, fees, allocation or fill timing changes the domain contract, not just performance.
 
-## Why the broker is authoritative
+## Source data and clocks
 
-One app owns the queue/timer. Against the latest consumed account, it computes and appends **one record** containing command, optional quote/fill and resulting state, then awaits its consumer. Only consumption changes the account.
+`labs/bitcoin/candles.json` attributes its public [Coinbase Exchange BTC-USD capture](https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=3600&start=2026-10-11T00:00:00Z&end=2026-10-12T00:00:00Z), retrieved 13 October 2026. Coinbase is the data provider, not this fictional company's identity. The fixture stores source URL, retrieval date, hourly granularity, range and the six-field schema `bucketStart`, `low`, `high`, `open`, `close`, `volume`.
 
-Restart replays from zero before readiness, recomputing transitions and comparing saved results. Stable IDs prevent duplicate fills. Changed fixture hash, contradictory outcome, missing retained prefix or unsupported codec fails closed, never silently resets cash. A consumed pause precedes later timer publications. A running replay resumes at the next unconsumed fixture position at normal pace, without invented missed quotes. This is one owner, not distributed coordination.
+The captured response includes the end-boundary bucket. The engine filters starts into `[2026-10-11T00:00:00Z, 2026-10-12T00:00:00Z)`, sorts ascending and reads field 4, the close. A quote's market time is bucket start plus 3600 seconds. There are 24 retained closes; runtime needs no market-data access. Local `at`/`observedAt` timestamps record owner observation, not market time. Accelerated playback is not a clock correction or missing-data policy.
 
-## API and inspection
+The [Coinbase candle reference](https://docs.cdp.coinbase.com/api-reference/exchange-api/rest-api/products/get-product-candles) warns that history can be incomplete, no-tick intervals have no bucket, responses can precede the requested start, and requests are capped at 300 candles. It discourages frequent historical polling for real-time data. This unversioned reference is provider guidance, not proof of complete market coverage. Attribution and fixture hashes do not grant commercial redistribution rights; review the provider's terms and data permissions.
+
+## Log and recovery
+
+One owner serializes user commands and timer steps. It computes a complete transition against consumed state, appends one `schema: 1` record to `bitcoin.paper.v1`, and waits for consumer application before returning a receipt. Records bind the fixture SHA256, command, local observation time and full result, including optional quote/fill and next model. Only the consumer changes the account. `/api/state` also exposes the fixture hash.
+
+A new ephemeral consumer group replays from offset zero to the startup high-watermark before readiness. The owner recomputes and compares outcomes; unsupported schemas, changed fixture hash, conflicting duplicate kind/result, bad key or contradictory accounting fail closed. Identical duplicates retain the original receipt and increment duplicate evidence without a new fill. Internal timer IDs are `tick-` plus the first 16 fixture-hash characters and the next quote index. Clients cannot reserve that prefix.
+
+A consumed pause wins before later queued timer publication. Restarted playing replay resumes from the next fixture index at the normal cadence, without synthesizing missed quotes. This is one owner, not distributed ownership or fencing.
+
+```bash
+./labs/run bitcoin rpk topic describe bitcoin.paper.v1
+./labs/run bitcoin logs app
+./labs/run bitcoin restart app
+```
+
+This one-partition RF1 ledger uses the [full-prefix policy](../reference/tuning.md#topic-policy); receipts and paper history also grow without bounds in memory. Missing history prevents readiness; volume loss loses the account. Do not compact, repartition or reinterpret this ledger with a new fixture or strategy. Use a fresh disposable account for a changed strategy.
+
+## API and uncertainty
 
 | Route | Contract |
 | --- | --- |
-| `GET /api/state` | Source, consumed prices, strategy, account, fills, receipts, replay progress |
-| `POST /api/commands` | `{ "id": "unique-id", "kind": "step" }`; kinds `play`, `pause`, `step`, `auto-on`, `auto-off`, `buy`, `sell` |
-| `GET /api/commands/ID` | Original consumed receipt and broker record |
-| `GET /api/stream` | Complete state snapshots over SSE |
-| `GET /metrics` | Quotes, fills, position, cash, realized P&L, duplicate records |
+| `GET /health` | 200 ready, otherwise 503; readiness and fault |
+| `GET /api/state` | Source, consumed prices, strategy, account, trades, receipts and replay progress |
+| `POST /api/commands` | `{ "id": "example-step", "kind": "step" }` |
+| `GET /api/commands/ID` | Original consumed receipt and record; 404 is not proof of failed publication |
+| `GET /api/stream` | Complete state snapshots over server-sent events |
+| `GET /metrics` | Quotes, buy/sell fills, cash cents, position satoshis, realized cents and duplicates |
 
-Domain rejection: 409 with retained rejected outcome. Conflicting ID: 409 without a new command. Shape errors/reserved internal `tick-` prefix: 400 before publication. Errors distinguish `outcomeUnknown:true` after uncertain publication from `false` before any attempt.
+Supported kinds are `play`, `pause`, `step`, `auto-on`, `auto-off`, `buy` and `sell`. IDs use 1–80 letters, digits, underscores or hyphens. Invalid input or reserved `tick-` IDs fail with 400 before publication. The shared HTTP helper bounds JSON to 16 KiB and rejects cross-origin mutation with 403 or wrong media type with 415; absent Origin is permitted for CLI use. These checks are not authentication.
 
-Publication/projection-ack uncertainty stops new commands. On response loss, the browser retains **ID and action**, blocks replacements and stores the pair when storage works. Lookup releases a known receipt; 404 does not prove non-publication. Inspect the topic and restart a faulted owner before **Resolve original command**, which explicitly sends the same ID/action. Contradictory duplicate outcomes stop the owner. There is no automatic mutation retry.
+A consumed domain rejection returns 409 with a retained result. A changed kind under an existing ID returns 409 without a new publication. An identical ID/kind returns the original receipt. Publication or projection-ack uncertainty stops writes and the timer, returns 503 with `outcomeUnknown:true`, and requires the original ID. Pre-attempt errors use `outcomeUnknown:false`.
 
-```bash
-just rpk bitcoin topic describe bitcoin.paper.v1
-just logs bitcoin app
-just restart bitcoin app
-just check bitcoin
-just test bitcoin
-```
+After response loss, retain ID and action. The browser blocks replacement commands and stores the pair when storage is available; copy them if storage is denied. Look up the receipt, inspect the topic, restore broker availability and restart a faulted owner before explicitly resolving the original command with the same ID/action. Lookup absence is unresolved, not evidence to issue a new ID. There is no automatic mutation retry. Shutdown stops admission/timers, waits for the owner's queue, then the shared log waits for in-flight KafkaJS sends to settle before disconnecting. A 30-second caller deadline does not cancel client retries.
 
-**`just test bitcoin` deletes the disposable account first.** It checks independent integer accounting, manual errors, stable/timer IDs, pacing/pause, next-close strategy, finite completion, duplicate records, exact restart replay and cleanup.
+## Workload tuning
 
-## Source data and reproducibility
+| Actual setting | Value and owner |
+| --- | --- |
+| `KAFKA_BROKERS` | Comma-separated brokers; shared default `redpanda:9092`, also assigned by Compose |
+| Strategy | Source constants: fast 3, slow 8, allocation 2500 bps, fee 10 bps, initial cash 1,000,000 cents |
+| Playback / SSE heartbeat | Source constants: 2000 / 15000 milliseconds |
+| Kafka request / append / projection wait | Source limits: 30000 milliseconds each |
+| Producer | Idempotent, one in-flight request, `acks: -1`, auto topic creation disabled |
+| App temporary filesystem | Compose: 16 MiB, read-only root, dropped capabilities, no-new-privileges |
 
-`labs/bitcoin/candles.json` is an attributed public [Coinbase Exchange capture](https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=3600&start=2026-10-11T00:00:00Z&end=2026-10-12T00:00:00Z), captured 13 October 2026. It records URL, range, date and six-field schema; every broker record and `/api/state` include its SHA256.
+Play/pause/step and automatic/manual controls are the supported runtime experiments. Fixture choice and strategy parameters are source declarations, not environment knobs. Longer fixtures increase replay, memory and full-state/SSE serialization costs without establishing better signals. Measure replay duration and slow-client snapshot pressure separately from reducer work; the server coalesces newer snapshots while an SSE client is blocked.
 
-The response included an end-boundary bucket. The lab filters starts into `[11 October, 12 October)` UTC, sorts chronologically and uses field 4 (close), available at bucket start plus one hour. The 24 closes need no runtime data access.
+The lab sends uncompressed records. [KafkaJS 2.2.4](https://raw.githubusercontent.com/tulios/kafkajs/v2.2.4/docs/Producing.md) codec support and [shared client/host limits](../reference/tuning.md) govern transport experiments; topic compression cannot add a missing client codec.
 
-[Coinbase documentation](https://docs.cdp.coinbase.com/api-reference/exchange-api/rest-api/products/get-product-candles) warns of incomplete history, missing no-tick intervals, a 300-candle cap and frequent-polling limits. Real feeds need venue trade/book/WebSocket protocols and gap reconciliation. Evaluate terms/permissions/data rights: attribution and hashes do not grant commercial redistribution.
+## Proposed production blueprint
 
-Node/KafkaJS use shared locked Nix packaging with separate ports, volume, network and ordered topic. Changing `engine.mjs` strategy or dataset requires an intentionally fresh disposable account, not historical reinterpretation. See [supply-chain pins](../reference/supply-chain.md).
+[Production blueprint](../blueprints/bitcoin.md).
 
-## Production boundaries
+Only the offline fixture, paper owner and replayed browser state run here. The proposed market-data service owns provenance, gaps and corrections; a fenced strategy owner consumes its validated chronology. Separately authorized risk, execution and custody/accounting services own real positions and venue reconciliation, not the paper reducer or a broker acknowledgment.
 
-No spread, liquidity, partial fills, latency, funding, tax or custody is modeled. One captured day is neither a performance study nor investment advice. Production paper trading needs retained data, source/arrival times, gap/correction policy; real execution also needs venue reconciliation, execution-report identity, risk limits and uncertain-order handling. Broker acknowledgment does not prove a venue trade.
+No spread, liquidity, partial fills, network latency, funding, taxes or custody is modeled. One captured day is not an investment study or advice. Regional recovery must fence the owner and consistently restore market history, strategy version, cash, basis, fees, command identities and offsets before reconciling positions and any replication-loss window. Define and exercise RPO/RTO separately; see [production and disaster recovery](../explanation/production.md).
 
-Regional recovery must fence the account owner and restore market history, strategy version, cash, basis, fees, IDs and offset consistently, then reconcile positions. Async replication has a loss window; this host is not regional recovery. Measure restore RPO/RTO; see [production and disaster recovery](../explanation/production.md).
+## Checks and packaging
+
+`just check bitcoin` runs static gates. `just test bitcoin` deletes the disposable account first, then exercises integer accounting, manual errors, stable/timer IDs, pacing/pause, next-close strategy, finite completion, duplicate records and exact replay. Node/KafkaJS use the shared locked Nix packaging and upstream licenses; see [supply-chain pins](../reference/supply-chain.md).

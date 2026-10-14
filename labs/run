@@ -6,14 +6,18 @@ if [[ ${REDPANDA_LAB_SHELL:-0} != 1 ]]; then
 fi
 name=${1:-help}
 case "$name" in
-  trading|sports|agent-messaging|agent-chat|bitcoin|iot|pos|logistics) ;;
+  trading|sports|agent-messaging|agent-chat|bitcoin|iot|pos|logistics|event-log|siem|activity|inventory|clearing) ;;
   terraform) shift; exec bash "$root/labs/terraform/lab" "$@" ;;
   jurisdictions) shift; exec bash "$root/labs/jurisdictions/lab" "$@" ;;
-  *) printf 'Usage: labs/run {trading|sports|agent-messaging|agent-chat|bitcoin|iot|pos|logistics|terraform|jurisdictions} {up|down|status|urls [--json]|logs|rpk|exec|restart}\n'; exit 2 ;;
+  *) printf 'Usage: labs/run {trading|sports|agent-messaging|agent-chat|bitcoin|iot|pos|logistics|event-log|siem|activity|inventory|clearing|terraform|jurisdictions} {up|down|status|urls [--json]|logs|rpk|exec|restart}\n'; exit 2 ;;
 esac
 shift
 command=${1:-help}
 shift || true
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../scripts/local-podman
+source "$root/scripts/local-podman"
+case "$command" in up|down|status|logs|exec|rpk|restart) require_local_podman ;; esac
 identity=$(printf '%s' "$root/$name" | sha256sum)
 export LAB_PROJECT="rp-${name}-${identity:0:10}"
 state="${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/labs/${identity:0:10}"
@@ -36,7 +40,7 @@ export REDPANDA_PROXY_URL=http://redpanda:8082
 compose() {
   local limit=()
   if [[ ${1:-} == up ]]; then limit=(timeout --foreground 240s); fi
-  "${limit[@]}" podman-compose -p "$LAB_PROJECT" -f "$root/labs/common/compose.yml" -f "$root/labs/$name/compose.yml" "$@" 9>&-
+  "${limit[@]}" podman-compose --podman-path="$REDPANDA_LAB_PODMAN" -p "$LAB_PROJECT" -f "$root/labs/common/compose.yml" -f "$root/labs/$name/compose.yml" "$@" 9>&-
 }
 urls() {
   if [[ ! -f $state/port-base ]]; then echo "Run just up $name first." >&2; return 1; fi
@@ -73,27 +77,29 @@ JS
       printf '%s\n' "$base" > "$state/port-base"
     fi
     image=$(nix build --no-update-lock-file --no-link --print-out-paths "path:$root#$name-image")
-    podman load -i "$image" 9>&-
+    podman --remote=false load -i "$image" 9>&-
     # Compose must see immutable identity changes, not a reused local tag.
-    LAB_APP_IMAGE=$(podman image inspect --format '{{.Id}}' "$LAB_APP_IMAGE")
+    LAB_APP_IMAGE=$(podman --remote=false image inspect --format '{{.Id}}' "$LAB_APP_IMAGE")
     if [[ $name == agent-chat || $name == agent-messaging ]]; then
       model_image=$(nix build --no-update-lock-file --no-link --print-out-paths "path:$root#model-image")
-      podman load -i "$model_image" 9>&-
-      LAB_MODEL_IMAGE=$(podman image inspect --format '{{.Id}}' "$LAB_MODEL_IMAGE")
+      podman --remote=false load -i "$model_image" 9>&-
+      LAB_MODEL_IMAGE=$(podman --remote=false image inspect --format '{{.Id}}' "$LAB_MODEL_IMAGE")
     fi
     compose up -d redpanda console
     wait_ready "http://127.0.0.1:$ADMIN_PORT/v1/cluster/health_overview" '.is_healthy'
     case "$name" in
       trading) topic=trading.exchange.v1 ;;
-      sports) topic=sports.events ;;
+      sports) topic=sports.events.v2 ;;
       agent-chat) topic=agent-chat-events ;;
       agent-messaging) topic=agent-messaging.events.v1 ;;
       bitcoin) topic=bitcoin.paper.v1 ;;
-      iot|pos|logistics) topic="$name.events.v1" ;;
+      iot|pos|logistics|event-log|siem|activity|inventory|clearing) topic="$name.events.v1" ;;
     esac
     if ! compose exec -T redpanda rpk topic describe "$topic" -X brokers=redpanda:9092 >/dev/null 2>&1; then
-      compose exec -T redpanda rpk topic create "$topic" -p 1 -r 1 -c retention.ms=86400000 -X brokers=redpanda:9092
+      compose exec -T redpanda rpk topic create "$topic" -p 1 -r 1 -c cleanup.policy=delete -c retention.ms=-1 -c retention.bytes=-1 -X brokers=redpanda:9092
     fi
+    # Full-prefix replay and future schedules require history until disposal.
+    compose exec -T redpanda rpk topic alter-config "$topic" --no-confirm -s cleanup.policy=delete -s retention.ms=-1 -s retention.bytes=-1 -X brokers=redpanda:9092
     compose up -d
     wait_ready "http://127.0.0.1:$APP_PORT/health" '.ready'
     deadline=$((SECONDS+120))
@@ -104,9 +110,10 @@ JS
     ;;
   down)
     compose down --volumes --remove-orphans
-    [[ -z $(podman ps -a --filter "name=^${LAB_PROJECT}_" --format '{{.Names}}') ]] || { echo 'Owned containers remain; port state retained.' >&2; exit 1; }
+    remaining=$(podman --remote=false ps -a --filter "name=^${LAB_PROJECT}_" --format '{{.Names}}') || { echo 'Cannot verify owned containers; port state retained.' >&2; exit 1; }
+    [[ -z $remaining ]] || { echo 'Owned containers remain; port state retained.' >&2; exit 1; }
     for kind in volume network; do
-      podman "$kind" ls --format '{{.Name}}' | jq -R -s -e --arg prefix "${LAB_PROJECT}_" 'split("\n") | all(.[]; startswith($prefix) | not)' >/dev/null || { echo "Owned $kind remains; port state retained." >&2; exit 1; }
+      podman --remote=false "$kind" ls --format '{{.Name}}' | jq -R -s -e --arg prefix "${LAB_PROJECT}_" 'split("\n") | all(.[]; startswith($prefix) | not)' >/dev/null || { echo "Owned $kind remains or inventory verification failed; port state retained." >&2; exit 1; }
     done
     rm -f "$state/port-base"
     echo "Disposed of $LAB_PROJECT. Nix outputs and reusable images remain cached."

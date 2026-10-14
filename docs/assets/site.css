@@ -1,0 +1,140 @@
+:root {
+  --doc-surface: #f6f7f9;
+  --doc-ink: #19202c;
+  --doc-muted: #596476;
+  --doc-border: #d1d7e0;
+  --doc-accent: #314f83;
+  --doc-selected: #e9eef7;
+}
+
+[data-md-color-scheme="slate"] {
+  --doc-surface: #181c23;
+  --doc-ink: #e4e8ee;
+  --doc-muted: #adb6c3;
+  --doc-border: #39424f;
+  --doc-accent: #9eb8ed;
+  --doc-selected: #25344e;
+}
+
+:root > * {
+  --md-primary-fg-color: var(--doc-accent);
+  --md-primary-fg-color--light: var(--doc-accent);
+  --md-primary-fg-color--dark: var(--doc-accent);
+  --md-accent-fg-color: var(--doc-accent);
+  --md-accent-fg-color--transparent: var(--doc-selected);
+}
+
+.md-header {
+  background: var(--doc-surface);
+  color: var(--doc-ink);
+  border-bottom: 1px solid var(--doc-border);
+  box-shadow: none;
+}
+
+.md-header__title { font-weight: 600; }
+.md-grid { max-width: 82rem; }
+.md-typeset { font-size: .9rem; line-height: 1.7; }
+.md-typeset h1 { color: var(--doc-ink); font-weight: 650; letter-spacing: -.025em; }
+.md-typeset h2 { font-weight: 600; letter-spacing: -.015em; }
+.md-typeset h3 { font-weight: 600; }
+.md-typeset :is(h1, h2, h3, p, li, a) { overflow-wrap: anywhere; }
+.md-typeset :is(p, ul, ol) { max-inline-size: 72ch; }
+.md-typeset a { color: var(--doc-accent); }
+.md-typeset :is(a, button):focus-visible,
+.md-header :is(a, button, [role="button"]):focus-visible,
+.md-nav [role="button"]:focus-visible {
+  outline: 3px solid var(--doc-accent);
+  outline-offset: 3px;
+}
+.md-typeset table:not([class]) { font-size: .82rem; font-variant-numeric: tabular-nums; }
+.md-typeset table:not([class]) :is(th, td) { padding: .6rem .75rem; }
+.md-typeset .md-typeset__scrollwrap { margin-inline: 0; }
+.md-typeset code { font-size: .83em; }
+.md-typeset pre > code { line-height: 1.6; }
+
+.blueprint-viewer {
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  margin-block: 1.5rem 2rem;
+  border: 1px solid var(--doc-border);
+}
+
+.blueprint-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .45rem .6rem;
+  padding: .7rem;
+  background: var(--doc-surface);
+}
+
+.blueprint-controls :is(button, a) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 2.2rem;
+  padding: .25rem .7rem;
+  border: 1px solid var(--doc-border);
+  border-radius: .2rem;
+  background: transparent;
+  color: var(--doc-ink);
+  font: inherit;
+  font-size: .8rem;
+  line-height: 1.4;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.blueprint-controls button[aria-pressed="true"] {
+  border-color: var(--doc-accent);
+  background: var(--doc-selected);
+  color: var(--doc-accent);
+}
+
+.blueprint-controls button:disabled { cursor: default; opacity: .6; }
+.blueprint-controls :is(button, a):hover { border-color: var(--doc-accent); }
+.blueprint-status {
+  display: block;
+  padding: .25rem .7rem .65rem;
+  background: var(--doc-surface);
+  color: var(--doc-muted);
+  font-size: .75rem;
+  line-height: 1.5;
+}
+
+.blueprint-viewport {
+  max-block-size: 75vh;
+  min-inline-size: 0;
+  overflow: auto;
+  border-top: 1px solid var(--doc-border);
+  background: #fff;
+}
+
+.blueprint-viewport:focus-visible {
+  outline: 3px solid var(--doc-accent);
+  outline-offset: -3px;
+}
+
+.blueprint-viewport img {
+  display: block;
+  inline-size: 100%;
+  max-inline-size: none;
+  margin: 0;
+}
+
+.blueprint-viewer[data-view="detail"] .blueprint-viewport img {
+  inline-size: max(100%, var(--blueprint-detail-width));
+}
+
+@media (max-width: 40rem) {
+  .md-typeset { font-size: .86rem; }
+  .blueprint-controls :is(button, a) { flex: 1 1 auto; }
+}
+
+@media print {
+  .blueprint-controls, .blueprint-status { display: none; }
+  .blueprint-viewport { max-block-size: none; overflow: visible; }
+  .blueprint-viewer[data-view="detail"] .blueprint-viewport img { inline-size: 100%; }
+}

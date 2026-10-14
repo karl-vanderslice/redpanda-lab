@@ -6,30 +6,41 @@ if [[ ${REDPANDA_LAB_SHELL:-0} != 1 ]]; then
 fi
 cd -- "$root"
 name=${1:-all}
-case "$name" in all|explorer|trading|sports|agent-messaging|agent-chat|bitcoin|iot|pos|logistics|terraform|jurisdictions) ;; *) echo 'Unknown lab.' >&2; exit 2 ;; esac
+case "$name" in all|explorer|trading|sports|agent-messaging|agent-chat|bitcoin|iot|pos|logistics|event-log|siem|activity|inventory|clearing|terraform|jurisdictions) ;; *) echo 'Unknown lab.' >&2; exit 2 ;; esac
 just --list >/dev/null
-shellcheck --severity=warning lab labs/run scripts/check scripts/docs scripts/dispatch scripts/e2e tests/e2e.sh
-nixfmt --check flake.nix labs/*/*.nix
-for file in labs/common/*.mjs; do node --check "$file"; done
-node --check docs/assets/zensical-storage.js
+actionlint .github/workflows/*.yml
+shellcheck --severity=style --external-sources --source-path=SCRIPTDIR lab labs/run scripts/* tests/e2e.sh
+nixfmt --check flake.nix nix/*.nix labs/*/*.nix
+for file in labs/common/*.mjs; do
+  [[ -f $file ]] || continue
+  node --check "$file"
+done
+for file in docs/assets/*.js; do
+  [[ -f $file ]] || continue
+  node --check "$file"
+done
 node --check labs/common/public/lab-theme.js
 if [[ $name == all || $name == explorer ]]; then
   node --check app/server.js
   node --check app/public/app.js
 fi
-for lab_name in trading sports agent-messaging agent-chat bitcoin iot pos logistics terraform jurisdictions; do
+system=$(nix eval --impure --raw --expr builtins.currentSystem)
+for lab_name in trading sports agent-messaging agent-chat bitcoin iot pos logistics event-log siem activity inventory clearing terraform jurisdictions; do
   if [[ $name != all && $name != "$lab_name" ]]; then continue; fi
   if [[ $lab_name == terraform ]]; then
     bash labs/terraform/lab check
   elif [[ -f labs/$lab_name/lint.sh ]]; then
     bash "labs/$lab_name/lint.sh"
   else
-    shellcheck "labs/$lab_name/e2e.sh"
-    if [[ -f labs/$lab_name/lab ]]; then shellcheck "labs/$lab_name/lab"; fi
-    for file in "labs/$lab_name/"*.mjs "labs/$lab_name/public/"*.js; do node --check "$file"; done
+    shellcheck --severity=style --external-sources --source-path=SCRIPTDIR "labs/$lab_name/e2e.sh"
+    if [[ -f labs/$lab_name/lab ]]; then shellcheck --severity=style --external-sources --source-path=SCRIPTDIR "labs/$lab_name/lab"; fi
+    for file in "labs/$lab_name/"*.mjs "labs/$lab_name/public/"*.js; do
+      [[ -f $file ]] || continue
+      node --check "$file"
+    done
   fi
-  system=$(nix eval --impure --raw --expr builtins.currentSystem)
   nix eval --no-update-lock-file --raw "path:$root#packages.$system.$lab_name-image.drvPath" >/dev/null
   echo "PASS $lab_name static and package evaluation gate"
 done
-bash scripts/docs build
+nix build --no-update-lock-file --no-link "path:$root#documentation"
+printf 'PASS strict documentation package\n'

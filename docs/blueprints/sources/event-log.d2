@@ -1,0 +1,47 @@
+# Every component and relationship below is proposed production infrastructure.
+# Evidence: labs/event-log/server.mjs; docs/labs/event-log.md.
+...@../profiles/schematic
+**.class: component
+(** -> **)[*].class: relationship
+direction: down
+title: "FOLIO HARBOR ARCHIVES\nProposed production architecture" {
+  shape: text
+  style.font-size: 26
+}
+
+workspace: "WORKSPACE TRUST BOUNDARY" {
+  style.stroke-dash: 4
+  identity: "WORKSPACE IDENTITY\nitem / archivist authorization"
+  writer: "FENCED COMMAND WRITER\nrevision checks / immutable results"
+}
+redpanda: "PROPOSED REDPANDA CLUSTER\nRF3 / replicas: AZ A, B, C" {
+  style.stroke: "#526f83"
+  events: "event-log.events.v1\nappend-only authority\n1 partition / no compaction" {
+    shape: cylinder
+    style.stroke: "#526f83"
+  }
+}
+materializer: "MATERIALIZER\nvalidate complete replay outcomes"
+read: "ITEM + RECEIPT READ STORE\nrebuildable / offset frontier" {shape: cylinder}
+rebuild: "REBUILD CONTROLLER\nclose old owner / readiness barrier"
+recovery: "INDEPENDENT RECOVERY OWNER" {
+  style.stroke-dash: 2
+  archive: "PREFIX ARCHIVE\nrecords / schema / offset manifests" {shape: cylinder}
+  restore: "RESTORE VERIFIER\ncomplete prefix / checkpoint proof"
+}
+
+workspace.identity -> workspace.writer: authorize item commands
+workspace.writer -> redpanda: result / stable command ID
+redpanda -> materializer: complete ordered prefix
+workspace <- materializer: consumed state / frontier
+materializer -> read: items / dedupe receipts
+rebuild -> workspace: fence / close old owner
+rebuild -> materializer: replay to captured frontier
+redpanda -> recovery: "complete\noffset ranges"
+recovery.archive -> recovery.restore: supply verified prefix
+redpanda <- recovery: "controlled\nprefix restore"
+
+
+# Layout-only edge: the title is a caption, not a service or data source.
+title -> workspace: {style.opacity: 0}
+title -> rebuild: {style.opacity: 0}

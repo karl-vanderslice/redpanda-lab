@@ -1,0 +1,44 @@
+# Every component and relationship below is proposed production infrastructure.
+# Evidence: labs/iot/server.mjs; domain tuning matrix, IoT.
+...@../profiles/schematic
+**.class: component
+(** -> **)[*].class: relationship
+direction: down
+title: "CRYOWELL INSTRUMENTS\nProposed production architecture" {
+  shape: text
+  style.font-size: 26
+}
+
+devices: "DEVICE FLEET\nsequence / temperature / battery"
+entry: "DEVICE TRUST BOUNDARY" {
+  style.stroke-dash: 4
+  identity: "DEVICE IDENTITY\ncredential rotation / revocation"
+  gateway: "TELEMETRY GATEWAY\nspool / validate / backpressure"
+}
+redpanda: "PROPOSED REDPANDA CLUSTER\nRF3 / replicas: AZ A, B, C" {
+  style.stroke: "#526f83"
+  events: "iot.events.v1\nordered telemetry + receipts\n1 partition / fleet owner" {
+    shape: cylinder
+    style.stroke: "#526f83"
+  }
+}
+projection: "TELEMETRY CONSUMER\nsequence checks / alert transitions"
+read: "ALERT + DEVICE READ MODEL\nconsumed offset frontier" {shape: cylinder}
+effects: "NOTIFICATION EFFECT BOUNDARY" {
+  style.stroke-dash: 8
+  owner: "NOTIFICATION OWNER\ndurable alert IDs / delivery ledger"
+  delivery: "NOTIFICATION SERVICE\noperator delivery / acknowledgments"
+}
+
+devices -> entry: readings to gateway
+entry.identity -> entry.gateway: verify device scope
+entry.gateway -> redpanda: append stable reading IDs
+redpanda -> projection: consume ordered readings
+projection -> read: "latest /\nalerts"
+projection -> effects: "alert\ntransitions"
+effects.owner -> effects.delivery: "stable\neffect ID"
+effects.owner <- effects.delivery: "delivery\nevidence"
+
+
+# Layout-only edge: the title is a caption, not a service or data source.
+title -> devices: {style.opacity: 0}

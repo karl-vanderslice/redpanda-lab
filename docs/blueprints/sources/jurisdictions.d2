@@ -1,0 +1,62 @@
+# All sites, identities, controls and recovery are PROPOSED, not legal compliance claims.
+...@../profiles/schematic
+**.class: component
+(** -> **)[*].class: relationship
+direction: down
+title: "MERIDIAN LEDGER ALLIANCE\nProposed production architecture\nResident raw data; approved summaries" {shape: text; style.font-size: 26}
+entry: "AUTHENTICATED TENANT GATEWAY\nOperator-owned home registry\nNever fail over private writes\nto another home"
+eu: "EU RESIDENCY BOUNDARY\nLocal keys / storage / backup vault" {
+  style.stroke-dash: 4
+  log: "REDPANDA RESIDENT LOG\njurisdictions.records.v1\np0 / p1 / p2\nRF3 across three local AZs" {
+    shape: cylinder
+    style.stroke: "#526f83"
+    style.fill: "#eef2f4"
+  }
+  export: "REGIONAL CONSUMER /\nPRIVACY EXPORT GATEWAY\nResident state; allowlisted\ncumulative summaries only"
+}
+us: "US RESIDENCY BOUNDARY\nLocal keys / storage / backup vault" {
+  style.stroke-dash: 4
+  log: "REDPANDA RESIDENT LOG\njurisdictions.records.v1\np0 / p1 / p2\nRF3 across three local AZs" {
+    shape: cylinder
+    style.stroke: "#526f83"
+    style.fill: "#eef2f4"
+  }
+  export: "REGIONAL CONSUMER /\nPRIVACY EXPORT GATEWAY\nResident state; allowlisted\ncumulative summaries only"
+}
+apac: "APAC RESIDENCY BOUNDARY\nLocal keys / storage / backup vault" {
+  style.stroke-dash: 4
+  log: "REDPANDA RESIDENT LOG\njurisdictions.records.v1\np0 / p1 / p2\nRF3 across three local AZs" {
+    shape: cylinder
+    style.stroke: "#526f83"
+    style.fill: "#eef2f4"
+  }
+  export: "REGIONAL CONSUMER /\nPRIVACY EXPORT GATEWAY\nResident state; allowlisted\ncumulative summaries only"
+}
+global: "GLOBAL SUMMARY BOUNDARY\nNo resident raw records or backups" {
+  style.stroke-dash: 8
+  log: "REDPANDA GLOBAL CLUSTER\njurisdictions.summaries.v1\np0 EU / p1 US / p2 APAC\nRF3 across three AZs" {
+    shape: cylinder
+    style.stroke: "#526f83"
+    style.fill: "#eef2f4"
+  }
+  reads: "SUMMARY CONSUMER / READ STORE\nLatest increasing source offset\nper shard"
+}
+recovery: "INDEPENDENT RECOVERY OWNER\nSeparate resident vaults / restore authority\nNo central raw backup\nSummaries cannot restore raw records"
+# Invisible title / row placement only. No inter-home data relationship.
+title -> entry: {style.opacity: 0}
+eu -> us: {style.opacity: 0}
+us -> apac: {style.opacity: 0}
+entry -> eu: "EU home records\nTenant partition"
+entry -> us: "US home records\nTenant partition"
+entry -> apac: "APAC home records\nTenant partition"
+eu.log -> eu.export: "consume resident raw"
+us.log -> us.export: "consume resident raw"
+apac.log -> apac.export: "consume resident raw"
+eu.export -> global: "allowlisted summary\n+ source offset"
+us.export -> global: "allowlisted summary\n+ source offset"
+apac.export -> global: "allowlisted summary\n+ source offset"
+global.log -> global.reads: "replace; never sum duplicates"
+entry <- global: "authorized aggregate reads" {class: relationship}
+recovery -> eu: "EU-local backup / restore"
+recovery -> us: "US-local backup / restore"
+recovery -> apac: "APAC-local backup / restore"

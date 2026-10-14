@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Folio Harbor Archives · Work ledger</title>
+  <link rel="stylesheet" href="/lab.css">
+  <link rel="stylesheet" href="/folio.css">
+  <script type="module" src="/lab-theme.js"></script>
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#workspace">Skip to workspace</a>
+  <header class="masthead">
+    <div><p class="eyebrow">F / H &nbsp; ARCHIVAL OPERATIONS</p><h1>Folio Harbor <span>Archives</span></h1></div>
+    <div class="controls"><button id="theme" type="button">Change theme</button><button id="updates" type="button" aria-pressed="false">Pause updates</button><button id="refresh" type="button">Refresh now</button></div>
+  </header>
+  <div class="owner-line"><span id="owner">Connecting to log owner…</span><span>One ordered log · Volatile workspace</span></div>
+  <main id="workspace">
+    <aside class="index" aria-labelledby="index-heading">
+      <p class="eyebrow">01 / INDEX</p><h2 id="index-heading">Work items</h2>
+      <label for="filter">Find an item<input id="filter" type="search" name="filter" autocomplete="off" placeholder="Identifier or title"></label>
+      <p id="index-count" class="muted">Loading index…</p><ul id="items" class="item-index"></ul>
+      <button id="new-item" type="button">New work item</button>
+    </aside>
+    <section class="workspace" aria-labelledby="item-heading">
+      <p class="eyebrow">02 / WORKSPACE</p><h2 id="item-heading">Open a work item</h2>
+      <p id="item-summary" class="muted">Select an indexed item, or create the first work item.</p>
+      <dl id="item-facts"></dl>
+      <form id="command-form">
+        <label for="kind">Action<select id="kind" name="kind"><option value="create">Create item</option><option value="assign">Assign archivist</option><option value="close">Close item</option><option value="reopen">Reopen item</option></select></label>
+        <label for="item-id">Item identifier<input id="item-id" name="itemId" required maxlength="80" pattern="[A-Za-z0-9_-]{1,80}" autocomplete="off" placeholder="folio-001"></label>
+        <label id="title-field" for="title">Work title<input id="title" name="title" required maxlength="160" autocomplete="off" placeholder="Index the harbor correspondence"></label>
+        <label id="revision-field" for="revision" hidden>Expected revision<input id="revision" name="expectedRevision" type="number" min="1" step="1" inputmode="numeric"></label>
+        <label id="assignee-field" for="assignee" hidden>Archivist<input id="assignee" name="assignee" maxlength="80" autocomplete="off"></label>
+        <label id="note-field" for="note" hidden>Audit note<textarea id="note" name="note" maxlength="240" rows="3"></textarea></label>
+        <label for="command-id">Command identifier<input id="command-id" name="id" required maxlength="80" pattern="[A-Za-z0-9_-]{1,80}" autocomplete="off" aria-describedby="id-help"></label>
+        <p id="id-help" class="muted">The same identifier and exact input return the original receipt. A different input conflicts. Rejections are also permanent records.</p>
+        <button id="submit" class="primary" type="submit">Append command</button>
+      </form>
+      <p id="message" role="status"></p>
+      <section id="pending-box" class="recovery" hidden aria-labelledby="pending-heading"><h3 id="pending-heading">Preserve this command</h3><p id="pending-copy"></p><pre id="pending-input"></pre><div class="actions"><button id="recover" type="button">Look up exact id</button><button id="retry" type="button" hidden>Retry exact input</button></div></section>
+    </section>
+    <aside class="inspector" aria-labelledby="replay-heading">
+      <p class="eyebrow">03 / REPLAY INSPECTOR</p><h2 id="replay-heading">Replay and receipts</h2>
+      <p>Item state is a projection, not a second authority. Rebuild closes the owner, clears memory and reads the actual Kafka prefix from offset zero.</p>
+      <dl><dt>Topic</dt><dd><code>event-log.events.v1</code></dd><dt>Consumed through</dt><dd id="offset">—</dd><dt>Unique commands / physical records</dt><dd id="record-count">—</dd><dt>Identical broker duplicates</dt><dd id="duplicates">—</dd></dl>
+      <button id="rebuild" type="button">Rebuild from the log</button>
+      <p id="rebuild-result">No explicit rebuild in this process.</p>
+      <details><summary>Exact replay evidence</summary><pre id="replay-evidence">No rebuild evidence yet.</pre></details>
+      <form id="receipt-form"><label for="receipt-id">Find command receipt<input id="receipt-id" name="receiptId" required autocomplete="off" maxlength="80"></label><button type="submit">Inspect receipt</button></form>
+      <p id="receipt-status" role="status"></p><pre id="receipt">Select a ledger record or look up an identifier.</pre>
+    </aside>
+    <section class="ledger" aria-labelledby="ledger-heading"><div class="ledger-head"><div><p class="eyebrow">04 / COMMAND REGISTER</p><h2 id="ledger-heading">Execution ledger</h2></div><p class="muted">Oldest first · Offsets are zero-based</p></div><p id="ledger-empty">No commands recorded. Create an item to begin.</p><ol id="ledger" class="ledger-lines"></ol></section>
+  </main>
+  <footer>Folio Harbor Archives is a fictional archival workbench. This local lab has no external archive or customer connection.</footer>
+</body>
+</html>

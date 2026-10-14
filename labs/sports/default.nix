@@ -33,5 +33,6 @@ let
 in
 common.mkNodeImage {
   name = "redpanda-sports";
+  sharedUI = true;
   src = source;
 }

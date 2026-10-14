@@ -1,71 +1,66 @@
 # Redpanda Lab
 
-Disposable applications built on real Redpanda logs. Publish records, inspect offsets, and explore failure and replay.
+Run a local application, follow its records in Redpanda, and see what survives a restart.
 
-## Start here
+## Start the explorer
 
-**Requires:** Linux, Nix flakes, and host support for rootless Podman (user namespaces, subordinate UID/GID mappings, and cgroup delegation). Nix supplies the tools. The first build downloads pinned dependencies; later runs reuse caches.
+Requires Linux, Nix with flakes, and a host configured for rootless Podman: user namespaces, subordinate UID/GID mappings and cgroup delegation. Nix supplies the user-space tools. Allow several GiB of free RAM for the three-broker explorer; start with one lab. The first build downloads dependencies and images.
+
+From the checkout root:
 
 ```bash
 nix develop --no-update-lock-file
-just up                    # Explorer, the default lab
-just urls                  # Open the printed app URL
+just up
+just urls
 ```
 
-Publish an event in the browser. Find it in Console. Pause consumption to build lag, then resume. Grafana shows the result.
+Open the printed **Stream app** URL. Publish an event, find it in Redpanda Console, then pause the shared consumer to build lag. Follow [your first event](docs/tutorials/first-event.md) for the walkthrough.
 
-**Finished? `just down` deletes that lab's data, containers, and networks.** Other labs, shared images, and Nix caches remain. Start one lab at a time; multi-broker labs need several GiB of free RAM.
+Keeping an older explorer's telemetry? [Back it up before upgrading](docs/how-to/failure-and-recovery.md#upgrade-retained-telemetry). `up` preserves volumes; a new Grafana version can migrate them.
+
+When finished:
+
+```bash
+just down
+```
+
+**`down` deletes the selected lab's records and telemetry volumes**, along with its containers and network. It is disposal, not a recoverable stop. Other labs and reusable upstream/Nix caches remain.
 
 ## Choose a lab
 
-Use the same commands for a named lab:
+For a named lab, use `just up iot`, `just urls iot` and `just down iot`. Each has its own runtime and data. All organizations below are fictional; Redpanda and the other tools retain their actual names.
 
-```bash
-just up iot
-just urls iot
-just down iot
-```
+| Lab | Organization | Try |
+| --- | --- | --- |
+| [`explorer`](docs/tutorials/first-event.md) | Signal Harbor Works | Partitions, committed lag, Grafana and broker failure. |
+| [`iot`](docs/labs/iot.md) | Cryowell Instruments | Sensor readings, device history and alerts. |
+| [`pos`](docs/labs/pos.md) | Counterlane Market | Baskets, cash checkout, refunds and optional sandbox payments. |
+| [`logistics`](docs/labs/logistics.md) | Wayline Dispatch | Driver positions, assignment, pickup and delivery. |
+| [`event-log`](docs/labs/event-log.md) | Folio Harbor Archives | An append-only execution ledger and state rebuild. |
+| [`siem`](docs/labs/siem.md) | Vesper Lantern Networks | Synthetic telemetry, correlation and incident evidence. |
+| [`activity`](docs/labs/activity.md) | Commonfield Dispatch | Posts, follows, likes and reading analytics. |
+| [`inventory`](docs/labs/inventory.md) | Cedarline Supply | Stock, reservations, fulfillment and transfers. |
+| [`clearing`](docs/labs/clearing.md) | Northbridge Ledgerworks | Held transfers, review and exact-cent local clearing. |
+| [`trading`](docs/labs/trading.md) | Amber Commodity Exchange | Rust CLI/web orders, matching and cancellation. |
+| [`bitcoin`](docs/labs/bitcoin.md) | Beacon Ridge Research | Historical prices and paper-account strategies. |
+| [`sports`](docs/labs/sports.md) | Courtside Assembly | Scores, watchlists, synthetic video and playback events. |
+| [`agent-messaging`](docs/labs/agent-messaging.md) | Relay Loom Cooperative | Planner/reviewer agents using real `fx` and local inference. |
+| [`agent-chat`](docs/labs/agent-chat.md) | Clockwork Correspondence | Local model chat, future jobs and cancellation. |
+| [`jurisdictions`](docs/labs/jurisdictions.md) | Meridian Ledger Alliance | Regional raw logs and summary-only federation. |
+| [`terraform`](docs/labs/terraform.md) | Foundry Harbor Infrastructure | Reviewed plans, drift and teardown. Read its guide before granting Podman socket access. |
 
-| Lab | Explore |
-| --- | --- |
-| [`explorer`](docs/tutorials/first-event.md) | Events, partitions, consumer lag, Grafana, broker failure. |
-| [`iot`](docs/labs/iot.md) | Sensor readings, temperature/battery alerts, device history. |
-| [`pos`](docs/labs/pos.md) | Baskets, cash checkout, refunds, optional Stripe/Square sandbox payments. |
-| [`logistics`](docs/labs/logistics.md) | Driver locations, nearest-driver dispatch, pickup and delivery. |
-| [`trading`](docs/labs/trading.md) | Rust CLI and web orders, matching, partial fills, cancellation. |
-| [`bitcoin`](docs/labs/bitcoin.md) | Historical BTC/USD prices, paper strategies, positions and P&L. |
-| [`sports`](docs/labs/sports.md) | Multi-sport scores, synthetic video, watchlists and playback events. |
-| [`agent-messaging`](docs/labs/agent-messaging.md) | Planner/reviewer agents using real `fx` and local inference. |
-| [`agent-chat`](docs/labs/agent-chat.md) | Local model chat, scheduled jobs, cancellation and recovery. |
-| [`jurisdictions`](docs/labs/jurisdictions.md) | Regional raw logs, tenant partitions, summary-only federation. |
-| [`terraform`](docs/labs/terraform.md) | Reviewed infrastructure plans, drift and teardown. |
+Local workflows need no API keys. POS's optional Stripe/Square paths require server-side **sandbox** credentials and network access; credential-dependent behavior remains unverified. No lab moves live funds or places real market orders. Use synthetic data only.
 
-Labs own separate ports, networks, volumes, and topics. The explorer and Terraform use three brokers; jurisdictions uses four independent clusters; other labs use one broker and an ordered topic. All run on one host.
+## Find your next step
 
-No keys are needed for the local workflows. POS provider payments need **sandbox credentials**, kept server-side. There are no live charges, real trading orders, or Uber connections. Sports clips are original synthetic loops. Agent answers come from a bundled small model, not a quality guarantee.
+- [Commands and ports](docs/reference/commands.md): status, logs, restarts and destructive test commands.
+- [Troubleshooting](docs/how-to/troubleshooting.md): startup failures and uncertain writes.
+- [Architecture](docs/explanation/architecture.md) and [delivery](docs/explanation/telemetry-and-delivery.md): what records, counters and acknowledgments mean.
+- [Tuning and storage limits](docs/reference/tuning.md): retention, resources and client-specific settings.
+- [Production and recovery](docs/explanation/production.md) and [blueprints](docs/blueprints/index.md): operational gaps and proposed systems, not deployed infrastructure.
 
-**Terraform asks for plan approval before apply or destroy.** Read its guide first.
+Build the docs with `just docs`; preview them with `just docs-serve`. Both keep generated output outside the checkout. [Build options](docs/reference/commands.md#documentation) include an explicit external output directory.
 
-## Inspect and verify
+Ports are loopback-only and unauthenticated. Development-mode brokers on one host do not prove production durability or geographic resilience. [Supply-chain notes](docs/reference/supply-chain.md) distinguish pinned inputs from reproducible builds and describe dependency licenses.
 
-```bash
-just status iot
-just logs iot app
-just rpk iot topic describe iot.events.v1
-just restart iot app       # Replay the retained log
-just check                 # Source, packaging, Terraform validation, strict docs
-just test iot              # Fresh real-container workflow, then disposal
-just docs-serve            # Documentation preview, prints its URL
-```
-
-**`just test LAB` deletes that application's existing history.** Terraform tests require empty owned state and retain failed deployments for diagnosis. Reports, caches, builds, and generated docs stay outside the checkout. Optional commit hook: `prek install`. No CI/CD is configured.
-
-[Walkthroughs](docs/labs/index.md) · [Commands and ports](docs/reference/commands.md) · [Troubleshooting](docs/how-to/troubleshooting.md) · [Architecture](docs/explanation/architecture.md)
-
-## Boundaries
-
-Use synthetic data only. Ports are loopback-only and unauthenticated; production TLS, storage sizing, distributed writers, and geographic resilience are absent. Broker acknowledgement does not prove consumer completion. Retention can prevent full replay, and deleting a volume deletes its log. See [production and recovery](docs/explanation/production.md).
-
-Inputs use lockfiles, image digests, and model hashes. The explorer's Debian package installation is not a byte-for-byte rebuild guarantee. See [supply-chain limits](docs/reference/supply-chain.md). Browser storage is optional; theme persistence depends on it.
-
-First-party code is [MIT licensed](LICENSE). Dependencies retain their own licenses; this grants no rights to third-party media.
+First-party code is [MIT licensed](LICENSE). Dependencies retain their own licenses; the repository grants no rights to third-party media.

@@ -1,0 +1,38 @@
+# Entire topology is PROPOSED. Kafka carries metadata, never video bytes.
+...@../profiles/schematic
+**.class: component
+(** -> **)[*].class: relationship
+direction: down
+title: "COURTSIDE ASSEMBLY\nProposed production architecture\nScore control and media delivery" {shape: text; style.font-size: 26}
+control: "IDENTITY / ROLE BOUNDARY" {
+  style.stroke-dash: 4
+  entry: "SCORE / CONTROL ENTRY\nScore-authority role\nScoped viewer controls"
+}
+log: "REDPANDA METADATA LOGS\nsports.events.v2 · ordered p0\nSeparate proposed analytics topic\nRF3 · replicas in AZ A / B / C" {
+  shape: cylinder
+  style.stroke: "#526f83"
+  style.fill: "#eef2f4"
+}
+scores: "SCORE CONSUMER / READ STORE\nRevision-checked state\nConsumed offset frontier"
+analytics: "VIEWER ANALYTICS CONSUMER\nSession windows; late-event policy\nNot score authority"
+media: "MEDIA PUBLISHING BOUNDARY" {
+  style.stroke-dash: 8
+  origin: "AUTHORIZED MEDIA ORIGIN\nLicensed sources\nPublishing identity"
+  transcode: "TRANSCODING\nRenditions + captions"
+  objects: "MEDIA OBJECT STORE\nVersioned renditions" {shape: cylinder}
+}
+cdn: "CDN\nAuthorized media\nHTTP range / cache semantics"
+viewer: "VIEWER CLIENT\nScores + playback\nPrivacy controls"
+# Invisible analytics row placement only; analytics never consumes score state.
+scores -> analytics: {style.opacity: 0}
+# Invisible title placement only; not a service or data relationship.
+title -> control: {style.opacity: 0}
+control <- viewer: "scoped controls\nPlayback telemetry" {class: relationship}
+control -> log: "sports.events.v2 controls\nSeparate analytics records"
+log -> scores: "sports.events.v2\nScores / controls"
+scores -> viewer: "read-only scores"
+log -> analytics: "analytics topic only" {style.font-size: 20}
+media.origin -> media.transcode: "source media bytes"
+media.transcode -> media.objects: "renditions + captions"
+media -> cdn: "object-origin fetch\nMedia bytes"
+cdn -> viewer: "authorized video"
