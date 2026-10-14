@@ -223,6 +223,10 @@ const server = http.createServer(async (req, res) => {
       if (await serveFile(req, res, publicRoot)) return;
       throw problem(404, 'Endpoint not found');
     }
+    if (req.method === 'HEAD') {
+      if (await serveFile(req, res, publicRoot)) return;
+      throw problem(404, 'Endpoint not found');
+    }
     if (req.method !== 'POST') throw problem(405, 'Use GET or POST');
     assertLocalMutation(req);
     requireReady();

@@ -46,6 +46,8 @@ Outside the shell, the equivalent ordinary-lab entry point is `./labs/run cleari
 
 **Do not run `just test` on history you want to keep.** Reports go under `${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/e2e/`. A lab's direct `e2e.sh` can have different preconditions and lifecycle behavior; follow its guide. Neither source checks nor a local scenario establish production readiness.
 
+Public E2Es check live pages, declared assets, content types, read APIs and supported HEAD requests. Missing resources must return 404; malformed Node paths must return 400, not 500. The report includes each checked URL.
+
 ## Documentation
 
 ```bash

@@ -427,15 +427,16 @@ fn engine(state: Shared, jobs: mpsc::Receiver<Job>, proxy: String) {
 fn header(name: &str, value: &str) -> Header {
     Header::from_bytes(name, value).unwrap()
 }
-fn respond(req: Request, code: u16, body: String, mime: &str) {
-    let _ = req.respond(Response::from_string(body).with_status_code(code).with_header(header("Content-Type", mime))
+fn respond(req: Request, code: u16, body: impl AsRef<[u8]>, mime: &str) {
+    let length = body.as_ref().len();
+    let _ = req.respond(Response::new(tiny_http::StatusCode(code), Vec::new(), std::io::Cursor::new(body), Some(length), None).with_header(header("Content-Type", mime))
         .with_header(header("Cache-Control", "no-store"))
         .with_header(header("X-Content-Type-Options", "nosniff"))
         .with_header(header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")));
 }
 fn handle(mut req: Request, state: Shared, jobs: mpsc::SyncSender<Job>) {
     let path = req.url().split('?').next().unwrap_or("/").to_owned();
-    if req.method() == &Method::Get {
+    if req.method() == &Method::Get || req.method() == &Method::Head {
         let static_file = match path.as_str() {
             "/" => Some((
                 include_str!("../public/index.html"),
@@ -452,9 +453,11 @@ fn handle(mut req: Request, state: Shared, jobs: mpsc::SyncSender<Job>) {
             _ => None,
         };
         if let Some((body, mime)) = static_file {
-            respond(req, 200, body.into(), mime);
+            respond(req, 200, body, mime);
             return;
         }
+    }
+    if req.method() == &Method::Get {
         let s = state.lock();
         let (code, value) = if path == "/health" {
             (
@@ -643,7 +646,7 @@ fn serve() -> Result<(), String> {
             respond(
                 req,
                 503,
-                "{\"error\":\"Too many concurrent requests\"}".into(),
+                "{\"error\":\"Too many concurrent requests\"}",
                 "application/json",
             );
             continue;

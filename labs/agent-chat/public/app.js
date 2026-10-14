@@ -270,7 +270,9 @@ $('#pause').addEventListener('click', () => {
   $('#pause').textContent = paused ? 'Resume updates' : 'Pause updates';
   if (paused) {
     clearTimeout(pollTimer);
-    pollController?.abort();
+    const pending = pollController;
+    pollController = null;
+    pending?.abort();
     $('#connection').textContent = 'Display paused · scheduled prompts continue running';
   } else void poll();
 });

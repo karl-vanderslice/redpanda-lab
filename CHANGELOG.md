@@ -30,6 +30,9 @@
 - Keep dispatch map labels readable in a named keyboard-scrollable region rather than shrinking them on narrow screens.
 - Settle pending log sends before disconnect. Use the Nix-owned local rootless Podman adapter without a Compose patch.
 - Use a supported rootless-compatible hosted check runner without rootful fallback or kernel-security overrides.
+- Check live pages, assets, MIME types, read APIs and missing-path boundaries in the public E2Es. Link Schema Registry to its subjects view.
+- Support static HEAD requests and classify malformed paths as client errors without hiding operating failures.
+- Keep intentional chat refresh cancellation separate from service outages when pausing the display.
 
 ## Initial polish
 

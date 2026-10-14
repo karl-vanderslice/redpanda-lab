@@ -3,6 +3,13 @@ import { resolve, sep, extname } from 'node:path';
 
 function httpError(status, message) { return Object.assign(new Error(message), { status }); }
 
+export function decodePath(value) {
+  let decoded;
+  try { decoded = decodeURIComponent(value); } catch { throw httpError(400, 'Invalid URL'); }
+  if (decoded.includes('\0')) throw httpError(400, 'Invalid URL');
+  return decoded;
+}
+
 export function assertLocalMutation(req) {
   if (req.headers.origin) {
     let origin;
@@ -34,15 +41,14 @@ export function sendJson(res, status, value) {
 
 export async function serveFile(req, res, publicRoot) {
   if (req.method !== 'GET' && req.method !== 'HEAD') return false;
-  let pathname;
-  try { pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname); } catch { throw httpError(400, 'Invalid URL'); }
+  const pathname = decodePath(new URL(req.url, 'http://localhost').pathname);
   const root = resolve(publicRoot);
   const path = resolve(root, `.${pathname === '/' ? '/index.html' : pathname}`);
   if (!path.startsWith(root + sep)) throw httpError(403, 'Invalid file path');
   const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json', '.mp4': 'video/mp4', '.vtt': 'text/vtt; charset=utf-8' };
   let body;
   try { body = await readFile(path); } catch (error) {
-    if (error.code === 'ENOENT' || error.code === 'EISDIR') return false;
+    if (['ENOENT', 'EISDIR', 'ENOTDIR', 'ENAMETOOLONG'].includes(error.code)) return false;
     throw error;
   }
   res.writeHead(200, { 'content-type': types[extname(path)] || 'application/octet-stream', 'content-length': body.length, 'x-content-type-options': 'nosniff' });

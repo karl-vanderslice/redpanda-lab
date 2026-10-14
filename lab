@@ -32,7 +32,7 @@ ports() {
   export KAFKA_0_PORT=$((base+10)) KAFKA_1_PORT=$((base+11)) KAFKA_2_PORT=$((base+12))
 }
 urls() {
-  printf '\nStream app:       http://127.0.0.1:%s\nRedpanda Console: http://127.0.0.1:%s\nGrafana:          http://127.0.0.1:%s/d/redpanda-lab\nPrometheus:       http://127.0.0.1:%s\nSchema Registry:  http://127.0.0.1:%s\nHTTP Proxy:       http://127.0.0.1:%s\nKafka brokers:    127.0.0.1:%s,127.0.0.1:%s,127.0.0.1:%s\n' "$APP_PORT" "$CONSOLE_PORT" "$GRAFANA_PORT" "$PROMETHEUS_PORT" "$REGISTRY_PORT" "$PROXY_PORT" "$KAFKA_0_PORT" "$KAFKA_1_PORT" "$KAFKA_2_PORT"
+  printf '\nStream app:       http://127.0.0.1:%s\nRedpanda Console: http://127.0.0.1:%s\nGrafana:          http://127.0.0.1:%s/d/redpanda-lab\nPrometheus:       http://127.0.0.1:%s\nSchema Registry:  http://127.0.0.1:%s/subjects\nHTTP Proxy:       http://127.0.0.1:%s/topics\nKafka brokers:    127.0.0.1:%s,127.0.0.1:%s,127.0.0.1:%s\n' "$APP_PORT" "$CONSOLE_PORT" "$GRAFANA_PORT" "$PROMETHEUS_PORT" "$REGISTRY_PORT" "$PROXY_PORT" "$KAFKA_0_PORT" "$KAFKA_1_PORT" "$KAFKA_2_PORT"
 }
 
 if [[ -f $state/port-base ]]; then

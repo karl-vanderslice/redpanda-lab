@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { connectLog } from '../common/log.mjs';
-import { assertLocalMutation, readJson, sendJson, serveFile } from '../common/http.mjs';
+import { assertLocalMutation, decodePath, readJson, sendJson, serveFile } from '../common/http.mjs';
 import { createModel, normalize, validateCommand, fail } from './model.mjs';
 
 const topic = 'siem.events.v1';
@@ -73,14 +73,14 @@ const server = createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/api/state') return sendJson(res, 200, snapshot());
     if (req.method === 'GET' && /^\/api\/(receipts|events)\//.test(url.pathname)) {
       const eventRoute = url.pathname.startsWith('/api/events/');
-      const id = decodeURIComponent(url.pathname.split('/').at(-1));
+      const id = decodePath(url.pathname.split('/').at(-1));
       const receipt = model.operations.get(id);
       if (receipt && (!eventRoute || receipt.command.type === 'ingest')) return sendJson(res, 200, receipt);
       if (unknown?.id === id) return sendJson(res, 503, { ...unknown, outcomeUnknown: true });
       throw fail(404, 'No consumed receipt. Absence is not proof an in-flight command failed.');
     }
     if (req.method === 'GET' && url.pathname.startsWith('/api/incidents/')) {
-      const incident = model.incidents.get(decodeURIComponent(url.pathname.slice('/api/incidents/'.length)));
+      const incident = model.incidents.get(decodePath(url.pathname.slice('/api/incidents/'.length)));
       if (!incident) throw fail(404, 'Incident not found.');
       return sendJson(res, 200, incident);
     }

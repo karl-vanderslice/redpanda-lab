@@ -202,10 +202,10 @@ const server = createServer(async (req, res) => {
       const operation = operations.get(event.id);
       sendJson(res, operation.status === 'unknown' ? 503 : operation.status === 'pending' ? 202 : 200, operation); return;
     }
-    if (req.method === 'GET' && (url.pathname.startsWith('/match/') || url.pathname.startsWith('/sport/'))) {
+    if ((req.method === 'GET' || req.method === 'HEAD') && (url.pathname.startsWith('/match/') || url.pathname.startsWith('/sport/'))) {
       req.url = '/';
     }
-    if (req.method === 'GET' && await serveFile(req, res, publicRoot)) return;
+    if (await serveFile(req, res, publicRoot)) return;
     throw failure(404, 'Not found.');
   } catch (error) {
     if (!error.status) console.error(error);

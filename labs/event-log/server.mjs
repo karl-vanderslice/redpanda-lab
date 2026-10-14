@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { connectLog } from '../common/log.mjs';
-import { assertLocalMutation, readJson, sendJson, serveFile } from '../common/http.mjs';
+import { assertLocalMutation, decodePath, readJson, sendJson, serveFile } from '../common/http.mjs';
 import { initial, validate, decide, applyResult, fail } from './model.mjs';
 
 const topic = 'event-log.events.v1';
@@ -105,7 +105,7 @@ const server = createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/api/status') { sendJson(res, 200, status()); return; }
     if (req.method === 'GET' && url.pathname === '/api/state') { sendJson(res, 200, snapshot()); return; }
     if (req.method === 'GET' && url.pathname.startsWith('/api/commands/')) {
-      const id = decodeURIComponent(url.pathname.slice('/api/commands/'.length));
+      const id = decodePath(url.pathname.slice('/api/commands/'.length));
       const receipt = operations.get(id);
       if (!receipt) throw fail(404, 'No consumed receipt for that id. Absence does not prove a publish failed, especially during replay.', { commandId: id, outcomeUnknown: true });
       sendJson(res, 200, receipt); return;

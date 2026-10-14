@@ -305,7 +305,11 @@ async function route(req, res) {
     return send(res, 200, generatorState());
   }
   if (req.method !== 'GET' && req.method !== 'HEAD') throw new HttpError(405, 'Method not allowed.');
-  const relative = normalize(decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname)).replace(/^([/\\])+/, '');
+  let pathname;
+  try { pathname = decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname); }
+  catch { throw new HttpError(400, 'Invalid URL.'); }
+  if (pathname.includes('\0')) throw new HttpError(400, 'Invalid URL.');
+  const relative = normalize(pathname).replace(/^([/\\])+/, '');
   const file = join(PUBLIC_DIR, relative);
   if (!file.startsWith(PUBLIC_DIR + sep) || !contentTypes[extname(file)]) throw new HttpError(404, 'Not found.');
   try {

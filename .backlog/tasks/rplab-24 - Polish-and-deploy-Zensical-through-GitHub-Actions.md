@@ -4,7 +4,7 @@ title: Polish and deploy Zensical through GitHub Actions
 status: In Progress
 assignee: []
 created_date: '2026-10-14 02:41'
-updated_date: '2026-10-14 11:07'
+updated_date: '2026-10-14 11:41'
 labels: []
 dependencies: []
 ordinal: 24000
@@ -34,4 +34,6 @@ Inspect existing contracts and relevant specialist guidance; implement within is
 
 <!-- SECTION:NOTES:BEGIN -->
 Signed 139218c was pushed through the already-authorized repository-owner SSH key after HTTPS rejected workflow updates for missing OAuth workflow scope. Hosted run 38552345214 passed thirteen domain static/package gates then failed at rootless Podman with failed to reexec: Permission denied. Sanitized real job log retained. Full gate remains mandatory; check runner changes to supported Ubuntu 22.04 without rootful fallback or host-security overrides. Deployment is not yet verified.
+
+Hosted run 38554819180 at signed commit 52416cc passed the full check/build job on Ubuntu 22.04 and the Pages publication job on Ubuntu 24.04. The actual public site opened successfully in Chromium. Its same-base HTTP crawl passed 102 resources, 43 HTML documents and 939 fragment references, including all sixteen SVG, PNG and D2 blueprint exports with their correct observed content types. Final keyboard, theme, narrow-layout and enlarged-text browser review remains open.
 <!-- SECTION:NOTES:END -->

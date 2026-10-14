@@ -15,7 +15,7 @@ for file in labs/common/*.mjs; do
   [[ -f $file ]] || continue
   node --check "$file"
 done
-for file in docs/assets/*.js; do
+for file in docs/assets/*.js tests/*.mjs; do
   [[ -f $file ]] || continue
   node --check "$file"
 done

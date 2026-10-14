@@ -31,7 +31,7 @@ finish() {
     echo; echo "- Source: $root ($source_revision)"
     echo "- Tools: $(podman --remote=false --version), $(podman-compose --podman-path="$REDPANDA_LAB_PODMAN" version 2>/dev/null | grep -i podman-compose | head -n1), node $(node --version)"
     echo "- Source snapshot hashes:"
-    sha256sum "$root/flake.nix" "$root/flake.lock" "$root/LICENSE" "$root/compose.yml" "$root/.containerignore" "$root/app/package.json" "$root/app/package-lock.json" "$root/app/server.js" "$root/app/Containerfile" "$root/lab" "$root/scripts/local-podman" "$root/tests/e2e.sh"
+    sha256sum "$root/flake.nix" "$root/flake.lock" "$root/LICENSE" "$root/compose.yml" "$root/.containerignore" "$root/app/package.json" "$root/app/package-lock.json" "$root/app/server.js" "$root/app/Containerfile" "$root/lab" "$root/scripts/local-podman" "$root/tests/e2e.sh" "$root/tests/http-routes.mjs"
     echo "- Replay: tests/e2e.sh (runs ./lab up, HTTP workflow checks, ./lab down)"
     echo "- Exit status: $status"
     echo; echo "## Results"; printf -- '- %s\n' "${results[@]}"
@@ -68,6 +68,11 @@ while IFS= read -r line; do
   esac
 done < <("$root/lab" urls)
 [[ -n $base_url && -n $prom_url && -n $console_url && -n $grafana_url ]] || fail 'all service URLs were discovered'
+if node "$root/tests/http-routes.mjs" "$base_url" explorer >> "$log" 2>&1; then
+  pass 'page, assets, tool links and read API routes return expected statuses and MIME types'
+else
+  fail 'public HTTP route and asset checks'
+fi
 identity=$(printf '%s' "$root" | sha256sum)
 project="rp-lab-${identity:0:10}"
 

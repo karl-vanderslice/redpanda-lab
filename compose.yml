@@ -87,7 +87,7 @@ services:
       CONSOLE_URL: http://127.0.0.1:${CONSOLE_PORT}
       GRAFANA_URL: http://127.0.0.1:${GRAFANA_PORT}/d/redpanda-lab
       PROMETHEUS_URL: http://127.0.0.1:${PROMETHEUS_PORT}
-      REGISTRY_URL: http://127.0.0.1:${REGISTRY_PORT}
+      REGISTRY_URL: http://127.0.0.1:${REGISTRY_PORT}/subjects
     ports: ["127.0.0.1:${APP_PORT}:3000"]
     mem_limit: 256m
     read_only: true

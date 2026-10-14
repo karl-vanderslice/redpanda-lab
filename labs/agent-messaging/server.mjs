@@ -150,7 +150,7 @@ const server = http.createServer(async (req, res) => {
       if (task.task !== text) return sendJson(res, 409, { error: 'Another submission with this ID was accepted first.' });
       return sendJson(res, 202, task);
     }
-    if (req.method === 'GET' && await serveFile(req, res, publicRoot)) return;
+    if (await serveFile(req, res, publicRoot)) return;
     sendJson(res, 404, { error: 'Not found.' });
   } catch (error) {
     console.error('HTTP request:', error.message);
