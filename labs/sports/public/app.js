@@ -29,7 +29,12 @@ function pauseForNavigation() {
     $('player').pause();
   }
 }
-function showError(message) { $('error').hidden = false; $('error').textContent = message; }
+function showError(message, owner = 'other') {
+  const error = $('error');
+  error.dataset.owner = owner;
+  error.hidden = false;
+  error.textContent = message;
+}
 function connection(message) { $('connection').textContent = message; }
 async function json(url, options = {}) {
   const response = await fetch(url, { ...options, signal: AbortSignal.timeout(8000) });
@@ -114,6 +119,12 @@ function route() {
   }).join('') : '<li>No saved matches yet.</li>');
 }
 function render(snapshot) {
+  const error = $('error');
+  if (error.dataset.owner === 'snapshot') {
+    error.hidden = true;
+    error.textContent = '';
+    delete error.dataset.owner;
+  }
   state = snapshot;
   connection(updatesPaused ? 'Scoreboard view paused' : state.ready ? 'Scoreboard connected' : 'Replaying scoreboard…');
   $('offset').textContent = `sports.events.v2 / offset ${state.lastOffset ?? '—'}`;
@@ -134,7 +145,7 @@ function connect() {
   source.addEventListener('state', (event) => {
     if (updatesPaused || eventSource !== source) return;
     try { render(JSON.parse(event.data)); $('reconnect').hidden = true; }
-    catch (error) { showError(`Could not read scoreboard update: ${error.message}`); }
+    catch (error) { showError(`Could not read scoreboard update: ${error.message}`, 'snapshot'); }
   });
   source.onerror = () => {
     if (updatesPaused || eventSource !== source) return;
@@ -151,7 +162,7 @@ async function refresh() {
   try {
     render(await json(`/api/state?viewer=${encodeURIComponent(viewerId)}`));
     $('update-status').textContent = updatesPaused ? 'View paused. Latest snapshot fetched; automatic updates remain paused.' : 'Latest snapshot fetched. Automatic updates enabled.';
-  } catch (error) { showError(`Could not refresh scoreboard: ${error.message}`); }
+  } catch (error) { showError(`Could not refresh scoreboard: ${error.message}`, 'snapshot'); }
   finally {
     refreshBusy = false;
     $('refresh').disabled = false;
@@ -224,4 +235,4 @@ addEventListener('pageshow', event => {
   if (event.persisted) { timer = setInterval(heartbeat, 10000); connect(); }
 });
 try { render(await json(`/api/state?viewer=${encodeURIComponent(viewerId)}`)); connect(); }
-catch (error) { showError(`Could not load exhibitions: ${error.message}. Reconnect after the app is healthy.`); $('reconnect').hidden = false; }
+catch (error) { showError(`Could not load exhibitions: ${error.message}. Reconnect after the app is healthy.`, 'snapshot'); $('reconnect').hidden = false; }

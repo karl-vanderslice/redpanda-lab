@@ -4,7 +4,7 @@ title: Audit every lab for missing routes and assets
 status: In Progress
 assignee: []
 created_date: '2026-10-14 10:44'
-updated_date: '2026-10-14 13:59'
+updated_date: '2026-10-14 17:26'
 labels: []
 dependencies: []
 ordinal: 29000
@@ -18,8 +18,8 @@ User requested an explicit all-lab audit of unintended 404s and similar page, st
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Exercise every real lab surface, declared navigation, loaded assets and representative read API paths; distinguish intentional missing-route/unknown-ID 404s from broken supported routes.
-- [ ] #2 Check actual response status, content type, browser/network errors and supported media/range/download paths, retaining replayable evidence for all sixteen labs and the docs site.
+- [x] #1 Exercise every real lab surface, declared navigation, loaded assets and representative read API paths; distinguish intentional missing-route/unknown-ID 404s from broken supported routes.
+- [x] #2 Check actual response status, content type, browser/network errors and supported media/range/download paths, retaining replayable evidence for all sixteen labs and the docs site.
 - [ ] #3 Fix supported-path failures, rerun the affected real path and publish verified checkpoints without suppressing errors or resetting unrelated data.
 <!-- AC:END -->
 
@@ -27,6 +27,10 @@ User requested an explicit all-lab audit of unintended 404s and similar page, st
 
 <!-- SECTION:PLAN:BEGIN -->
 Inventory implemented routes and app entrypoints, start isolated source-matched runtimes, crawl supported pages/assets/read APIs, check expected negative paths separately, repair consumer-visible failures and retain/publish real proof.
+
+Resumed source-matched browser review found stale sports refresh errors after successful snapshot/SSE recovery. Tag snapshot-read errors with their owner and clear only that owner on a valid snapshot, preserving unknown-operation, media and route errors. Verify the observed failed-before case and operation-error preservation on a fresh immutable fixture.
+
+Source-matched clearing browser review found a stale read-failure notice after recovery and enabled transfer submission during initial loading. Tag read notices by owner, clear only recovered read failures, initialize the existing control gate before the first request and enforce readiness at mutation admission. Preserve pending-command messages and IDs; prove loading, failed-read, recovery and uncertain-command boundaries on a separate fixed fixture.
 <!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
@@ -41,4 +45,8 @@ The source-matched chat cancellation after case preserved Display paused, aria-p
 Terraform created the reviewed healthy cluster, but the new checker incorrectly required HEAD support from the pinned upstream Console: its root returned 405 rather than 200. This is an unsupported-method boundary, not a broken supported GET page. Owned app HEAD assertions remain strict; the Console branch audits its supported GET page and declared assets. The failed task-owned deployment is retained while its exact saved destroy plan is reviewed before a fresh full lifecycle run.
 
 All sixteen real public workflows passed: thirteen source-8b9 child scenarios, corrected reviewed Terraform lifecycle (80.98s), explorer broker/consumer/Prometheus/Grafana failover (69.68s), and jurisdiction residency/outage/five-field export/replay (64.26s). Exact reports, logs and hashes retained in the registered run. Final native network audit passed on all fifteen first-party apps with no failed supported browser requests or page errors. Native storage-denied keyboard/reload/read APIs passed all fifteen after correcting two harness assumptions, not changing valid APIs or tri-state theme semantics. Independent image review found unreadable SIEM letter-column buttons; fixed the existing flex basis and proved every label word stays whole at 320px/root32. Trading duplicated unit prose fixed and all market selections exercised. All 43 actual docs pages passed 320px/root40 article reflow. Latest full just check passed 24.27s. Production SVG detail review identified six edge labels crossing dashed boundaries; that final legibility correction remains open.
+
+Failing-before sports-browser.json and sports-request-error/recovery.png retain actual failed GET /api/state followed by successful real refresh/SSE with the old error still displayed. No response success was mocked. LSP has no server for this file; inspected local error and render callers. Domain and remaining current browser reviews continue independently.
+
+All fifteen current-source native app loading/empty/error/recovery, keyboard, assets and read APIs verified against retained immutable snapshots. Fixed sports read-error ownership: paused refresh and SSE clear recovered snapshot errors, while an actual aborted watchlist command keeps its exact unconfirmed ID/error after real reads. Fixed clearing first-paint and observed-readiness gates, recovered read-notice ownership and pending-command preservation; delayed app script/state and aborted actual transfer prove the boundaries. Corrected malformed POS synthetic-storage harness evidence is superseded, not an application defect. Sports full/ranged HEAD, standard/suffix/open-ended ranges and malformed/unsatisfiable 416 passed for all four clips. Evidence root /home/karl/Projects/artifacts/redpanda-lab/2026-10-14/164304-ddf0ba84-3a03-41a0-980d-7f9170076b5c. Final full gate through prek passed in 23.98 seconds; UI publication and final public documentation delta remain pending.
 <!-- SECTION:NOTES:END -->

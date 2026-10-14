@@ -9,7 +9,12 @@ function node(tag, text, className) {
   if (className) value.className = className;
   return value;
 }
-function message(text, error = false) { $('notice').textContent = text; $('notice').className = error ? 'error' : 'status'; }
+function message(text, error = false, owner = 'command') {
+  const notice = $('notice');
+  notice.dataset.owner = owner;
+  notice.textContent = text;
+  notice.className = error ? 'error' : 'status';
+}
 function preserve(value) {
   preserved = value;
   try { if (value) localStorage.setItem(storageKey, JSON.stringify(value)); else localStorage.removeItem(storageKey); } catch { /* In-memory recovery works when storage is denied. */ }
@@ -43,6 +48,7 @@ function choices(element, values) {
   element.dataset.signature = signature;
 }
 function render(next) {
+  if ($('notice').dataset.owner === 'snapshot') message('');
   state = next;
   $('connection').textContent = next.ready ? `Ordered log · offset ${next.lastOffset}` : `Writes paused · ${next.fault || 'ledger not ready'}`;
   $('policy').textContent = `Risk policy ${next.policy?.version || 'pending'}`;
@@ -90,7 +96,7 @@ async function refresh() {
   if (refreshing) return;
   refreshing = true;
   try { const result = await api('/api/state'); if (!result.ok) throw new Error(result.value.error || 'State unavailable.'); render(result.value); }
-  catch (error) { $('connection').textContent = 'Connection unavailable'; message(error.message, true); state = null; controls(); }
+  catch (error) { $('connection').textContent = 'Connection unavailable'; message(error.message, true, 'snapshot'); state = null; controls(); }
   finally { refreshing = false; }
 }
 function clock() { return Math.max(Date.now(), (state?.lastDecisionAt || 0) + 1); }
@@ -110,7 +116,7 @@ async function lookup(id) {
   await refresh();
 }
 async function mutate(path, command) {
-  if (busy) return;
+  if (busy || !state?.ready) return;
   busy = true;
   preserve({ path, command });
   try {
@@ -144,4 +150,5 @@ $('refresh').addEventListener('click', () => { void refresh(); });
 $('updates').addEventListener('click', () => { paused = !paused; $('updates').textContent = paused ? 'Resume updates' : 'Pause updates'; $('updates').setAttribute('aria-pressed', String(paused)); if (!paused) void refresh(); });
 const timer = setInterval(() => { if (!paused && !busy) void refresh(); }, 3000);
 window.addEventListener('pagehide', () => clearInterval(timer), { once: true });
+controls();
 void refresh();

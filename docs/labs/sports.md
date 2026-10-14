@@ -27,6 +27,8 @@ Playback sends `play`, `pause` and visible-tab heartbeats every ten seconds. Lea
 
 SSE connectivity is score/control connectivity, not media availability. Telemetry failure leaves playback available but stops telemetry until **Reconnect control plane**. Pause freezes the rendered state/event wire only: consumption and telemetry continue. Refresh discards the old subscription's queued updates, reads one snapshot and stays paused if automatic updates are off. Resume catches up; same-match updates do not reload the player or reset score selections.
 
+Successful snapshots clear scoreboard-read errors, not unconfirmed-operation or media errors. Refreshed scores do not prove that a prior command completed.
+
 ## Score and operation contract
 
 `sports.events.v2` has one partition, RF1 and match-ID keys. Records contain `schema:1`, stable `id`, `kind`, `matchId`, server receipt Unix millisecond `at`, plus:

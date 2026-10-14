@@ -40,6 +40,8 @@
 - Wrap SIEM controls by their text width and remove repeated unit wording from the trading ticket.
 - Include the explorer's page, stylesheet, script and company mark in replay source hashes.
 - Use D2's bundled Source Code Pro for legible blueprint identifiers and opaque connection labels. Remove the separate font package and preserve the matching release license and embedded font attribution.
+- Clear recovered sports snapshot errors without hiding unconfirmed-operation or media errors; preserve paused display state during manual refresh.
+- Keep clearing writes disabled from first paint through readiness; clear recovered read notices without discarding preserved command uncertainty.
 
 ## Initial polish
 

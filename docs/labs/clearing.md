@@ -14,6 +14,8 @@ just urls clearing
 
 Open the app URL. **Pause updates** freezes this browser's view, not the ledger. **Refresh ledger** reads current state manually.
 
+Write controls stay disabled until a ready ledger snapshot arrives. A failed read keeps the displayed ledger but disables new writes. Recovery clears only the read-error notice; it does not discard an uncertain command, its exact payload or its write lock.
+
 The first consumed record initializes five accounts and policy `northbridge-risk-1`:
 
 | Account | Opening cents | Fixture marker |

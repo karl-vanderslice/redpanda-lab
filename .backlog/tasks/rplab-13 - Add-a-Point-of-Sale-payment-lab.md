@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@omp'
 created_date: '2026-10-14 01:27'
-updated_date: '2026-10-14 03:05'
+updated_date: '2026-10-14 17:06'
 labels: []
 dependencies: []
 ordinal: 13000
@@ -34,4 +34,6 @@ Use integer-cent catalog prices and ordered checkout events, with local cash by 
 
 <!-- SECTION:NOTES:BEGIN -->
 Cash E2E passed 20261013T225207-2794742 and native browser checkout/refund passed. Actual owner clock4/4 and graceful-drain2/2 scenarios pass. Endive parameter updated to allowed_payment_method_types[] from version-matched primary changelog. AC2 external sandbox runtime remains unverified without real test credentials; no live funds or fake success. Evidence: /home/karl/Projects/artifacts/redpanda-lab/2026-10-13/213154-e6691ad6-6412-4133-b985-318d972e2b3e/index.md
+
+Resumed verification confirms required server-side sandbox variables are absent (presence checked only, no secrets printed). Cash and replay proof remains retained. Criterion 2 stays unverified until real STRIPE_TEST_SECRET_KEY, SQUARE_SANDBOX_ACCESS_TOKEN and SQUARE_SANDBOX_LOCATION_ID are supplied through the documented private runtime configuration with explicit sandbox opt-in. No external call, live funds, fake provider success or acceptance-criterion waiver.
 <!-- SECTION:NOTES:END -->
