@@ -10,6 +10,7 @@ Start with the explorer if you want to learn partitions and consumer lag. Choose
 | [Scheduled agent chat](agent-chat.md) | Conversations, messages and job transitions | Web chat, future jobs and cancellation | One scheduler; model completion can become unknown after interruption. |
 | [Bitcoin paper trading](bitcoin.md) | Quotes, commands and exact paper-account outcomes | Historical price replay, automated entries/exits, positions and P&L | No live feed, exchange orders, wallets or profitability claim. |
 | [Terraform](terraform.md) | Terraform state identifies infrastructure; Redpanda stores broker records | Reviewed plans, drift and teardown | Infrastructure state is not a Kafka data backup. |
+| [Multi-jurisdiction sharding](jurisdictions.md) | Separate regional raw logs and a global summary log | Residency-aware writes, tenant partitions, export policy and region-specific outages | Same host, no legal/compliance or geographic resilience guarantee. |
 
 ## The same lifecycle, separate ownership
 
@@ -23,7 +24,7 @@ just check sports
 just down sports
 ```
 
-The five application labs use one broker each. This keeps them small and makes their total-order projections explicit. The explorer and Terraform labs use three brokers for quorum experiments. All clusters run on the same host and use development settings. None demonstrates regional resilience.
+The five single-broker application labs keep their total-order projections explicit. The explorer and Terraform labs use three brokers for quorum experiments. The jurisdictions lab uses four independent clusters to distinguish jurisdiction sharding from partitioning within a region, with asynchronous summary-only federation. All run on the same host and use development settings. None demonstrates geographic resilience.
 
 Every application uses real Redpanda records. HTTP acceptance and broker acknowledgement are not interchangeable with consumer application. The pages show projection/operation state; the guides explain stable identifiers, deduplication, replay and uncertain outcomes. Redpanda does not generate model answers, deliver media bytes or wake timers by itself. The model server generates text, the sports server streams local MP4 files, and the chat application checks due jobs and records transitions through Redpanda.
 

@@ -8,7 +8,8 @@ name=${1:-help}
 case "$name" in
   trading|sports|agent-messaging|agent-chat|bitcoin) ;;
   terraform) shift; exec bash "$root/labs/terraform/lab" "$@" ;;
-  *) printf 'Usage: labs/run {trading|sports|agent-messaging|agent-chat|bitcoin|terraform} {up|down|status|urls [--json]|logs|rpk|exec|restart}\n'; exit 2 ;;
+  jurisdictions) shift; exec bash "$root/labs/jurisdictions/lab" "$@" ;;
+  *) printf 'Usage: labs/run {trading|sports|agent-messaging|agent-chat|bitcoin|terraform|jurisdictions} {up|down|status|urls [--json]|logs|rpk|exec|restart}\n'; exit 2 ;;
 esac
 shift
 command=${1:-help}

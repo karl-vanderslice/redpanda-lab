@@ -1,6 +1,6 @@
 # Redpanda Lab
 
-A collection of disposable, local systems built around Redpanda. The repository includes an event-stream explorer and six independent labs: a commodity exchange, a sports portal, two coordinating agents, scheduled agent chat, a Bitcoin paper trader, and a Terraform-managed cluster.
+A collection of disposable, local systems built around Redpanda. The repository includes an event-stream explorer and seven independent labs: a commodity exchange, a sports portal, two coordinating agents, scheduled agent chat, a Bitcoin paper trader, a Terraform-managed cluster, and a multi-jurisdiction sharding experiment.
 
 These are working applications, not deployment templates. They use real broker records and containerized services, but fixture data and development settings. You can inspect a record, restart an application, and see which state comes back from the log. You should not use them for production data.
 
@@ -38,8 +38,9 @@ The first build needs network access to download pinned inputs. Subsequent runs 
 | [`agent-chat`](docs/labs/agent-chat.md) | Web chat with local inference | Durable conversations, future jobs, ordered cancellation, and restart recovery. |
 | [`bitcoin`](docs/labs/bitcoin.md) | Web Bitcoin paper trader with historical BTC/USD data | Price watching, next-close strategy entries/exits, positions, fees, P&L, and replay. No live or real orders. |
 | [`terraform`](docs/labs/terraform.md) | Terraform-managed three-broker cluster and Console | Saved-plan review, infrastructure state, observed drift, and complete teardown. |
+| [`jurisdictions`](docs/labs/jurisdictions.md) | EU, US and APAC logs with a summary-only global view | Residency routing, tenant partitions, export boundaries, regional outages and replay. |
 
-The application labs have separate networks, volumes, ports, and topics. Each uses one broker and one ordered topic. The explorer and Terraform use three brokers. Running three brokers on one machine is useful for quorum experiments; it is not a simulation of three availability zones.
+The labs have separate networks, volumes, ports, and topics. The five single-broker application labs use one ordered topic each. The explorer and Terraform use three brokers in one cluster. The jurisdictions lab uses four independent single-broker clusters and three partitions per topic. All run on one machine, not in separate availability zones or geographic regions.
 
 For example, to run the exchange:
 
@@ -54,6 +55,18 @@ just down trading
 Use `sports`, `agent-messaging`, `agent-chat`, or `bitcoin` in the same lifecycle commands. The domain guides explain their APIs, state transitions, and failure cases. Terraform is different: `just up terraform` and `just down terraform` display a plan and require you to type the project name before making changes. Read its guide before applying a plan.
 
 The sports lab serves original, silent, synthetic video loops. It does not redistribute film footage or sports broadcasts. The agent labs include the model file and model server in containers. Their small model performs real inference, but its answers are not a quality or safety guarantee.
+
+To explore jurisdiction sharding:
+
+```bash
+just up jurisdictions
+just urls jurisdictions
+./labs/run jurisdictions outage eu
+./labs/run jurisdictions recover eu
+just down jurisdictions
+```
+
+The operator page shows each tenant's fixed home region, partition and consumed offset. Regional private fixtures remain in their home logs; only explicit aggregate snapshots go to the global cluster. During an EU outage, new EU writes are refused instead of redirected, while US and APAC can continue. The [walkthrough](docs/labs/jurisdictions.md) distinguishes this local demonstration from real data residency, compliance and regional disaster recovery.
 
 ## Checks and documentation
 
@@ -80,7 +93,7 @@ Browser storage is optional. Documentation theme and search controls stay usable
 
 `flake.lock`, application lockfiles, immutable model hashes, the Terraform provider lock, and digest-qualified upstream images define the inputs. The new application images are built with Nix. The original explorer still installs Debian packages inside its pinned base image, so those package versions are not a byte-for-byte rebuild guarantee. The [supply-chain reference](docs/reference/supply-chain.md) distinguishes version pins, artifact identity, provenance, and the remaining limits.
 
-All published ports are loopback-only. The labs omit production authentication, TLS, storage tuning, and distributed application ownership. Broker retention is finite; deleting a volume deletes its log. The [production and recovery guide](docs/explanation/production.md) covers independent failure domains, cross-region replication, writer fencing, recovery objectives, and restore drills. Those requirements are documented, not claimed as capabilities of this single-host setup.
+All published ports are loopback-only. The labs omit production authentication, TLS, storage tuning, and distributed application ownership. Most broker topics have finite retention; the jurisdictions experiment retains complete history until disposal. Deleting a volume deletes its log. The [production and recovery guide](docs/explanation/production.md) covers independent failure domains, cross-region replication, writer fencing, recovery objectives, and restore drills. Those requirements are documented, not claimed as capabilities of this single-host setup.
 
 ## License
 

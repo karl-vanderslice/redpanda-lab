@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root=$(realpath "$(dirname "${BASH_SOURCE[0]}")/../..")
+if [[ ${REDPANDA_LAB_SHELL:-0} != 1 ]]; then
+  exec nix develop "path:$root" --no-update-lock-file -c bash "$root/labs/jurisdictions/lab" "$@"
+fi
+command=${1:-help}; shift || true
+identity=$(printf '%s' "$root/jurisdictions" | sha256sum)
+export LAB_PROJECT="rp-jurisdictions-${identity:0:10}" LAB_APP_IMAGE=localhost/redpanda-jurisdictions:nix
+state="${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/labs/${identity:0:10}"
+mkdir -p "$state"
+case "$command" in
+  up|down|restart|outage|recover) exec 9>"$state/lifecycle.lock"; flock -n 9 || { echo 'Another lifecycle action owns this lab.' >&2; exit 1; } ;;
+esac
+port=${LAB_PORT_BASE:-$((49152+RANDOM%16000))}
+if [[ -f $state/port-base ]]; then read -r port < "$state/port-base"; fi
+if [[ ! $port =~ ^[0-9]+$ ]] || ((port < 49152 || port > 65535)); then
+  echo 'LAB_PORT_BASE must be 49152 through 65535.' >&2; exit 2
+fi
+export APP_PORT=$port
+compose() { podman-compose -p "$LAB_PROJECT" -f "$root/labs/jurisdictions/compose.yml" "$@" 9>&-; }
+region() { case "${1:-}" in eu|us|apac|global) ;; *) echo 'Select eu, us, apac, or global.' >&2; exit 2 ;; esac; }
+urls() {
+  [[ -f $state/port-base ]] || { echo 'Run just up jurisdictions first.' >&2; return 1; }
+  if [[ ${1:-} == --json ]]; then jq -n --arg app "http://127.0.0.1:$APP_PORT" --arg project "$LAB_PROJECT" '{app:$app,project:$project}'
+  else printf 'Jurisdiction operator: http://127.0.0.1:%s\nProject: %s\n' "$APP_PORT" "$LAB_PROJECT"; fi
+}
+wait_ready() {
+  local deadline=$((SECONDS+180))
+  until curl -fsS --max-time 10 "http://127.0.0.1:$APP_PORT/api/state" | jq -e '.global.ready and .global.brokerAvailable and ([.regions[] | .ready and .brokerAvailable] | all)' >/dev/null; do
+    ((SECONDS < deadline)) || { echo 'Readiness timed out. Containers remain; inspect logs.' >&2; return 1; }; sleep 1
+  done
+}
+case "$command" in
+  up)
+    if [[ ! -f $state/port-base ]]; then
+      available=0
+      for _attempt in {1..20}; do
+        if node --input-type=module - "$port" <<'JS'
+import net from 'node:net';
+const server=net.createServer();
+server.once('error',()=>{process.exitCode=1;}).listen(Number(process.argv[2]),'127.0.0.1',()=>server.close());
+JS
+        then available=1; break; fi
+        [[ -z ${LAB_PORT_BASE:-} ]] || break
+        port=$((49152+RANDOM%16000)); export APP_PORT=$port
+      done
+      ((available)) || { echo 'Selected port unavailable.' >&2; exit 1; }
+      printf '%s\n' "$port" > "$state/port-base"
+    fi
+    image=$(nix build --no-update-lock-file --no-link --print-out-paths "path:$root#jurisdictions-image")
+    podman load -i "$image" 9>&-
+    LAB_APP_IMAGE=$(podman image inspect --format '{{.Id}}' "$LAB_APP_IMAGE")
+    timeout --foreground 240s podman-compose -p "$LAB_PROJECT" -f "$root/labs/jurisdictions/compose.yml" up -d broker-eu broker-us broker-apac broker-global 9>&-
+    for target in eu us apac global; do
+      deadline=$((SECONDS+120))
+      until compose exec -T "broker-$target" rpk cluster health -X brokers=localhost:9092 --exit-when-healthy >/dev/null 2>&1; do
+        ((SECONDS < deadline)) || { echo "$target broker timed out" >&2; exit 1; }; sleep 1
+      done
+      topic=jurisdictions.records.v1
+      [[ $target != global ]] || topic=jurisdictions.summaries.v1
+      if ! compose exec -T "broker-$target" rpk topic describe "$topic" -X brokers=localhost:9092 >/dev/null 2>&1; then
+        compose exec -T "broker-$target" rpk topic create "$topic" -p 3 -r 1 -c retention.ms=-1 -c retention.bytes=-1 -X brokers=localhost:9092
+      fi
+    done
+    compose up -d
+    wait_ready; urls
+    ;;
+  down)
+    compose down --volumes --remove-orphans
+    [[ -z $(podman ps -a --filter "name=^${LAB_PROJECT}_" --format '{{.Names}}') ]] || { echo 'Owned containers remain.' >&2; exit 1; }
+    for kind in volume network; do
+      podman "$kind" ls --format '{{.Name}}' | jq -R -s -e --arg prefix "${LAB_PROJECT}_" 'split("\n") | all(.[]; startswith($prefix) | not)' >/dev/null || { echo "Owned $kind remains." >&2; exit 1; }
+    done
+    rm -f "$state/port-base"; echo "Disposed of $LAB_PROJECT. Shared images and Nix caches remain."
+    ;;
+  urls) urls "$@" ;;
+  status) compose ps; [[ ! -f $state/port-base ]] || urls ;;
+  logs) compose logs --tail=100 "$@" ;;
+  exec) compose exec -T "$@" ;;
+  rpk) region "${1:-}"; target=$1; shift; compose exec -T "broker-$target" rpk -X brokers=localhost:9092 "$@" ;;
+  restart) [[ $# == 1 ]] || { echo 'restart requires one service' >&2; exit 2; }; compose restart "$1"; wait_ready ;;
+  outage|recover)
+    region "${1:-}"; [[ $# == 1 ]] || { echo 'Specify one region.' >&2; exit 2; }
+    if [[ $command == outage ]]; then compose stop "broker-$1"; else compose start "broker-$1"; wait_ready; fi
+    ;;
+  *) echo 'Usage: labs/run jurisdictions {up|down|status|urls [--json]|logs|exec|restart SERVICE|rpk REGION ARGS...|outage REGION|recover REGION}' >&2; exit 2 ;;
+esac

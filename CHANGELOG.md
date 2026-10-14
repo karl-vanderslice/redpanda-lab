@@ -18,6 +18,7 @@
 - Separate unpublished Bitcoin errors from uncertain outcomes, retain original-command recovery and reserve internal quote IDs.
 - Persist Terraform port/Console choices at planning, not inspection; release them only after a reviewed, verified empty destroy.
 - Keep Zensical theme/search usable when browser storage is denied, with page-local preference state and no storage-policy bypass.
+- Add a multi-jurisdiction lab with separate EU, US, APAC and global clusters, deterministic tenant sharding, three-partition regional logs, summary-only federation, an operator web page and real regional/global outage and replay checks.
 
 ## Initial polish
 

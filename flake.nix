@@ -21,9 +21,14 @@
           pkgs = pkgsFor system;
           common = import ./labs/common { inherit pkgs; };
         in
-        nixpkgs.lib.genAttrs [ "trading" "sports" "agent-messaging" "agent-chat" "bitcoin" ] (
-          name: import (./labs + "/${name}/default.nix") { inherit pkgs common; }
-        );
+        nixpkgs.lib.genAttrs [
+          "trading"
+          "sports"
+          "agent-messaging"
+          "agent-chat"
+          "bitcoin"
+          "jurisdictions"
+        ] (name: import (./labs + "/${name}/default.nix") { inherit pkgs common; });
     in
     {
       packages = forAllSystems (

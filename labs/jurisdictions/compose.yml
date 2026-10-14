@@ -1,0 +1,68 @@
+x-broker: &broker
+  image: registry-1.docker.io/redpandadata/redpanda:v26.2.4@sha256:c98c2f04a751e6646012cc701bac5183252cee44c88ba1dfa412e4c7124f2e89
+  mem_limit: 1g
+  healthcheck:
+    test: [CMD, rpk, cluster, health, -X, brokers=localhost:9092, --exit-when-healthy]
+    interval: 5s
+    timeout: 5s
+    retries: 30
+x-app: &app
+  image: ${LAB_APP_IMAGE}
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges]
+  tmpfs: ['/tmp:size=32m,mode=1777']
+  mem_limit: 256m
+  restart: on-failure
+services:
+  broker-eu:
+    <<: *broker
+    command: [redpanda, start, --mode=dev-container, --smp=1, --memory=512M, --reserve-memory=0M, --node-id=0, --kafka-addr=0.0.0.0:9092, --advertise-kafka-addr=broker-eu:9092, --rpc-addr=0.0.0.0:33145, --advertise-rpc-addr=broker-eu:33145, --default-log-level=warn]
+    networks: [eu]
+    volumes: [broker-eu:/var/lib/redpanda/data]
+  broker-us:
+    <<: *broker
+    command: [redpanda, start, --mode=dev-container, --smp=1, --memory=512M, --reserve-memory=0M, --node-id=0, --kafka-addr=0.0.0.0:9092, --advertise-kafka-addr=broker-us:9092, --rpc-addr=0.0.0.0:33145, --advertise-rpc-addr=broker-us:33145, --default-log-level=warn]
+    networks: [us]
+    volumes: [broker-us:/var/lib/redpanda/data]
+  broker-apac:
+    <<: *broker
+    command: [redpanda, start, --mode=dev-container, --smp=1, --memory=512M, --reserve-memory=0M, --node-id=0, --kafka-addr=0.0.0.0:9092, --advertise-kafka-addr=broker-apac:9092, --rpc-addr=0.0.0.0:33145, --advertise-rpc-addr=broker-apac:33145, --default-log-level=warn]
+    networks: [apac]
+    volumes: [broker-apac:/var/lib/redpanda/data]
+  broker-global:
+    <<: *broker
+    command: [redpanda, start, --mode=dev-container, --smp=1, --memory=512M, --reserve-memory=0M, --node-id=0, --kafka-addr=0.0.0.0:9092, --advertise-kafka-addr=broker-global:9092, --rpc-addr=0.0.0.0:33145, --advertise-rpc-addr=broker-global:33145, --default-log-level=warn]
+    networks: [global]
+    volumes: [broker-global:/var/lib/redpanda/data]
+  region-eu:
+    <<: *app
+    environment: {ROLE: regional, REGION: eu, KAFKA_BROKERS: 'broker-eu:9092', ADMIN_HOST: broker-eu}
+    networks: [eu, global]
+  region-us:
+    <<: *app
+    environment: {ROLE: regional, REGION: us, KAFKA_BROKERS: 'broker-us:9092', ADMIN_HOST: broker-us}
+    networks: [us, global]
+  region-apac:
+    <<: *app
+    environment: {ROLE: regional, REGION: apac, KAFKA_BROKERS: 'broker-apac:9092', ADMIN_HOST: broker-apac}
+    networks: [apac, global]
+  global:
+    <<: *app
+    environment: {ROLE: global, KAFKA_BROKERS: 'broker-global:9092', ADMIN_HOST: broker-global}
+    networks: [global]
+  app:
+    <<: *app
+    environment: {ROLE: gateway}
+    ports: ['127.0.0.1:${APP_PORT}:3000']
+    networks: [eu, us, apac, global]
+networks:
+  eu: {driver: bridge}
+  us: {driver: bridge}
+  apac: {driver: bridge}
+  global: {driver: bridge}
+volumes:
+  broker-eu: {}
+  broker-us: {}
+  broker-apac: {}
+  broker-global: {}
