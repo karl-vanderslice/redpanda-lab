@@ -15,3 +15,23 @@ require_local_podman() {
     return 1
   fi
 }
+
+# Bind an archive before touching shared cache tags owned by other checkouts.
+load_archive_image() {
+  local archive=$1 identity status=0
+  identity=$(skopeo inspect --config --raw "docker-archive:$archive" | sha256sum) || return
+  identity=${identity%% *}
+  podman --remote=false image exists "$identity" 9>&- || status=$?
+  case "$status" in
+    0) ;;
+    1)
+      podman --remote=false load -i "$archive" 9>&- >&2 || return
+      if ! podman --remote=false image exists "$identity" 9>&-; then
+        printf 'Archive image was not loaded: %s\n' "$identity" >&2
+        return 1
+      fi
+      ;;
+    *) printf 'Cannot inspect archive image: %s\n' "$identity" >&2; return "$status" ;;
+  esac
+  printf '%s\n' "$identity"
+}

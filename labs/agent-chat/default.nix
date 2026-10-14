@@ -1,5 +1,5 @@
 { common, ... }:
 common.mkNodeImage {
   name = "redpanda-agent-chat";
-  src = ./.;
+  src = common.nodeSource { root = ./.; };
 }

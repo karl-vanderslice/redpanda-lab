@@ -1,6 +1,6 @@
 { common, ... }:
 common.mkNodeImage {
   name = "redpanda-pos";
-  src = ./.;
+  src = common.nodeSource { root = ./.; };
   sharedUI = true;
 }

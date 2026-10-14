@@ -41,6 +41,8 @@ case $mode in
       mkdir -p -- "$(dirname -- "$output")"
       mkdir -- "$output"
       cp -R -- "$stage/site/." "$output/"
+      # The export is the retained copy; its build stage is disposable.
+      rm -rf -- "$stage"
     else
       output="$stage/site"
     fi

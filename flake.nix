@@ -9,12 +9,15 @@
         "aarch64-linux"
       ];
       forAllSystems = nixpkgs.lib.genAttrs systems;
-      pkgsFor =
+      # Function applications are not memoized; share one instance per system.
+      pkgsBySystem = forAllSystems (
         system:
         import nixpkgs {
           inherit system;
           config.allowUnfreePredicate = pkg: (nixpkgs.lib.getName pkg) == "terraform";
-        };
+        }
+      );
+      pkgsFor = system: pkgsBySystem.${system};
       toolsFor =
         system:
         let

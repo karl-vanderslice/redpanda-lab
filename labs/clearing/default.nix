@@ -1,6 +1,6 @@
 { common, ... }:
 common.mkNodeImage {
   name = "redpanda-clearing";
-  src = ./.;
+  src = common.nodeSource { root = ./.; };
   sharedUI = true;
 }

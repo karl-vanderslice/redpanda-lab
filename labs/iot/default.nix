@@ -1,6 +1,6 @@
 { common, ... }:
 common.mkNodeImage {
   name = "redpanda-iot";
-  src = ./.;
+  src = common.nodeSource { root = ./.; };
   sharedUI = true;
 }

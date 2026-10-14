@@ -3,6 +3,9 @@ set -Eeuo pipefail
 umask 077
 lab=$(realpath "$(dirname "${BASH_SOURCE[0]}")")
 root=$(realpath "$lab/../..")
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../../scripts/local-podman
+source "$root/scripts/local-podman"
 identity=$(printf '%s' "$root" | sha256sum)
 identity=${identity:0:12}
 project="rplab-tf-$identity"
@@ -148,14 +151,10 @@ image=${LAB_TERRAFORM_IMAGE:-}
 if [[ -z "$image" ]]; then
   archive=$(nix build --no-update-lock-file --no-link --print-out-paths "path:$root#terraform-image")
   [[ -f "$archive" ]] || fail 'terraform-image must be a dockerTools archive'
-  archive_hash=$(sha256sum "$archive"); archive_hash=${archive_hash%% *}
-  if [[ ! -f "$state/tool-archive.sha256" || $(cat "$state/tool-archive.sha256") != "$archive_hash" ]] || ! podman_local image exists localhost/redpanda-lab-terraform:tf-1.16.4-docker-4.6.0; then
-    podman_local load -i "$archive" >&2
-    printf '%s\n' "$archive_hash" > "$state/tool-archive.sha256"
-  fi
-  image=localhost/redpanda-lab-terraform:tf-1.16.4-docker-4.6.0
+  image_id=$(load_archive_image "$archive")
+else
+  image_id=$(podman_local image inspect --format '{{.Id}}' "$image")
 fi
-image_id=$(podman_local image inspect --format '{{.Id}}' "$image")
 # No host home, credentials, checkout write access, host network or extra socket.
 # Socket authority still equals the host user: read-only mount is NOT an API ACL.
 tf() {

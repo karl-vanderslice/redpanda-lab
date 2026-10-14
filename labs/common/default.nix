@@ -18,6 +18,21 @@ let
         mkdir -p "$out"
         tar -xzf ${kafkaArchive} --strip-components=1 -C "$out"
       '';
+  nodeSource =
+    {
+      root,
+      extraFiles ? [ ],
+    }:
+    pkgs.lib.fileset.toSource {
+      inherit root;
+      fileset = pkgs.lib.fileset.unions (
+        [
+          (pkgs.lib.fileset.fileFilter (file: file.hasExt "mjs") root)
+          (root + "/public")
+        ]
+        ++ extraFiles
+      );
+    };
   mkNodeImage =
     {
       name,
@@ -76,5 +91,5 @@ let
     };
 in
 {
-  inherit mkNodeImage kafkaClient;
+  inherit mkNodeImage nodeSource kafkaClient;
 }

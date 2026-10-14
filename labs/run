@@ -38,9 +38,12 @@ ports
 export LAB_APP_IMAGE="localhost/redpanda-$name:nix" LAB_MODEL_IMAGE=localhost/redpanda-lab-model:nix
 export REDPANDA_PROXY_URL=http://redpanda:8082
 compose() {
-  local limit=()
-  if [[ ${1:-} == up ]]; then limit=(timeout --foreground 240s); fi
-  "${limit[@]}" podman-compose --podman-path="$REDPANDA_LAB_PODMAN" -p "$LAB_PROJECT" -f "$root/labs/common/compose.yml" -f "$root/labs/$name/compose.yml" "$@" 9>&-
+  local limit=() status=0
+  # Without --foreground, timeout signals Compose's Podman children too.
+  if [[ ${1:-} == up ]]; then limit=(timeout 240s); fi
+  "${limit[@]}" podman-compose --podman-path="$REDPANDA_LAB_PODMAN" -p "$LAB_PROJECT" -f "$root/labs/common/compose.yml" -f "$root/labs/$name/compose.yml" "$@" 9>&- || status=$?
+  if (( status == 124 )); then echo 'Compose startup exceeded 240 seconds. Containers may remain; inspect status and logs, or use down.' >&2; fi
+  return "$status"
 }
 urls() {
   if [[ ! -f $state/port-base ]]; then echo "Run just up $name first." >&2; return 1; fi
@@ -77,13 +80,11 @@ JS
       printf '%s\n' "$base" > "$state/port-base"
     fi
     image=$(nix build --no-update-lock-file --no-link --print-out-paths "path:$root#$name-image")
-    podman --remote=false load -i "$image" 9>&-
-    # Compose must see immutable identity changes, not a reused local tag.
-    LAB_APP_IMAGE=$(podman --remote=false image inspect --format '{{.Id}}' "$LAB_APP_IMAGE")
+    # Mutable cache tags cannot select a different checkout's image.
+    LAB_APP_IMAGE=$(load_archive_image "$image")
     if [[ $name == agent-chat || $name == agent-messaging ]]; then
       model_image=$(nix build --no-update-lock-file --no-link --print-out-paths "path:$root#model-image")
-      podman --remote=false load -i "$model_image" 9>&-
-      LAB_MODEL_IMAGE=$(podman --remote=false image inspect --format '{{.Id}}' "$LAB_MODEL_IMAGE")
+      LAB_MODEL_IMAGE=$(load_archive_image "$model_image")
     fi
     compose up -d redpanda console
     wait_ready "http://127.0.0.1:$ADMIN_PORT/v1/cluster/health_overview" '.is_healthy'
@@ -119,7 +120,7 @@ JS
     echo "Disposed of $LAB_PROJECT. Nix outputs and reusable images remain cached."
     ;;
   urls) urls "$@" ;;
-  status) compose ps; if [[ -f $state/port-base ]]; then urls; fi ;;
+  status) compose ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'; if [[ -f $state/port-base ]]; then urls; fi ;;
   logs) compose logs --tail=100 "$@" ;;
   exec) compose exec -T "$@" ;;
   rpk) compose exec -T redpanda rpk -X brokers=redpanda:9092 "$@" ;;

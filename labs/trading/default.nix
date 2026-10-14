@@ -3,7 +3,15 @@ let
   app = pkgs.rustPlatform.buildRustPackage {
     pname = "commodity-exchange";
     version = "0.1.0";
-    src = ./.;
+    src = pkgs.lib.fileset.toSource {
+      root = ./.;
+      fileset = pkgs.lib.fileset.unions [
+        ./Cargo.toml
+        ./Cargo.lock
+        ./src
+        ./public
+      ];
+    };
     cargoLock.lockFile = ./Cargo.lock;
     postInstall = ''
       install -Dm644 ${../../LICENSE} "$out/share/licenses/redpanda-lab/LICENSE"

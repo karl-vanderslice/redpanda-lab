@@ -113,7 +113,7 @@ JS
       npm --prefix "$root/app" install --package-lock-only --ignore-scripts --no-audit --no-fund \
       --registry=https://registry.npmjs.org/ --userconfig="$state/npm-home/empty.npmrc" --globalconfig=/dev/null
     ;;
-  status) compose ps; [[ ! -f $state/port-base ]] || urls ;;
+  status) compose ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'; [[ ! -f $state/port-base ]] || urls ;;
   urls) [[ -f $state/port-base ]] || { echo 'Lab is not initialized. Run ./lab up.' >&2; exit 1; }; urls ;;
   logs) shift; compose logs --tail=100 "$@" ;;
   rpk) shift; compose exec -T redpanda-0 rpk -X brokers=redpanda-0:9092,redpanda-1:9092,redpanda-2:9092 "$@" ;;

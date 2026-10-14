@@ -5,7 +5,7 @@ let
   fx = pkgs.callPackage ./fx.nix { };
   node = common.mkNodeImage {
     name = "redpanda-agent-messaging";
-    src = ./.;
+    src = common.nodeSource { root = ./.; };
     extraContents = [
       fx
       pkgs.bash

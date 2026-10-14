@@ -1,5 +1,8 @@
 { common, ... }:
 common.mkNodeImage {
   name = "redpanda-bitcoin";
-  src = ./.;
+  src = common.nodeSource {
+    root = ./.;
+    extraFiles = [ ./candles.json ];
+  };
 }

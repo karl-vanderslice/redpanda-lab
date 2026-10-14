@@ -25,7 +25,7 @@ let
       '';
   source = pkgs.runCommand "sports-app-with-local-media" { } ''
     mkdir -p "$out"
-    cp -R ${./.}/. "$out/"
+    cp -R ${common.nodeSource { root = ./.; }}/. "$out/"
     chmod -R u+w "$out"
     mkdir -p "$out/public/media"
     cp ${media}/*.mp4 "$out/public/media/"
