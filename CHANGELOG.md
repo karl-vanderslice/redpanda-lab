@@ -29,6 +29,7 @@
 - Preserve admitted POS IDs and paused sensor sequence hints. Disable new writes on unavailable observations without discarding the consumed view.
 - Keep dispatch map labels readable in a named keyboard-scrollable region rather than shrinking them on narrow screens.
 - Settle pending log sends before disconnect. Use the Nix-owned local rootless Podman adapter without a Compose patch.
+- Use a supported rootless-compatible hosted check runner without rootful fallback or kernel-security overrides.
 
 ## Initial polish
 

@@ -4,6 +4,7 @@ title: Audit every lab for missing routes and assets
 status: In Progress
 assignee: []
 created_date: '2026-10-14 10:44'
+updated_date: '2026-10-14 11:07'
 labels: []
 dependencies: []
 ordinal: 29000
@@ -27,3 +28,9 @@ User requested an explicit all-lab audit of unintended 404s and similar page, st
 <!-- SECTION:PLAN:BEGIN -->
 Inventory implemented routes and app entrypoints, start isolated source-matched runtimes, crawl supported pages/assets/read APIs, check expected negative paths separately, repair consumer-visible failures and retain/publish real proof.
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Real source-matched HTTP baseline retained in http-route-baseline.json: explorer Registry and HTTP Proxy roots return 404 while /subjects and /topics return 200; IoT static file-as-directory, decoded NUL and overlong path return 500; malformed receipt escapes in event-log and SIEM and malformed explorer path return 500. Supported asset/HEAD parity and browser-request auditing remain in progress.
+<!-- SECTION:NOTES:END -->

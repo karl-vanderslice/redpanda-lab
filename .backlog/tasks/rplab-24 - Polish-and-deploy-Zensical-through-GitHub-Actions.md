@@ -4,6 +4,7 @@ title: Polish and deploy Zensical through GitHub Actions
 status: In Progress
 assignee: []
 created_date: '2026-10-14 02:41'
+updated_date: '2026-10-14 11:07'
 labels: []
 dependencies: []
 ordinal: 24000
@@ -28,3 +29,9 @@ Authorized extended Redpanda release. Original fictional companies, real local w
 <!-- SECTION:PLAN:BEGIN -->
 Inspect existing contracts and relevant specialist guidance; implement within isolated ownership; integrate through the parent; run public workflows and browser checks; retain evidence; commit and publish only verified checkpoints.
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Signed 139218c was pushed through the already-authorized repository-owner SSH key after HTTPS rejected workflow updates for missing OAuth workflow scope. Hosted run 38552345214 passed thirteen domain static/package gates then failed at rootless Podman with failed to reexec: Permission denied. Sanitized real job log retained. Full gate remains mandatory; check runner changes to supported Ubuntu 22.04 without rootful fallback or host-security overrides. Deployment is not yet verified.
+<!-- SECTION:NOTES:END -->
