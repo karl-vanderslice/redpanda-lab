@@ -1,6 +1,6 @@
 const $ = id => document.getElementById(id);
 const storageKey = 'northbridge-preserved-command';
-let state = null, paused = false, refreshing = false, busy = false, preserved = null;
+let state = null, paused = false, activeRead = null, viewGeneration = 0, busy = false, preserved = null;
 const newId = prefix => `${prefix}-${crypto.randomUUID()}`;
 const cents = value => `${value.toLocaleString('en-US')} cents`;
 function node(tag, text, className) {
@@ -92,12 +92,19 @@ function render(next) {
   }) : [node('p', 'No transfer instructions have been screened.', 'muted')]));
   controls();
 }
-async function refresh() {
-  if (refreshing) return;
-  refreshing = true;
-  try { const result = await api('/api/state'); if (!result.ok) throw new Error(result.value.error || 'State unavailable.'); render(result.value); }
-  catch (error) { $('connection').textContent = 'Connection unavailable'; message(error.message, true, 'snapshot'); state = null; controls(); }
-  finally { refreshing = false; }
+async function refresh(automatic = false) {
+  if (automatic && (paused || activeRead)) return;
+  const generation = ++viewGeneration;
+  activeRead = { generation, automatic };
+  try {
+    const result = await api('/api/state');
+    if (generation !== viewGeneration || (automatic && paused)) return;
+    if (!result.ok) throw new Error(result.value.error || 'State unavailable.');
+    render(result.value);
+  } catch (error) {
+    if (generation !== viewGeneration || (automatic && paused)) return;
+    $('connection').textContent = 'Connection unavailable'; message(error.message, true, 'snapshot'); state = null; controls();
+  } finally { if (activeRead?.generation === generation) activeRead = null; }
 }
 function clock() { return Math.max(Date.now(), (state?.lastDecisionAt || 0) + 1); }
 async function lookup(id) {
@@ -147,8 +154,8 @@ $('lookup-form').addEventListener('submit', event => { event.preventDefault(); v
 $('inspect-uncertain').addEventListener('click', () => { if (preserved) void lookup(preserved.command.id).catch(error => message(error.message, true)); });
 $('retry-preserved').addEventListener('click', () => { if (preserved && state?.ready) void mutate(preserved.path, preserved.command); });
 $('refresh').addEventListener('click', () => { void refresh(); });
-$('updates').addEventListener('click', () => { paused = !paused; $('updates').textContent = paused ? 'Resume updates' : 'Pause updates'; $('updates').setAttribute('aria-pressed', String(paused)); if (!paused) void refresh(); });
-const timer = setInterval(() => { if (!paused && !busy) void refresh(); }, 3000);
+$('updates').addEventListener('click', () => { paused = !paused; if (paused && activeRead?.automatic) { viewGeneration += 1; activeRead = null; } $('updates').textContent = paused ? 'Resume updates' : 'Pause updates'; $('updates').setAttribute('aria-pressed', String(paused)); if (!paused) void refresh(); });
+const timer = setInterval(() => { if (!paused && !busy) void refresh(true); }, 3000);
 window.addEventListener('pagehide', () => clearInterval(timer), { once: true });
 controls();
 void refresh();

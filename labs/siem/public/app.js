@@ -6,7 +6,7 @@ let readFailed = false;
 let selected = null;
 let displayed = null;
 let paused = false;
-let fetching = false;
+let activeRead = null, viewGeneration = 0;
 let busy = false;
 let pending = null;
 try { pending = JSON.parse(localStorage.getItem(storageKey) || 'null'); } catch { /* Storage is optional. */ }
@@ -91,11 +91,13 @@ function renderTimeline() {
     row.dataset.offset = receipt.offset; $('timeline').insertBefore(row, before || null);
   }
 }
-async function refresh() {
-  if (fetching) return;
-  fetching = true;
+async function refresh(automatic = false) {
+  if (automatic && (paused || activeRead)) return;
+  const generation = ++viewGeneration;
+  activeRead = { generation, automatic };
   try {
     const response = await request('/api/state');
+    if (generation !== viewGeneration || (automatic && paused)) return;
     if (response.status !== 200) throw new Error('Projection unavailable.');
     if (readFailed) notice(pending ? 'Projection reconnected. Look up the preserved command receipt.' : 'Projection reconnected.');
     readFailed = false;
@@ -105,12 +107,13 @@ async function refresh() {
     if (state.unknown) remember({ path: state.unknown.command.type === 'ingest' ? '/api/telemetry' : '/api/incidents/actions', payload: payloadFromCommand(state.unknown.command) });
     renderQueue(); renderCase(); renderTimeline(); controls();
   } catch (error) {
+    if (generation !== viewGeneration || (automatic && paused)) return;
     readFailed = true;
     $('owner').textContent = 'Unavailable / view retained';
     notice(`Refresh failed: ${error.message}. Previously consumed view retained.`);
     controls();
   }
-  finally { fetching = false; }
+  finally { if (activeRead?.generation === generation) activeRead = null; }
 }
 function payloadFromCommand(command) { const { type, ...payload } = command; return payload; }
 async function publish(path, payload) {
@@ -179,7 +182,7 @@ $('lookup').addEventListener('click', () => { if (!pending) return; void action(
 $('retry').addEventListener('click', () => { if (!pending) return; const exact = pending; void action(() => publish(exact.path, exact.payload)); });
 $('filter').addEventListener('change', () => { if (state) renderQueue(); });
 $('refresh').addEventListener('click', () => { void refresh(); });
-$('updates').addEventListener('click', () => { paused = !paused; $('updates').textContent = paused ? 'Resume updates' : 'Pause updates'; $('updates').setAttribute('aria-pressed', String(paused)); notice(paused ? 'Automatic updates paused. Refresh remains available.' : 'Automatic updates resumed.'); if (!paused) void refresh(); });
+$('updates').addEventListener('click', () => { paused = !paused; if (paused && activeRead?.automatic) { viewGeneration += 1; activeRead = null; } $('updates').textContent = paused ? 'Resume updates' : 'Pause updates'; $('updates').setAttribute('aria-pressed', String(paused)); notice(paused ? 'Automatic updates paused. Refresh remains available.' : 'Automatic updates resumed.'); if (!paused) void refresh(); });
 remember(pending);
 await refresh();
 if (state?.maxEventTime !== null && state?.maxEventTime !== undefined) {
@@ -188,4 +191,4 @@ if (state?.maxEventTime !== null && state?.maxEventTime !== undefined) {
   if ($('json-input').value === initialImportText) $('json-input').value = JSON.stringify({ ...initialImport, timestamp: new Date(exampleTime).toISOString() }, null, 2);
 }
 if (state?.ready && !pending) notice('Projection ready. Ingest observations or select an incident.');
-setInterval(() => { if (!paused && !busy) void refresh(); }, 2500);
+setInterval(() => { if (!paused && !busy) void refresh(true); }, 2500);

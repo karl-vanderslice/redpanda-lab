@@ -1,5 +1,5 @@
 const $ = id => document.getElementById(id);
-let state = null, selected = '', articleId = null, pending = null, busy = false, paused = false, refreshing = false, readFailed = false;
+let state = null, selected = '', articleId = null, articleOpener = null, pending = null, busy = false, paused = false, activeRead = null, viewGeneration = 0, readFailed = false;
 const postNodes = new Map(), authorNodes = new Map(), analyticNodes = new Map();
 const storageKey = 'commonfield-pending-v1';
 function storageWarning() { $('storage').textContent = 'Browser storage is unavailable. This page still works, but copy unresolved commands before closing it; they cannot be recovered after a reload.'; }
@@ -99,7 +99,7 @@ function render() {
       const root = element('article', 'post');
       const title = element('h3', 'post-title'), byline = element('p', 'byline muted'), summary = element('p'), counts = element('p', 'counts muted');
       const actions = element('div', 'actions');
-      const read = button('Read local article', () => { void openArticle(post.postId); });
+      const read = button('Read local article', event => { void openArticle(post.postId, event.currentTarget); });
       const like = button('Like', () => {
         const latest = state.posts.find(item => item.postId === post.postId);
         void command({ type: 'like', viewerId: selected, postId: post.postId, liked: !latest.likes.includes(selected) });
@@ -142,24 +142,27 @@ function render() {
   $('ledger').textContent = `Consumed offset ${state.lastOffset ?? 'none'} · ${state.operations.length} command receipts · ${state.duplicates} broker duplicates`;
   lock();
 }
-async function refresh(announce = true) {
-  if (refreshing) return;
-  refreshing = true;
+async function refresh(announce = true, automatic = false) {
+  if (automatic && (paused || activeRead)) return;
+  const generation = ++viewGeneration;
+  activeRead = { generation, automatic };
   try {
     const response = await request('/api/state');
+    if (generation !== viewGeneration || (automatic && paused)) return;
     if (response.status !== 200) throw new Error(response.body.error || 'State unavailable');
     readFailed = false;
     state = response.body; render();
     if (!state.ready) status(state.unknown?.message || 'The app is not accepting commands.');
     else if (announce) status(paused ? 'Refreshed. Automatic updates remain paused.' : 'Public edition is current. Only consumed records appear here.');
   } catch (error) {
+    if (generation !== viewGeneration || (automatic && paused)) return;
     readFailed = true;
     status(`Refresh failed: ${error.message}. Previously consumed view retained.`);
     lock();
   }
-  finally { refreshing = false; }
+  finally { if (activeRead?.generation === generation) activeRead = null; }
 }
-async function openArticle(postId) {
+async function openArticle(postId, opener) {
   if (pending || busy || readFailed || !selected || !state?.ready) return;
   const openingViewer = selected;
   busy = true; lock();
@@ -168,6 +171,7 @@ async function openArticle(postId) {
     if (response.status !== 200) throw new Error(response.body.error || 'Article unavailable');
     const { post, author } = response.body;
     articleId = post.postId;
+    if (opener) articleOpener = opener;
     $('article-title').textContent = post.title;
     $('article-byline').textContent = `By ${author.name} · public article · ${post.postId}`;
     $('article-source').textContent = post.fixture ? 'Explicit logged fixture' : 'Reader-published article';
@@ -177,6 +181,12 @@ async function openArticle(postId) {
     await command({ type: 'read', viewerId: openingViewer, postId, surface: 'article' });
   } catch (error) { status(`Article open failed: ${error.message}`); }
   finally { busy = false; lock(); }
+}
+function closeArticle() {
+  $('article').hidden = true; articleId = null; lock();
+  const target = articleOpener?.isConnected && !articleOpener.disabled && articleOpener.getClientRects().length ? articleOpener : $('viewer');
+  target.focus();
+  articleOpener = null;
 }
 $('viewer').addEventListener('change', () => { selected = $('viewer').value; remember('commonfield-viewer', selected); if (state) render(); });
 $('mode').addEventListener('change', () => { void command({ type: 'feed', viewerId: selected, mode: $('mode').value }); });
@@ -198,9 +208,12 @@ $('inspect').addEventListener('click', async () => {
 });
 $('retry').addEventListener('click', () => { void sendExact(); });
 $('read-again').addEventListener('click', () => { void openArticle(articleId); });
-$('close-article').addEventListener('click', () => { $('article').hidden = true; articleId = null; lock(); });
+$('close-article').addEventListener('click', closeArticle);
+$('article').addEventListener('keydown', event => {
+  if (event.key === 'Escape' && !event.defaultPrevented) { event.preventDefault(); closeArticle(); }
+});
 $('refresh').addEventListener('click', () => { void refresh(); });
-$('updates').addEventListener('click', () => { paused = !paused; $('updates').textContent = paused ? 'Resume updates' : 'Pause updates'; $('updates').setAttribute('aria-pressed', String(paused)); status(paused ? 'Automatic updates paused. Commands still consume and refresh their receipts.' : 'Automatic updates resumed.'); if (!paused) void refresh(); });
+$('updates').addEventListener('click', () => { paused = !paused; if (paused && activeRead?.automatic) { viewGeneration += 1; activeRead = null; } $('updates').textContent = paused ? 'Resume updates' : 'Pause updates'; $('updates').setAttribute('aria-pressed', String(paused)); status(paused ? 'Automatic updates paused. Commands still consume and refresh their receipts.' : 'Automatic updates resumed.'); if (!paused) void refresh(); });
 lock(); await refresh();
-const timer = setInterval(() => { if (!paused && !document.hidden) void refresh(false); }, 2000);
+const timer = setInterval(() => { if (!paused && !document.hidden) void refresh(false, true); }, 2000);
 window.addEventListener('pagehide', () => clearInterval(timer), { once: true });

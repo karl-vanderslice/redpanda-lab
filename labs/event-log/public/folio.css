@@ -1,6 +1,6 @@
-:root { --bg: #f2eee5; --surface: #fffcf5; --fg: #282b30; --muted: #555961; --border: #96958e; --accent: #214bb6; --tint: #e8edf8; --warning: #854414; --error: #a32b35; }
-:root[data-theme="dark"] { --bg: #191b20; --surface: #22252b; --fg: #f1ede3; --muted: #bebdb9; --border: #797d86; --accent: #a8c0ff; --tint: #2e3950; --warning: #ffcb9b; --error: #ffb3ba; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #191b20; --surface: #22252b; --fg: #f1ede3; --muted: #bebdb9; --border: #797d86; --accent: #a8c0ff; --tint: #2e3950; --warning: #ffcb9b; --error: #ffb3ba; } }
+:root { --bg: #f2eee5; --surface: #fffcf5; --fg: #282b30; --muted: #555961; --border: #96958e; --control-border: #818079; --accent: #214bb6; --tint: #e8edf8; --warning: #854414; --error: #a32b35; }
+:root[data-theme="dark"] { --bg: #191b20; --surface: #22252b; --fg: #f1ede3; --muted: #bebdb9; --border: #797d86; --control-border: var(--border); --accent: #a8c0ff; --tint: #2e3950; --warning: #ffcb9b; --error: #ffb3ba; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #191b20; --surface: #22252b; --fg: #f1ede3; --muted: #bebdb9; --border: #797d86; --control-border: var(--border); --accent: #a8c0ff; --tint: #2e3950; --warning: #ffcb9b; --error: #ffb3ba; } }
 body { font-family: system-ui, sans-serif; }
 h1, h2, h3, p, .owner-line span { overflow-wrap: anywhere; }
 .masthead > *, .owner-line > * { min-inline-size: 0; max-inline-size: 100%; }

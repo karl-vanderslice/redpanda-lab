@@ -1,6 +1,6 @@
-:root { --accent: #244c73; --bg: #f1f2f2; --surface: #fcfcf9; --tint: #e5edf3; --fg: #152d42; --muted: #536272; --border: #8894a0; --warning: #8b3d0c; --error: #ad2033; }
-:root[data-theme="dark"] { --accent: #a9c9e4; --bg: #101b26; --surface: #1b2936; --tint: #203447; --fg: #e4edf4; --muted: #bac6cf; --border: #8293a2; --warning: #ffc496; --error: #ffacb7; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --accent: #a9c9e4; --bg: #101b26; --surface: #1b2936; --tint: #203447; --fg: #e4edf4; --muted: #bac6cf; --border: #8293a2; --warning: #ffc496; --error: #ffacb7; } }
+:root { --accent: #244c73; --bg: #f1f2f2; --surface: #fcfcf9; --tint: #e5edf3; --fg: #152d42; --muted: #536272; --border: #8894a0; --control-border: #74808c; --warning: #8b3d0c; --error: #ad2033; }
+:root[data-theme="dark"] { --accent: #a9c9e4; --bg: #101b26; --surface: #1b2936; --tint: #203447; --fg: #e4edf4; --muted: #bac6cf; --border: #8293a2; --control-border: var(--border); --warning: #ffc496; --error: #ffacb7; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --accent: #a9c9e4; --bg: #101b26; --surface: #1b2936; --tint: #203447; --fg: #e4edf4; --muted: #bac6cf; --border: #8293a2; --control-border: var(--border); --warning: #ffc496; --error: #ffacb7; } }
 h1, h2 { font-family: Georgia, "Times New Roman", serif; letter-spacing: -.015em; font-weight: 500; }
 h1 { font-size: clamp(1.5rem, 4vw, 3.4rem); }
 .shell { inline-size: min(100%, 88rem); }

@@ -42,7 +42,7 @@ body { margin: 0; background: var(--bg); color: var(--fg); font: 1rem/1.55 syste
 a { color: var(--accent); text-underline-offset: .2em; }
 button, input, select, textarea { font: inherit; }
 button, input, select, textarea { max-inline-size: 100%; border: 1px solid var(--border); border-radius: .35rem; padding: .55rem .7rem; background: var(--surface); color: var(--fg); }
-input, select, textarea { inline-size: 100%; min-inline-size: 0; }
+input, select, textarea { inline-size: 100%; min-inline-size: 0; border-color: var(--control-border, var(--border)); }
 fieldset { min-inline-size: 0; }
 legend { max-inline-size: 100%; overflow-wrap: anywhere; }
 button { min-block-size: 2.75rem; cursor: pointer; white-space: normal; overflow-wrap: anywhere; }

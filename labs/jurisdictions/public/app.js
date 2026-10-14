@@ -23,6 +23,14 @@ function placement() {
 }
 $('tenant').addEventListener('change', placement);
 
+function controls() {
+  const unresolved = submitting || Boolean(operation);
+  $('tenant').disabled = !initialized || unresolved;
+  $('amount').readOnly = unresolved;
+  $('note').readOnly = unresolved;
+  $('submit').disabled = !initialized || unresolved;
+}
+
 function createRegion(region) {
   const card = node('article', undefined, 'region-column');
   const heading = node('header', undefined, 'region-heading');
@@ -58,8 +66,7 @@ function renderState(state) {
       return option;
     }));
     initialized = true;
-    $('tenant').disabled = false;
-    $('submit').disabled = submitting;
+    controls();
     placement();
   }
   for (const region of state.regions) {
@@ -119,7 +126,7 @@ async function checkOperation(signal) {
     if (signal?.aborted || operation !== current || submitting) return;
     if (response.ok) {
       $('result').textContent = `${result.status} · ${current.region.toUpperCase()} · partition ${result.partition} · offset ${result.offset ?? 'not observed'} · operation ${current.id}`;
-      if (result.status === 'completed') operation = undefined;
+      if (result.status === 'completed') { operation = undefined; controls(); }
     } else {
       $('result').textContent = `Operation ${current.id} · home region ${current.region.toUpperCase()} · ${response.status === 404 ? 'not observed; absence is not proof that publication failed' : result.error || `HTTP ${response.status}`}. Inspect the home region and logs; do not create a new ID for an uncertain write.`;
     }
@@ -171,10 +178,10 @@ $('record').addEventListener('submit', async (event) => {
   if (operation) { $('result').textContent = `Resolve operation ${operation.id} before another submission. Inspect its home region and logs; do not create a new ID for an uncertain write.`; return; }
   const tenant = tenants.find((item) => item.id === $('tenant').value);
   if (!tenant) { $('result').textContent = 'Wait for the tenant registry before submitting.'; return; }
-  const input = { id: crypto.randomUUID(), tenantId: tenant.id, amount: Number($('amount').value), privateNote: $('note').value };
-  operation = { id: input.id, region: tenant.region };
+  const input = Object.freeze({ id: crypto.randomUUID(), tenantId: tenant.id, amount: Number($('amount').value), privateNote: $('note').value });
+  operation = Object.freeze({ id: input.id, region: tenant.region, input });
   submitting = true;
-  $('submit').disabled = true;
+  controls();
   $('check-operation').hidden = false;
   $('result').textContent = `Publishing ${input.id} to ${tenant.region.toUpperCase()}…`;
   try {
@@ -186,7 +193,7 @@ $('record').addEventListener('submit', async (event) => {
     $('result').textContent = `${failure.message}. Outcome unknown. Operation ${input.id}, home region ${tenant.region}. Inspect before retrying.`;
   } finally {
     submitting = false;
-    $('submit').disabled = false;
+    controls();
     if (!paused) { await refresh(); schedule(); }
   }
 });

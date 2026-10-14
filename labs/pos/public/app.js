@@ -160,6 +160,7 @@ function makeRow(operation) {
   const row = { id: operation.id, tr, cells, refund, resume, refundId: null, refundable: false, resumable: false, providerAvailable: false };
   refund.addEventListener('click', () => {
     if (busy || pending) return;
+    if (!window.confirm(`Refund checkout ${operation.id} in full for ${money(operation.amountCents)} (${operation.amountCents} cents)? This reserves the full receipt once and cannot be undone.`)) return;
     row.refundId ||= newId('refund');
     const body = { id: row.refundId, checkoutId: operation.id };
     remember({ path: '/api/refunds', body });

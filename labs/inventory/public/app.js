@@ -1,6 +1,6 @@
 const $ = id => document.getElementById(id);
 const pendingKey = 'inventory-pending-v1';
-let paused = false, refreshing = false, writing = false, state = null, rendered = '', pending = null;
+let paused = false, activeRead = null, viewGeneration = 0, writing = false, state = null, rendered = '', pending = null;
 try {
   const saved = JSON.parse(localStorage.getItem(pendingKey) || 'null');
   if (saved && typeof saved.id === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(saved.id) && typeof saved.kind === 'string') pending = saved;
@@ -80,18 +80,22 @@ function render(next) {
   $('commands').replaceChildren(...next.commands.slice(-30).reverse().map(value => row([value.offset, value.id, value.kind, value.accepted ? 'Accepted' : `Rejected: ${value.reason}`])));
   $('command-count').textContent = `${next.commands.length} durable commands`;
 }
-async function refresh() {
-  if (refreshing) return;
-  refreshing = true;
+async function refresh(automatic = false) {
+  if (automatic && (paused || activeRead)) return;
+  const generation = ++viewGeneration;
+  activeRead = { generation, automatic };
   try {
     const response = await fetch('/api/state', { cache: 'no-store', signal: AbortSignal.timeout(10000) });
     if (!response.ok) throw new Error(`Snapshot HTTP ${response.status}`);
-    render(await response.json());
+    const snapshot = await response.json();
+    if (generation !== viewGeneration || (automatic && paused)) return;
+    render(snapshot);
   } catch (error) {
+    if (generation !== viewGeneration || (automatic && paused)) return;
     $('connection').textContent = `Projection unavailable: ${error.message}`;
     if (state) state = { ...state, ready: false };
     controls();
-  } finally { refreshing = false; }
+  } finally { if (activeRead?.generation === generation) activeRead = null; }
 }
 function showReceipt(body) { $('receipt').textContent = JSON.stringify(body, null, 2); }
 async function submit(command) {
@@ -142,10 +146,11 @@ $('retry').addEventListener('click', () => {
 });
 $('updates').addEventListener('click', () => {
   paused = !paused;
+  if (paused && activeRead?.automatic) { viewGeneration += 1; activeRead = null; }
   $('updates').textContent = paused ? 'Resume updates' : 'Pause updates';
   $('updates').setAttribute('aria-pressed', String(paused));
   if (!paused) void refresh();
 });
 $('refresh').addEventListener('click', () => { void refresh(); });
 newId(); fields(); preserve(pending); void refresh();
-setInterval(() => { if (!paused) void refresh(); }, 2500);
+setInterval(() => { if (!paused) void refresh(true); }, 2500);

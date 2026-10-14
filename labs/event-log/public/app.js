@@ -1,7 +1,7 @@
 'use strict';
 const $ = id => document.getElementById(id);
 const storageKey = 'folio-harbor-pending-v1';
-let state = null, selected = null, paused = false, fetching = false, busy = false, pending = null, readFailed = false;
+let state = null, selected = null, paused = false, activeRead = null, viewGeneration = 0, busy = false, pending = null, readFailed = false;
 const itemNodes = new Map(), ledgerNodes = new Map();
 try {
   const saved = JSON.parse(sessionStorage.getItem(storageKey));
@@ -103,22 +103,25 @@ async function request(path, command) {
   const body = await response.json();
   return { status: response.status, body };
 }
-async function refresh() {
-  if (fetching) return;
-  fetching = true;
+async function refresh(automatic = false) {
+  if (automatic && (paused || activeRead)) return;
+  const generation = ++viewGeneration;
+  activeRead = { generation, automatic };
   try {
     const result = await request('/api/state');
+    if (generation !== viewGeneration || (automatic && paused)) return;
     if (result.status !== 200) throw new Error(result.body.error ?? 'State request failed.');
     if (readFailed) message(pending ? 'Connection restored. Look up the preserved command receipt before retrying.' : 'Connection restored. Consumed view updated.');
     readFailed = false;
     state = result.body; render();
   } catch (error) {
+    if (generation !== viewGeneration || (automatic && paused)) return;
     readFailed = true;
     $('owner').textContent = 'Connection unavailable · consumed view retained';
     recovery();
     message(`${error.message} Keep any submitted command id and look it up after reconnecting.`);
   }
-  finally { fetching = false; }
+  finally { if (activeRead?.generation === generation) activeRead = null; }
 }
 function resolved(receipt) {
   pending = null; savePending(); recovery();
@@ -175,8 +178,8 @@ $('receipt-form').addEventListener('submit', async event => {
   try { const result = await request(`/api/commands/${encodeURIComponent($('receipt-id').value)}`); $('receipt-status').textContent = result.status === 200 ? 'Consumed immutable receipt.' : result.body.error; $('receipt').textContent = pretty(result.body); }
   catch (error) { $('receipt-status').textContent = `${error.message} Refresh and look up the same id again.`; }
 });
-$('updates').addEventListener('click', () => { paused = !paused; $('updates').setAttribute('aria-pressed', String(paused)); $('updates').textContent = paused ? 'Resume updates' : 'Pause updates'; if (!paused) void refresh(); });
+$('updates').addEventListener('click', () => { paused = !paused; if (paused && activeRead?.automatic) { viewGeneration += 1; activeRead = null; } $('updates').setAttribute('aria-pressed', String(paused)); $('updates').textContent = paused ? 'Resume updates' : 'Pause updates'; if (!paused) void refresh(); });
 $('refresh').addEventListener('click', () => { void refresh(); });
 newId(); fields(); recovery(); void refresh();
-const timer = setInterval(() => { if (!paused && !document.hidden) void refresh(); }, 2000);
+const timer = setInterval(() => { if (!paused && !document.hidden) void refresh(true); }, 2000);
 window.addEventListener('pagehide', () => clearInterval(timer), { once: true });
