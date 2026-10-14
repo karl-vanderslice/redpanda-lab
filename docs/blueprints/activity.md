@@ -19,4 +19,6 @@ The lab stores feed commands and explicit read receipts together in activity.eve
 
 The feed owner keeps exact unsampled outcomes and public-only publishing. Identity/privacy owns consent, actor scope and deletion across linked stores and backups. Analytics owns dedupe and late-data definitions; new read IDs do not prove unique people or attention. Broker segment retention is not selective record erasure.
 
+Rebuild the feed from its complete ordered outcomes through a captured offset frontier. Restore must preserve original interaction IDs and receipts without publishing new article-open events. Splitting clickstream storage requires a separate checkpoint and privacy-retention policy; deleting the lab's prefix breaks reconstruction.
+
 [Lab guide](../labs/activity.md) · [D2 source](sources/activity.d2) · [PNG export](../assets/blueprints/activity.png)

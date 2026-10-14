@@ -37,4 +37,4 @@ market -> reads: "materialize by offset"
 access <- reads: "query book / receipt" {class: relationship}
 authority -> settlement: "fills; not settled funds\nfrom trading.exchange.v1"
 settlement.clearing -> settlement.accounts: "receipts + reconciliation"
-authority <-> recovery: "retain execution history\nRestore matcher + replay\nNo external replay" {class: relationship}
+authority <-> recovery: "retain execution\nhistory\nRestore matcher\n+ log replay\nNo external replay" {class: relationship}

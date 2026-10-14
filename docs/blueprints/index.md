@@ -33,7 +33,7 @@ Ordinary application topics currently use one partition, RF1, delete cleanup and
 
 ## Sources and regeneration
 
-Portable D2 sources live in `docs/blueprints/sources`; each imports the shared [schematic profile](profiles/schematic.d2) and applies its component/relationship classes locally. There are no remote fonts, images or private paths in those sources. The repository's Nix-owned `diagram-render` uses D2 0.9.0, ELK, theme 0, 32-pixel padding and actual Routed Gothic, without sketch mode. Regular, bold and semibold slots use the regular face; italic uses the actual italic face.
+Portable D2 sources in `docs/blueprints/sources` import the shared [schematic profile](profiles/schematic.d2). The Nix-owned renderer pins D2 0.9.0, ELK, theme 0 and 32-pixel padding, without sketch mode. Embedded monospace labels distinguish topic versions and partition digits. Opaque connection labels keep boundary strokes off the text. Sources contain no remote fonts, images or private paths.
 
 From the checkout, render all sixteen pairs to an external directory:
 
@@ -44,6 +44,6 @@ bash scripts/diagrams "$output"
 
 The direct CLI is `diagram-render SOURCE.d2 OUTPUT-STEM` inside the Nix development shell; its output directory must already exist. Use an external output stem. SVG and PNG are rendered once each and published only after both commands succeed. Their final renames are individually atomic, not a crash-atomic pair; rerender after an interrupted publication. No font files or generated SVG/PNG belong in the checkout.
 
-The documentation build generates these assets under its external stage at `docs/assets/blueprints` before strict site generation. SVG embeds local WOFF data for offline viewing. Some viewers ignore embedded fonts; use the adjacent PNG export in those viewers. Review fonts, glyphs, labels, clipping and arrow endpoints at practical size before publication. Rendering alone does not establish visual approval or production behavior.
+The strict documentation build generates both formats under its external stage at `docs/assets/blueprints`. SVG embeds WOFF for offline viewing; use the adjacent PNG if a viewer ignores embedded fonts. Before publication, review glyphs, labels, clipping and arrow endpoints in both themes and at enlarged text. Rendering alone is not visual approval.
 
-Exports include Darren Embry's [Routed Gothic OFL 1.1 license](../assets/blueprints/Routed-Gothic-OFL.txt) and [attribution](../assets/blueprints/Routed-Gothic-attribution.txt). Fonts remain in the Nix closure; those notices accompany the embedded payload rather than standalone font copies.
+Exports include the [Source Code Pro OFL 1.1 notice](../assets/blueprints/Source-Code-Pro-OFL.txt) and [attribution](../assets/blueprints/Source-Code-Pro-attribution.txt). D2 supplies the embedded face. No separate font package or standalone font copy is required.

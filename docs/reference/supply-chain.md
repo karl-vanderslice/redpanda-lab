@@ -52,7 +52,7 @@ First-party code uses the repository's MIT license. Application images include i
 
 Documentation fonts, search and UI assets are local. Zensical uses a plain GitHub navigation link rather than `repo_url`, whose [repository integration](https://zensical.org/docs/setup/repository/) fetches statistics in the reader's browser. The small early storage hook keeps current-page preferences usable when browser storage is denied; do not remove it without checking the selected Zensical version's initialization behavior.
 
-Blueprint exports embed the Nix-owned Routed Gothic font and include its OFL notice and attribution. See [blueprint generation](../blueprints/index.md#sources-and-regeneration) for the source and export boundary.
+Blueprint exports embed D2's bundled Source Code Pro face and include its OFL notice and attribution. See [blueprint generation](../blueprints/index.md#sources-and-regeneration) for the source and export boundary.
 
 ## Update deliberately
 

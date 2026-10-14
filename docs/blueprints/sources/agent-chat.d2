@@ -27,10 +27,10 @@ models -> recovery: {style.opacity: 0}
 # Invisible title placement only; not a service or data relationship.
 title -> identity: {style.opacity: 0}
 identity -> log: "submit / cancel\nStable request ID"
-log <-> executor: "consume eligibility + owned attempt\nAppend exact-input start\nResult / unknown" {class: relationship}
+log <-> executor: "consume eligible\nowned attempt\nAppend exact-input\nstart\nResult / unknown" {class: relationship}
 time -> executor: "clock + fenced\ndue authority"
 executor <-> models: "infer after consumed owned start\nReturn reply / usage / uncertainty" {class: relationship}
-log -> replies: "recorded replies\nAttempt state"
+log -> replies: "recorded\nreplies\nAttempt\nstate"
 replies -> reads: "materialize by offset"
 identity <- reads: "schedule / reply / receipt" {class: relationship}
 log -> recovery: "retain scheduling +\nrecovery horizon"

@@ -36,8 +36,7 @@ public -> entry: "publish / follow / like\nto feed owner"
 entry.identity -> entry.writer: actor scope
 public -> entry: "article open\nto click admission"
 entry.identity -> entry.clicks: "session\nref."
-entry -> redpanda: "activity.events.v1\nimmutable feed outcomes"
-entry <- redpanda: "activity.events.v1\nauthority / receipts"
+entry <-> redpanda: "activity.events.v1\nappend immutable outcomes /\nconsume authority + receipts" {class: relationship}
 redpanda -> feed: "activity.events.v1\npublic feed"
 public <- feed: serve public view
 entry -> redpanda: "activity.clicks.v1\nminimized reads"

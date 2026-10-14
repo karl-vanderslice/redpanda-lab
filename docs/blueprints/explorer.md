@@ -19,4 +19,6 @@ The lab combines producer and consumer in one Node process, uses a fixed group a
 
 The application owner controls native-client lifetime, partition readiness and event identities. Observability owns metric definitions and dashboards; creation-to-consumption delay includes backlog. The view is not a business ledger, and synthetic payment labels produce no commerce effects.
 
+The consumer resumes from committed group offsets and can redeliver records after interruption. Restarting the app resets its bounded view and process counters; it does not reconstruct a business ledger. Rebuilding a projection requires an explicit offset and retained-range contract because the explorer topic expires records after six hours.
+
 [Explorer guide](../tutorials/first-event.md) · [D2 source](sources/explorer.d2) · [PNG export](../assets/blueprints/explorer.png)

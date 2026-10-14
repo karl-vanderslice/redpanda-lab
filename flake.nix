@@ -19,11 +19,9 @@
         system:
         let
           pkgs = pkgsFor system;
-          routed-gothic = pkgs.callPackage ./nix/routed-gothic.nix { };
         in
         {
-          inherit routed-gothic;
-          diagram-render = pkgs.callPackage ./nix/diagrams.nix { inherit routed-gothic; };
+          diagram-render = pkgs.callPackage ./nix/diagrams.nix { };
           local-podman = pkgs.writeShellApplication {
             name = "redpanda-local-podman";
             text = ''

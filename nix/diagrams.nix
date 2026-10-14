@@ -2,7 +2,6 @@
   writeShellApplication,
   d2,
   coreutils,
-  routed-gothic,
 }:
 assert d2.version == "0.9.0";
 writeShellApplication {
@@ -34,15 +33,6 @@ writeShellApplication {
         exit 2
       fi
     done
-    regular=${routed-gothic}/share/fonts/truetype/routed-gothic.ttf
-    italic=${routed-gothic}/share/fonts/truetype/routed-gothic-italic.ttf
-    license=${routed-gothic}/share/doc/routed-gothic/LICENSE.md
-    for required in "$regular" "$italic" "$license"; do
-      if [[ ! -f $required ]]; then
-        printf 'Required font closure file is missing: %s\n' "$required" >&2
-        exit 1
-      fi
-    done
     for variable in "''${!D2_@}"; do
       unset "$variable"
     done
@@ -51,8 +41,6 @@ writeShellApplication {
       --watch=false --bundle=true
       --layout=elk --theme=0 --pad=32
       --sketch=false --scale=1 --animate-interval=0 --timeout=120 --target=""
-      "--font-regular=$regular" "--font-italic=$italic"
-      "--font-bold=$regular" "--font-semibold=$regular"
     )
     temporary=$(mktemp -d "$directory/.diagram-render.XXXXXXXX")
     trap 'rm -rf -- "$temporary"' EXIT
@@ -61,20 +49,21 @@ writeShellApplication {
     cd -- "$(dirname -- "$source")"
     d2 "''${arguments[@]}" "$source" "$temporary/diagram.svg"
     d2 "''${arguments[@]}" "$source" "$temporary/diagram.png"
-    cp -- "$license" "$temporary/Routed-Gothic-OFL.txt"
-    printf '%s\n' \
-      'Routed Gothic 1.0.0 by Darren Embry.' \
-      'Copyright (c) 2017 Darren Embry. Reserved Font Name: Routed Gothic.' \
-      'Licensed under SIL Open Font License 1.1; see Routed-Gothic-OFL.txt.' \
-      'Source: https://github.com/dse/routed-gothic' \
-      'Revision: 365e340d64c55cb7c57940744773e6c833e3efd9' \
-      'Website: https://webonastick.com/fonts/routed-gothic/' \
-      'SVG exports embed WOFF derived from the unchanged supplied font faces.' \
-      'Regular, bold and semibold slots use regular; italic uses the italic face.' \
+    cp -- ${./Source-Code-Pro-OFL.txt} "$temporary/Source-Code-Pro-OFL.txt"
+    # UTF-8 escapes preserve the notice without shell-parser quote ambiguity.
+    printf '%b\n' \
+      'Source Code Pro 2.038 (Regular), bundled by the pinned D2 0.9.0 package.' \
+      'Embedded notice: \0302\0251 2010 - 2020 Adobe Systems Incorporated (http://www.adobe.com/), with Reserved Font Name \0342\0200\0230Source\0342\0200\0231.' \
+      'Licensed under SIL Open Font License 1.1; see Source-Code-Pro-OFL.txt.' \
+      'Upstream release: https://github.com/adobe-fonts/source-code-pro/tree/2.038R-ro%2F1.058R-it%2F1.018R-VAR' \
+      'The accompanying full release license preserves the upstream 2010-2021 notice; line endings are normalized to LF.' \
+      'Bundled regular TTF SHA256: f144137f557805c7327fc4b14d1d730f6e1822e0124170251ff1bcd723a693f1' \
+      'Original font metadata remains in the embedded WOFF payload.' \
+      'Portable style.font: mono selects the bundled face; no font overrides.' \
       'No standalone font files are distributed with these exports.' \
-      > "$temporary/Routed-Gothic-attribution.txt"
-    mv -fT -- "$temporary/Routed-Gothic-OFL.txt" "$directory/Routed-Gothic-OFL.txt"
-    mv -fT -- "$temporary/Routed-Gothic-attribution.txt" "$directory/Routed-Gothic-attribution.txt"
+      > "$temporary/Source-Code-Pro-attribution.txt"
+    mv -fT -- "$temporary/Source-Code-Pro-OFL.txt" "$directory/Source-Code-Pro-OFL.txt"
+    mv -fT -- "$temporary/Source-Code-Pro-attribution.txt" "$directory/Source-Code-Pro-attribution.txt"
     mv -fT -- "$temporary/diagram.svg" "$stem.svg"
     mv -fT -- "$temporary/diagram.png" "$stem.png"
     printf '%s\n' "$stem.svg" "$stem.png"
