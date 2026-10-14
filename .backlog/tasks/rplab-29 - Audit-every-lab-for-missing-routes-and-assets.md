@@ -1,10 +1,10 @@
 ---
 id: RPLAB-29
 title: Audit every lab for missing routes and assets
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-14 10:44'
-updated_date: '2026-10-14 17:26'
+updated_date: '2026-10-14 17:34'
 labels: []
 dependencies: []
 ordinal: 29000
@@ -20,7 +20,7 @@ User requested an explicit all-lab audit of unintended 404s and similar page, st
 <!-- AC:BEGIN -->
 - [x] #1 Exercise every real lab surface, declared navigation, loaded assets and representative read API paths; distinguish intentional missing-route/unknown-ID 404s from broken supported routes.
 - [x] #2 Check actual response status, content type, browser/network errors and supported media/range/download paths, retaining replayable evidence for all sixteen labs and the docs site.
-- [ ] #3 Fix supported-path failures, rerun the affected real path and publish verified checkpoints without suppressing errors or resetting unrelated data.
+- [x] #3 Fix supported-path failures, rerun the affected real path and publish verified checkpoints without suppressing errors or resetting unrelated data.
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -49,4 +49,12 @@ All sixteen real public workflows passed: thirteen source-8b9 child scenarios, c
 Failing-before sports-browser.json and sports-request-error/recovery.png retain actual failed GET /api/state followed by successful real refresh/SSE with the old error still displayed. No response success was mocked. LSP has no server for this file; inspected local error and render callers. Domain and remaining current browser reviews continue independently.
 
 All fifteen current-source native app loading/empty/error/recovery, keyboard, assets and read APIs verified against retained immutable snapshots. Fixed sports read-error ownership: paused refresh and SSE clear recovered snapshot errors, while an actual aborted watchlist command keeps its exact unconfirmed ID/error after real reads. Fixed clearing first-paint and observed-readiness gates, recovered read-notice ownership and pending-command preservation; delayed app script/state and aborted actual transfer prove the boundaries. Corrected malformed POS synthetic-storage harness evidence is superseded, not an application defect. Sports full/ranged HEAD, standard/suffix/open-ended ranges and malformed/unsatisfiable 416 passed for all four clips. Evidence root /home/karl/Projects/artifacts/redpanda-lab/2026-10-14/164304-ddf0ba84-3a03-41a0-980d-7f9170076b5c. Final full gate through prek passed in 23.98 seconds; UI publication and final public documentation delta remain pending.
+
+Signed 5944419 publishes the verified sports/clearing observation-recovery fixes and guides. Required full hook/gate passed; source-matched failed-before/passing-after browser evidence preserves unknown-command semantics. Changed UIs also passed both themes, keyboard refresh, denied-storage getters and 320px/root32 reflow with current loaded script hashes. Sports expected stream cancellation is retained as requestfailed ERR_ABORTED, not an uncaught page error. Actual published blueprint crawl passed 102 resources, 43 pages and 939 fragments. Docs final publication remains tracked separately by RPLAB-24.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Completed supported route/asset/API/media/download audit and published verified corrections. Retained intentional missing-path and Console unsupported-HEAD boundaries, real media ranges, native browser transitions and source hashes. No prior user data reset or errors suppressed.
+<!-- SECTION:FINAL_SUMMARY:END -->
