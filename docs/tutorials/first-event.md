@@ -6,7 +6,7 @@ Use Signal Harbor Works, the fictional explorer company, to publish a record, fi
 
 From the checkout root, with the [host prerequisites](../reference/commands.md) met:
 
-```bash
+```bash title="Start the explorer"
 nix develop --no-update-lock-file
 just up
 ```
@@ -29,7 +29,9 @@ Open **Redpanda Console** from the workbench or printed URLs. Browse `lab.events
 
 Publish another event with the same key. With unchanged partition count and partitioner, both go to the same partition. Different keys can share a partition. Offsets order records within a partition, not across the cluster.
 
-If the request times out, do not send it again immediately. Inspect Console using the ID in the error, if available. A timeout leaves the [delivery outcome unknown](../explanation/telemetry-and-delivery.md#delivery-promises).
+!!! warning "A timeout is not a rejected event"
+
+    If the request times out, do not send it again immediately. Inspect Console using the ID in the error, if available. A timeout leaves the [delivery outcome unknown](../explanation/telemetry-and-delivery.md#delivery-promises).
 
 ## Build and drain a backlog
 
@@ -48,8 +50,12 @@ Try [stopping one broker](../how-to/failure-and-recovery.md), or inspect the [ar
 
 When you no longer need the records:
 
-```bash
+!!! warning "Deletion is permanent"
+
+    `just down` deletes this checkout's explorer containers, network, broker records and telemetry volumes. To keep the data for another experiment, leave the lab running instead.
+
+```bash title="Erase the explorer and its records"
 just down
 ```
 
-This deletes this checkout's explorer containers, network, broker records and telemetry volumes. Downloaded upstream images and Nix caches remain. To keep the data for another experiment, leave the lab running instead.
+Downloaded upstream images and Nix caches remain.

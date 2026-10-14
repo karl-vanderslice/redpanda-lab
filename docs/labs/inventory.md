@@ -11,7 +11,7 @@ labs/run inventory up
 labs/run inventory urls
 ```
 
-Receive stock, reserve available units, then release or fulfill that reservation. Transfer moves unreserved stock between North warehouse and Quay stockroom in one record. Reservation IDs remain stable for the reservation's lifetime; each new command has its own ID. Polling preserves inputs and can be paused.
+Receive stock, reserve available units, then release or fulfill that reservation. Transfer moves unreserved stock between North warehouse and Quay stockroom in one record. Reservation IDs remain stable for the reservation's lifetime; each new command has its own ID. Polling preserves inputs. Pause also discards an automatic read already in flight; Refresh still reads state.
 
 ## Catalog and conservation
 

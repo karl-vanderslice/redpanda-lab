@@ -45,6 +45,6 @@ No Alertmanager or notification delivery is configured.
 | `POST /api/generator/stop` | Stops future generator sends; in-flight sends can complete. |
 | `GET /metrics` | Prometheus process and `lab_*` application metrics. |
 
-Send JSON with `Content-Type: application/json`; the body limit is 64 KiB. Event keys contain 1–200 characters. Kinds are `order.created`, `payment.received` or `sensor.reading`, and payloads must be JSON objects. Generator rate is an integer from 1–100 events/second; duration is an integer from 1–300 seconds. Rejected input does not enter the topic.
+Every POST, including generator stop, must send JSON with `Content-Type: application/json` (otherwise 415). A browser Origin must be the same loopback origin (otherwise 403); command-line callers may omit it. The body limit is 64 KiB. Event keys contain 1–200 characters. Kinds are `order.created`, `payment.received` or `sensor.reading`, and payloads must be JSON objects. Generator rate is an integer from 1–100 events/second; duration is an integer from 1–300 seconds. Rejected input does not enter the topic.
 
 These are explorer contracts. Domain applications have separate receipt, reconstruction and uncertain-effect rules in their [lab guides](../labs/index.md).

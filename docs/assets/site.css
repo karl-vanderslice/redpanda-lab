@@ -39,6 +39,7 @@
 .md-typeset h3 { font-weight: 600; }
 .md-typeset :is(h1, h2, h3, p, li, a) { overflow-wrap: anywhere; }
 .md-typeset :is(p, ul, ol) { max-inline-size: 72ch; }
+.md-typeset .admonition { font-size: inherit; }
 .md-typeset a { color: var(--doc-accent); }
 .md-typeset :is(a, button):focus-visible,
 .md-header :is(a, button, [role="button"]):focus-visible,

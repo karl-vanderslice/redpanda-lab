@@ -11,7 +11,7 @@ labs/run pos up
 labs/run pos urls
 ```
 
-Open the reported app URL, choose quantities and Cash, then submit Checkout. Full refund reserves the entire receipt amount once. Only completed operations affect totals; pending or unknown provider responses do not count as sales or refunds.
+Open the reported app URL, choose quantities and Cash, then submit Checkout. **Full refund** first asks you to confirm the checkout ID and full amount; cancelling creates, stores and sends nothing. A confirmed refund reserves the entire receipt amount once. Only completed operations affect totals; pending or unknown provider responses do not count as sales or refunds.
 
 ## Ledger and accounting
 

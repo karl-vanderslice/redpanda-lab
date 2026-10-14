@@ -11,9 +11,9 @@ Use the [shared setup and lifecycle commands](../reference/commands.md):
 ./labs/run activity urls --json
 ```
 
-Create or select a public profile, follow an author, choose all posts or followed authors, publish a dispatch and open an article. The read ledger shows consumed opens, distinct public profile IDs and current likes, not verified people or attention. Anyone with lab access can act as any profile and inspect all data. Use synthetic text only.
+Create or select a public profile, follow an author, choose all posts or followed authors, publish a dispatch and open an article. The read ledger shows consumed opens, distinct public profile IDs and current likes, not verified people or attention. Close article, or Escape from inside it, returns focus to the Read button that opened it, or to the profile selector if that post is no longer in the feed. Anyone with lab access can act as any profile and inspect all data. Use synthetic text only.
 
-First startup consumes `fixture-commonfield-v1`, installing two original profiles (`cf-mara`, `cf-ellis`) and articles (`cf-bench`, `cf-route`) without interactions. Fixture labels remain visible; no popularity counts are seeded. The browser polls every two seconds while visible. Pause stops automatic reads, not commands; explicit commands still consume and refresh receipts. Refresh works while paused. Optional storage preserves viewer/pending-command choices; denied storage falls back to memory.
+First startup consumes `fixture-commonfield-v1`, installing two original profiles (`cf-mara`, `cf-ellis`) and articles (`cf-bench`, `cf-route`) without interactions. Fixture labels remain visible; no popularity counts are seeded. The browser polls every two seconds while visible. Pause stops automatic reads and discards one already in flight, not commands; explicit commands still consume and refresh receipts. Refresh works while paused. Optional storage preserves viewer/pending-command choices; denied storage falls back to memory.
 
 ## Commands and state
 

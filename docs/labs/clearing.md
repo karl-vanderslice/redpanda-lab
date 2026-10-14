@@ -12,7 +12,7 @@ just up clearing
 just urls clearing
 ```
 
-Open the app URL. **Pause updates** freezes this browser's view, not the ledger. **Refresh ledger** reads current state manually.
+Open the app URL. **Pause updates** freezes this browser's view, including against an automatic read already in flight, not the ledger. **Refresh ledger** reads current state manually.
 
 Write controls stay disabled until a ready ledger snapshot arrives. A failed read keeps the displayed ledger but disables new writes. Recovery clears only the read-error notice; it does not discard an uncertain command, its exact payload or its write lock.
 

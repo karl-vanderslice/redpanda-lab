@@ -17,7 +17,7 @@ The wrappers select the local engine explicitly and reject rootful engines befor
 | --- | --- |
 | `just up [LAB]` | Build/start the selected lab and wait for readiness. Terraform displays a plan and requires project-name approval before apply. |
 | `just urls [LAB]` | Print actual loopback endpoints. Explorer/application URLs require initialized port state. |
-| `just status [LAB]` | Show the selected runtime's state. |
+| `just status [LAB]` | Show the selected runtime's state. For Compose-backed labs, list owned container names, status and published ports, followed by the lab's endpoints; selection remains scoped to that checkout's Compose labels. |
 | `just logs [LAB] [SERVICE]` | Read recent explorer/application logs. For Terraform, use scoped `podman logs` on containers named by its `status`. |
 | `just rpk LAB ARGS...` | Run the broker CLI against that lab, not an ambient Kafka cluster. For jurisdictions, prefix arguments with `eu`, `us`, `apac` or `global`. |
 | `just exec LAB SERVICE COMMAND...` | Execute in an application service. Not supported for explorer or Terraform. |
@@ -50,7 +50,7 @@ Public E2Es check live pages, declared assets, content types, read APIs and supp
 
 ## Documentation
 
-```bash
+```bash title="Build or preview the documentation"
 just docs
 just docs-serve
 ```
@@ -59,7 +59,7 @@ just docs-serve
 
 To copy a strict build into an explicit publication directory:
 
-```bash
+```bash title="Export a strict build to a new external directory"
 bash scripts/docs build /tmp/redpanda-lab-docs-export
 ```
 
@@ -70,6 +70,14 @@ nix build --no-update-lock-file --no-link --print-out-paths .#documentation
 ```
 
 Generated diagrams and site files remain outside the checkout. See [blueprint sources and regeneration](../blueprints/index.md#sources-and-regeneration). A build command or workflow definition is not evidence of a deployed site.
+
+### Edit a guide
+
+Edit the Markdown under `docs/`; `zensical.toml` owns navigation, and `docs-theme/` contains the small theme override. Keep existing page paths and headings stable when possible: they are link targets. Every maintained page must appear in navigation or be intentionally linked from an indexed page.
+
+The pinned Zensical build already supports titled language fences, tables, non-collapsible admonitions, keyboard-key notation and ordinary relative Markdown links. Use a visible warning before a destructive command, not a collapsed detail or code annotation. Give command fences a language and a task-oriented `title="..."`; omit shell prompts so copied commands remain runnable. Keep prerequisites and uncertainty in prose even when an image illustrates them.
+
+The strict build checks internal page links and heading anchors. Preview the staged output after an edit; a successful build does not prove readable diagrams, keyboard interaction or narrow-screen layout. The site deliberately uses full-page loads so its small storage, native-control and blueprint adapters initialize on each page; do not enable instant navigation without migrating and exercising all three.
 
 ## Ports
 
@@ -97,7 +105,7 @@ Terraform persists a path-derived block with thirteen endpoints. `LAB_TF_PORT_BA
 
 Jurisdictions publishes one gateway port, in 49152–65535; Kafka and Admin APIs remain on container networks. `LAB_PORT_BASE` selects the port before startup. `./labs/run jurisdictions outage REGION` and `recover REGION` stop/start one owned broker (`eu`, `us`, `apac`, `global`). See its [export and recovery rules](../labs/jurisdictions.md).
 
-All published ports are loopback-only and unauthenticated. Nonroot app users, read-only roots and bounded inputs do not replace authorization. Terraform's Podman socket grants host-user authority. Resource identity depends on the absolute checkout path; dispose before moving it or keep the original path for cleanup.
+All published ports are loopback-only and unauthenticated. Browser mutations must send JSON and, when an Origin is present, come from the same loopback origin (`127.0.0.1`, `localhost` or `[::1]`); this rejects DNS-rebinding names that resolve to loopback. Command-line requests may omit Origin. Nonroot app users, read-only roots, Origin checks and bounded inputs do not replace authorization. Terraform's Podman socket grants host-user authority. Resource identity depends on the absolute checkout path; dispose before moving it or keep the original path for cleanup.
 
 ## Compression
 

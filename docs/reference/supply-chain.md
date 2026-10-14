@@ -26,7 +26,7 @@ Do not remove it as cleanup. First select an upstream version that fixes both li
 
 ## Application and infrastructure labs
 
-Nix-built application images use `dockerTools.buildLayeredImage`; they do not install from npm or a package registry at container startup. Their runtime and native libraries come from locked Nixpkgs. Credentials remain runtime inputs, never image or Nix-store contents.
+Nix-built application images use `dockerTools.buildLayeredImage`; they do not install from npm or a package registry at container startup. Their runtime and native libraries come from locked Nixpkgs. Credentials remain runtime inputs, never image or Nix-store contents. Lifecycle wrappers read each archive's image configuration digest, load the archive only when that exact image is absent, and start containers by that ID. A shared local tag updated by another checkout cannot select a different image.
 
 | Component | Identity owner | Review when updating |
 | --- | --- | --- |
@@ -45,6 +45,14 @@ The model revision is `09816acd5d99df7be770d85ea30822623dab342c`; SHA256 is `5a1
 Both `x86_64-linux` and `aarch64-linux` are declared. The reported runtime evidence is x86_64 only; a declared package or hash is not an ARM smoke test. Host kernels, storage, rootless mappings and browser codecs remain part of the runtime boundary.
 
 An uncached first run needs downloads. Cached local workflows do not require an external model provider, media service or API credential. Optional POS Stripe/Square sandbox flows need network access and server-side test credentials; their credential-dependent runtime remains unverified.
+
+### Packaged application inputs
+
+The shared `nodeSource` selector in `labs/common/default.nix` includes `.mjs` files and the complete lab `public/` tree. Callers must explicitly declare other runtime files: Bitcoin includes `candles.json`. Sports selects these application inputs before overlaying its four generated clips under `public/media/`; it does not copy the entire lab directory.
+
+Trading selects `Cargo.toml`, `Cargo.lock`, `src/` and `public/` for its Rust build. Both the shared Node image builder and the trading package install the repository's MIT notice separately. Source selection does not replace dependency-license review or change the model and harness notices described below.
+
+Lab-root READMEs, design notes, Compose files, Nix recipes and E2E scripts are not copied as application sources. An edit confined to those lab-root documentation files therefore leaves that lab's application-image derivation identity unchanged. Nix recipes and Compose still control build and deployment behavior; excluding them from copied runtime sources does not make their changes irrelevant. This is an input-selection boundary, not a byte-for-byte reproducible-build or runtime-verification guarantee.
 
 ## Licenses and local assets
 

@@ -11,7 +11,7 @@ Use the [shared setup and lifecycle commands](../reference/commands.md):
 ./labs/run siem urls --json
 ```
 
-Open the app and select **Ingest fixture sequence**. Inspect the authentication and multi-port incidents, follow their evidence receipts, then acknowledge or resolve an incident. The timeline displays the latest 100 telemetry receipts; `/api/state` exposes the complete projection. Automatic reads run every 2.5 seconds. Pause stops automatic display updates; Refresh still reads state. Neither stops ingestion or correlation.
+Open the app and select **Ingest fixture sequence**. Inspect the authentication and multi-port incidents, follow their evidence receipts, then acknowledge or resolve an incident. The timeline displays the latest 100 telemetry receipts; `/api/state` exposes the complete projection. Automatic reads run every 2.5 seconds. Pause stops automatic display updates, including an automatic read already in flight; Refresh still reads and displays state. Neither stops ingestion or correlation.
 
 ## Telemetry contract
 
@@ -91,7 +91,7 @@ Review commands contain `id`, an actual `incidentId`, `action`, positive integer
 | `POST /api/incidents/actions` | Revision-checked review |
 | `POST /api/fixtures` | Eight sequential telemetry records; not an atomic batch |
 
-Fixture input is `{id,sensor,eventTime}`: ID 1–40 identifier characters and a minute-aligned Unix millisecond time. It generates three failures at +0/+1,000/+2,000 ms, a success at +3,000 ms, then TCP ports 22/80/443/8080 at +4,000 through +7,000 ms. IDs are `ID-fail-1` through `ID-fail-3`, `ID-success` and `ID-port-PORT`. All use source `192.0.2.17`, destination `198.51.100.24` and authentication actor `mira-synthetic`. Inspect every returned receipt. A transport failure can leave a consumed prefix; retry the same fixture payload and IDs.
+Fixture input is `{id,sensor,eventTime}`: ID 1–40 identifier characters and a minute-aligned Unix millisecond time. It generates three failures at +0/+1,000/+2,000 ms, a success at +3,000 ms, then TCP ports 22/80/443/8080 at +4,000 through +7,000 ms. IDs are `ID-fail-1` through `ID-fail-3`, `ID-success` and `ID-port-PORT`. All use source `192.0.2.17`, destination `198.51.100.24` and authentication actor `mira-synthetic`. If the last generated event would exceed the future-clock guard, the whole fixture fails with 400 before publication. Inspect every returned receipt. A transport failure can leave a consumed prefix; retry the same fixture payload and IDs.
 
 The browser sends equivalent individual `/api/telemetry` requests, with failure suffixes `-failure-0` through `-failure-2`. It stops on rejection or unknown completion. Its generated minute is clamped to the logged five-minute advance bound, reserving 7,000 ms for the sequence. Initial native/import sample times are also clamped after replay. These are synthetic samples and can be behind wall time after idle; they are never current network telemetry.
 

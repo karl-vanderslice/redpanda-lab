@@ -37,7 +37,7 @@ These are teaching inputs, not market prices, contract grades or deliverable spe
 
 The blocking Rust worker uses `ureq` and Redpanda's [HTTP Proxy API](https://docs.redpanda.com/streaming/current/develop/http-proxy/), not KafkaJS. It stages a deterministic outcome, appends one `schema: 1` execution record containing the command and complete ordered event vector to partition 0 of `trading.exchange.v1`, then reads through the acknowledged offset. Accepted-order events precede fills. Rejection and cancellation share this atomic record boundary. Admission and append acknowledgment alone do not change visible state.
 
-The consumer recomputes each new execution before applying it. Conflicting command IDs, unsupported schemas, nondeterministic new outcomes and offset gaps stop readiness. A duplicate with the same command returns the original operation without another fill; replay's duplicate branch compares the command, not a second event vector. Trade IDs derive from the incoming operation ID and fill index. Original operation offsets and order priority survive replay.
+The consumer recomputes each new execution before applying it. Conflicting command IDs, unsupported schemas, nondeterministic new outcomes and offset gaps stop readiness. A duplicate with the same command returns the original operation without another fill; replay's duplicate branch compares the command, not a second event vector. An accepted order's priority comes from its consumed offset. The provisional `sequence` in the stored proposal is not compared, so a foreign exact duplicate that lands before the next append does not stop replay. Trade IDs derive from the incoming operation ID and fill index. Original operation offsets and order priority survive replay.
 
 Startup appends a harmless barrier and reads the contiguous prefix from offset zero through the barrier's acknowledged offset before `/health` becomes ready. It does not infer completion from an empty poll. App restart adds a barrier, not republished historical commands:
 
@@ -46,11 +46,11 @@ Startup appends a harmless barrier and reads the contiguous prefix from offset z
 ./labs/run trading exec app commodity-exchange order-status demo-ask
 ```
 
-This one-partition RF1 log uses the [full-prefix policy](../reference/tuning.md#topic-policy). Orders, operations and trades grow without bounds in memory. A prefix gap fails closed rather than inventing liquidity or forgetting IDs; volume loss loses the market. Do not compact, repartition or rewrite the topic. `./labs/run trading down` followed by `up` deletes its history and starts a fresh market.
+This one-partition RF1 log uses the [full-prefix policy](../reference/tuning.md#topic-policy). Orders, operations and trades grow without bounds in memory. A prefix gap fails closed rather than inventing liquidity or forgetting IDs; volume loss loses the market. Do not compact, repartition or rewrite the topic. The matcher reads through the HTTP Proxy's JSON format, so any manual record needs a JSON key and value, such as `rpk topic produce --key '"ORDER-ID"' --compression none`. A raw non-JSON key cannot be decoded and stops replay. `./labs/run trading down` followed by `up` deletes its history and starts a fresh market.
 
 ## API and failure reference
 
-IDs accept 1–96 ASCII letters, digits, dots, underscores or hyphens.
+IDs accept 1–96 ASCII letters, digits, dots, underscores or hyphens, except `.` and `..`, which URL normalization would remove from lookup paths.
 
 | Route | Result |
 | --- | --- |
@@ -74,7 +74,7 @@ Invalid domain action, symbol, side, price or quantity produces a durable `rejec
 
 A 20-second reply deadline returns 202 `pending` while work can still finish. Poll the original ID. Publish or consume failure returns 503 `outcome_unknown`, disables trading and retains inspectable reconstructed results. Restore broker availability, restart the app, inspect the original operation, then retry only the identical payload if appropriate. A 404 `not_observed` while unready does not prove non-publication. Startup failures leave health at 503 with a diagnostic; there is no automatic domain retry. Queue admission failure reports `not_submitted`; unavailable readiness and the separate HTTP-concurrency limit have their own 503 responses.
 
-The CLI emits JSON: exit 0 for a successful lookup or accepted command, 1 for usage/transport/HTTP client errors, 2 for a durable rejection including lookup, and 3 for pending/server-unavailable/unknown outcome. `commodity-exchange help` lists its options. Assets are embedded under a same-origin CSP with no remote scripts or credentials. Origin checks are not authentication or a trusted-local-writer boundary.
+The CLI emits JSON: exit 0 for a successful lookup or accepted command, 1 for usage/transport/HTTP client errors, 2 for a durable rejection including lookup, and 3 for pending/server-unavailable/unknown outcome. `commodity-exchange help` lists its options. Assets are embedded under a same-origin CSP with no remote scripts or credentials. A browser Origin must equal `http://` plus the Host header and name a loopback host (`127.0.0.1`, `localhost` or `[::1]`). Origin checks are not authentication or a trusted-local-writer boundary.
 
 ## Workload tuning
 

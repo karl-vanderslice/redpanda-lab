@@ -18,6 +18,8 @@ Container clients use `redpanda-0:9092` through `redpanda-2:9092`. Host clients 
 
 Use `just urls` rather than assuming a port. Console can inspect topics, groups, schemas and the Admin API. The provisioned Grafana dashboard has no login requirement; [delivery and telemetry](telemetry-and-delivery.md) explains its measurements.
 
+Console, Grafana and Prometheus are unmodified upstream interfaces. A rendered review of the pinned versions found unnamed Console 3.12.0 Messages controls and horizontal overflow on that page at 320 CSS pixels, and Prometheus 3.13.4 target-health control text measured 3.55:1 contrast. The lab does not patch upstream interfaces; use the API or `rpk` when those pages do not suit your keyboard, screen reader or zoom setting.
+
 ## Runtime ownership
 
 The `lab` wrapper derives a Compose project name from the checkout's absolute path. Named volumes hold broker and telemetry data, outside the repository. Port state and lifecycle locks live under `${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/`.

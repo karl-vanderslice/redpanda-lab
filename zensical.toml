@@ -58,7 +58,17 @@ variant = "modern"
 custom_dir = "docs-theme"
 language = "en"
 font = false
-features = ["navigation.indexes", "navigation.top", "navigation.footer", "content.code.copy", "search.highlight"]
+# Full loads deliberately initialize the storage, native-control and diagram adapters.
+features = [
+  "navigation.indexes",
+  "navigation.path",
+  "navigation.tracking",
+  "navigation.top",
+  "navigation.footer",
+  "toc.follow",
+  "content.code.copy",
+  "search.highlight",
+]
 
 [[project.theme.palette]]
 media = "(prefers-color-scheme: light)"

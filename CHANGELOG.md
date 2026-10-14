@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Accept a trading proposal after a foreign exact duplicate lands before its append; replay assigns order priority from the consumed offset. Reject `.` and `..` trading IDs.
+- Return consumed Bitcoin receipts while writes are stopped and keep `outcomeUnknown:true` for retries of the unresolved command.
+- Return 503, not 202, for identical retries of unknown sports and jurisdiction operations. Keep the exact uncertain jurisdiction input frozen until its consumed result appears.
+- Confirm POS full refunds before creating or sending a refund command. Classify a Square 4xx `FAILED` card decline as declined after the existing identity, amount and scope checks.
+- Discard automatic reads already in flight when event-log, SIEM, activity, inventory or clearing views are paused. Restore focus to the activity opener after closing an article.
+- Reject the whole SIEM fixture before publication when its last event exceeds the future-clock guard.
+- Reject DNS-rebinding browser origins for every lab mutation, and require JSON plus a loopback Origin on every explorer POST.
+- Start labs from each archive's exact image ID instead of a shared mutable tag, and package only runtime application inputs.
+- Show compact owned container names, status and ports in `status`. Let startup timeouts stop Compose's Podman children and report the timeout.
+- Share one Nixpkgs evaluation per system, remove per-request static type maps and unused routes, and record the executed fx version.
+- Raise enabled form-control boundaries to at least 3:1 against adjacent surfaces in eight lab themes, and wrap long sports scoreboard names at 320 CSS pixels with enlarged text.
+- Add documentation breadcrumbs, section tracking, titled command blocks and visible disposal warnings.
 - Add separate Rust commodity-exchange, multi-sport streaming, fx agent messaging, scheduled agent chat, and Terraform infrastructure labs.
 - Provide a shared `just up LAB` / `just down LAB` interface, per-lab validation and public-workflow E2E checks. Terraform mutations require review of the exact saved plan.
 - Package application and model containers with locked Nix inputs. Pin KafkaJS, Rust dependencies, genuine fx releases, the 135M local model, broker images, and the Terraform provider mirror.
