@@ -1,46 +1,47 @@
-# Production, multi-region, and disaster recovery
+# Production and disaster recovery
 
-This repository teaches mechanisms. It does not deploy a production platform. Broker replicas on one laptop share the same power, disk, kernel, and network failure domain.
+The lab demonstrates mechanisms, not a production deployment. Local replicas share power, disk, kernel, and network failure domains. It claims no multi-region failover, RPO/RTO target, security audit, or performance benchmark.
 
-## Start with ownership and failure domains
+## Ownership and failure domains
 
-Use broker replicas across independent availability zones within a region. Define capacity, disk behavior, retention, TLS, SASL, ACLs, secrets rotation, audit requirements, monitoring, and alert delivery before accepting real data. Pin and review deployable artifact identities. Benchmark representative workloads before making latency or throughput claims.
+Place regional replicas across independent availability zones. Define capacity, disk behavior, retention, TLS, SASL, ACLs, secrets rotation, audit requirements, monitoring, and alert delivery before accepting real data. Pin and review artifacts; benchmark representative workloads before claiming latency or throughput.
 
-A topic's ordering is partition-local. Partition keys must match domain ownership: one order book, one match, one agent task, or one conversation. Increasing a partition count can change key placement. Side effects need stable operation IDs and a durable deduplication boundary; producer idempotence alone does not make application processing exactly-once.
+Ordering is partition-local. Keys should match ownership: a book, match, agent task, or conversation. More partitions can change key placement. External effects need stable operation IDs and durable deduplication; producer idempotence is insufficient.
 
-## Prefer an explicit regional writer
+## Regional writer
 
-For an active-passive design, keep one authoritative writer and replicate to a second regional cluster. Fence the old writer before promoting the standby. Route consumers and producers together, and record which region owns writes. Do not treat DNS changes as fencing: old clients can keep their original connections.
+Active-passive recovery requires one authoritative writer. Fence the old writer before promoting the standby; route producers and consumers together and record write ownership. DNS changes do not fence connected clients.
 
-[Redpanda Shadowing](https://docs.redpanda.com/streaming/current/manage/disaster-recovery/shadowing/overview/) provides asynchronous, offset-preserving replication. It requires an **enterprise license**. The documented 26.2 feature is active-passive, not active-active; replication lag means some acknowledged source data can be absent at the standby during a disaster. Automatic fallback after promotion is not supported. These capabilities are documented options, not enabled services in this lab.
+[Redpanda Shadowing](https://docs.redpanda.com/streaming/current/manage/disaster-recovery/shadowing/overview/) in 26.2 provides asynchronous, offset-preserving replication under an enterprise license. It is active-passive, not active-active. Replication lag can leave acknowledged source records absent from the standby. Automatic fallback after promotion is unsupported. Shadowing is not enabled here.
 
-Alternative re-produce replication tools need their own offset translation and consumer recovery procedure. A stretch cluster exchanges regional independence for synchronous wide-area latency and quorum design. Do not select either from the local failover experiment alone.
+Re-produce replication needs offset translation and consumer recovery. Stretch clusters trade regional independence for synchronous WAN latency and quorum design. Local failover does not validate either.
 
-## Define recovery objectives before the runbook
+## Recovery objectives
 
-**RPO** (recovery point objective) is the acceptable amount of lost data. **RTO** (recovery time objective) is the acceptable restoration time. Set them per workflow and measure them in rehearsals, including client routing and application reconstruction, not just broker startup.
+RPO is acceptable data loss; RTO is acceptable restoration time. Set both per workflow. Rehearsals must include client routing and application reconstruction, not just broker startup.
 
-A production runbook should:
+A recovery runbook must:
 
-1. Establish incident scope and stop or fence the current writer.
-2. Record replication lag, offsets, topic configuration, schemas, and the known data-loss window.
-3. Promote or restore the target cluster using its supported procedure.
+1. Establish incident scope; stop or fence the writer.
+2. Record replication lag, offsets, topic configuration, schemas, and the known loss window.
+3. Promote or restore through the supported procedure.
 4. Recover identity, TLS/SASL secrets, ACLs, schemas, consumer state, and application state.
-5. Rebuild projections and reconcile uncertain side effects using stable operation IDs.
+5. Rebuild projections; reconcile uncertain effects by stable operation ID.
 6. Route clients, verify domain outcomes, and resume writes under one owner.
-7. Plan controlled failback or reseeding; never let an old region resume independently.
+7. Control failback or reseeding. Never let the old region resume independently.
 
-[Whole Cluster Restore](https://docs.redpanda.com/streaming/current/manage/disaster-recovery/whole-cluster-restore/) is a distinct recovery mechanism using Tiered Storage. Tiered Storage is not a general backup of application databases, model files, media assets, secrets, or Terraform state. Retain and rehearse those owners separately. Verify licensing and exact version support before adoption.
+[Whole Cluster Restore](https://docs.redpanda.com/streaming/current/manage/disaster-recovery/whole-cluster-restore/) uses Tiered Storage and is distinct from Shadowing. Tiered Storage does not back up application databases, models, media, secrets, or Terraform state. Retain and rehearse those separately; check licensing and exact version support.
 
-## Apply the boundary to applications
+## Application recovery
 
-| Workflow | Recovery constraint |
+| Workflow | Required boundary |
 | --- | --- |
-| Commodity matching | Fence the matcher per book; reconcile accepted orders, fills, balances, and external settlement before reopening. |
-| Sports broadcasting | Replicate score/control events separately from media origin assets, manifests, and viewer sessions. A broker is not a video CDN. |
-| Agent coordination | Fence task ownership, preserve correlation IDs, and surface uncertain tool/model effects rather than repeating them silently. |
-| Scheduled chat | Persist schedule state, use one fenced executor per job, define timezone/overdue policy, and reconcile replies generated before interruption. |
-| Bitcoin positions | Fence account ownership; restore source data, strategy version, cash, cost basis, fees, command IDs and consumed offset together. Real venue execution requires separate reconciliation. |
-| Terraform provisioning | Protect and lock state independently, retain provider pins, and reconcile actual resources before applying a recovery plan. |
-
-No multi-region failover, RPO/RTO target, production security audit, or performance benchmark is claimed by this lab.
+| IoT telemetry | Authenticate devices; retain sequence/threshold policy and alert state. Define delivery, notification and missing-device behavior separately. |
+| Point of Sale | Reconcile provider payment/refund IDs and unknown outcomes before resuming checkout. A log receipt is not proof of settlement. |
+| Logistics | Fence dispatch ownership; restore driver availability, trip assignments and location observations together. Event order does not prove physical pickup or delivery. |
+| Commodity matching | Fence each book's matcher; reconcile orders, fills, balances, and settlement before reopening. |
+| Sports broadcasting | Recover score/control events separately from media origins, manifests, and viewer sessions. Brokers are not a video CDN. |
+| Agent coordination | Fence task ownership, preserve correlation IDs, and expose uncertain tool/model effects rather than silently retrying. |
+| Scheduled chat | Persist schedules; fence one executor per job. Define timezone/overdue policy and reconcile replies generated before interruption. |
+| Bitcoin positions | Fence accounts; restore source data, strategy version, cash, cost basis, fees, command IDs, and consumed offset together. Reconcile real venue execution separately. |
+| Terraform provisioning | Lock and protect state separately, retain provider pins, and reconcile resources before applying a reviewed recovery plan. The Podman socket grants host-user authority; see the [Terraform guide](../labs/terraform.md). |

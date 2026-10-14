@@ -1,126 +1,110 @@
 # Sports: Courtside broadcast portal
 
-Courtside is an unaffiliated, fictional multi-sports portal inspired by the information hierarchy of a sports broadcaster: a sports rail, exhibition slate, match player, scoreboard and event wire. It does **not** stream ESPN, movie footage or a real sporting event. It plays original, silent, 18-second synthetic field animations from the local Nix-built image, while Redpanda carries actual score, preference and playback events.
+Courtside is a fictional, unaffiliated multi-sports portal. Original silent 18-second field animations play from the Nix-built image; Redpanda carries real score, preference and playback events. No ESPN stream, film footage or real sporting event is included.
 
 ## Start and watch
 
-From the repository root, enter the pinned development environment and start the isolated project:
+Use the [common environment and lifecycle commands](../reference/commands.md):
 
 ```bash
-nix develop
 just up sports
 ./labs/run sports urls
 ```
 
-Open the reported app URL. No external media URL, model, API key, account or host-installed encoder is needed. The first image build generates four videos using the flake-pinned Nixpkgs FFmpeg. No video is downloaded at runtime.
+No external media, model, API key, account or host encoder is needed. The first build generates four clips with pinned FFmpeg; runtime downloads none.
 
-1. Choose **Basketball**, then open **Timberwolves vs Harbor Comets** or **Tune Squad vs Monstars**. Press the native player's **Play** control. A moving red marker crosses an abstract court. The video is deliberately silent; its text description and captions explain the animation.
-2. Use the native pause, seek, volume and fullscreen controls. Successful playback publishes `play`; pausing publishes `pause`; playback while the tab is visible publishes a `heartbeat` every 10 seconds. The event wire and “Behind the broadcast” counters show these consumed records.
-3. Choose **Ice hockey**, **Soccer** and **Football**. Each has its own match page and generated media file, scoring increments and exhibition fixtures. Browser back/forward and direct match URLs work. Moving away from playing media emits a pause for the old match.
-4. On a match, choose **Add to watchlist** and **Follow** either team. Wait for the projected-offset confirmation, then visit **Watchlist**. The saved match appears. Follow is by team display name, so the fixture Timberwolves follow also covers the football fixture. Toggle again to remove a preference.
-5. In **Control room**, choose a scoring team and increment, then **Emit score event**. The number changes only after a consumer projects that record. Basketball permits 1/2/3; hockey and soccer 1; football 1/2/3/6. This is an exhibition scoring demo, not a full rules engine.
-6. Toggle light/dark theme. Viewer ID and theme persist in local storage if the browser allows it; a storage-blocked tab still works, but gets a new viewer identity on reload. No auto-play is used.
+Each sport has match pages, exhibition fixtures and a native player with play/pause/seek/volume/fullscreen. Basketball includes Timberwolves vs Harbor Comets and Tune Squad vs Monstars; other routes cover hockey, soccer and football. Captions/descriptions explain the silent animation. No autoplay is used; back/forward and direct match URLs work.
 
-A “Scoreboard connected” label describes the SSE/control-plane connection, not video availability. If telemetry publication fails, playback still works; telemetry stops until **Reconnect control plane** is chosen. Errors display the operation ID to investigate before issuing another action.
+Playback emits `play`, `pause` and a visible-tab `heartbeat` every ten seconds. Leaving playing media emits pause for the old match. **Watchlist** stores matches; **Follow** uses team display names, so Timberwolves also covers its football fixture. Preference confirmation waits for the projected offset. Control-room score increments are basketball 1/2/3, hockey/soccer 1, football 1/2/3/6, not a complete rules engine.
+
+Viewer ID/theme persist when local storage works; otherwise reload creates a new viewer. **Scoreboard connected** means SSE/control-plane connectivity, not playable media. Telemetry failure leaves playback working but stops telemetry until **Reconnect control plane**. Errors retain the operation ID for investigation.
 
 ## Produce and inspect a score
 
-The runner reports the actual isolated port; do not assume port 3000 on the host:
-
 ```bash
 APP=$(./labs/run sports urls --json | jq -er .app)
-curl --fail "$APP/health"
-curl --fail "$APP/api/state?viewer=reader" | jq '.matches'
-
 ID="reader_$(date +%s)_$RANDOM"
 curl --fail -H 'Content-Type: application/json' \
   -d "{\"id\":\"$ID\",\"kind\":\"score\",\"matchId\":\"ducks-rink\",\"side\":\"home\",\"delta\":1}" \
   "$APP/api/events" | jq
 curl --fail "$APP/api/operations/$ID" | jq
 curl --fail "$APP/api/state?viewer=reader" | jq '.matches[] | select(.id == "ducks-rink")'
-
 ./labs/run sports rpk topic describe sports.events
 ./labs/run sports rpk topic consume sports.events --offset start --num 10
-curl --fail "$APP/metrics"
 ```
 
-The operation can initially be `pending`; query its URL again until it is `completed` or `error`. `completed` includes the consumed partition/offset. Append acknowledgement alone does not mean the scoreboard was applied. The Console URL reported by `urls` provides another way to inspect the topic. The bounded `rpk` example waits for ten records if fewer exist; use Ctrl-C or choose a smaller count.
+Poll a `pending` operation until `completed` or `error`. Completion includes consumed partition/offset; append acknowledgment alone does not apply the score. Bounded `rpk` consumption waits if fewer records exist; reduce the count or use Ctrl-C.
 
-For optimistic scoring, include `expectedRevision` from the match in `/api/state`. Two concurrent changes against one revision cannot both succeed: the consumer records the later stale operation as `error`. Read the new scoreboard before creating a new ID. Omit this field for an intentionally unconditional additive score.
+For optimistic scoring, send the match's `expectedRevision` from state. Only one concurrent change against that revision succeeds; the consumer marks later stale operations `error`. Read the new score before creating another ID. Omission intentionally makes an unconditional additive score.
 
 ## Media and control planes
 
 ```text
-Nix FFmpeg → immutable local MP4 → HTTP byte ranges → native video player
-                                                        │ play/pause/heartbeat
-Score buttons / follow / watchlist ──────────────────────┤
-                                                        ▼
-                         POST /api/events → sports.events (Redpanda)
-                                                    │ consumer / replay
-                                                    ▼
-                       in-memory projection → state + operations + SSE
+Nix FFmpeg → immutable MP4 → HTTP byte ranges → native player
+                                                   │ play/pause/heartbeat
+Score / follow / watchlist ─────────────────────────┤
+                                                   ▼
+POST /api/events → sports.events → consumer/replay → projection → state/SSE
 ```
 
-Media files are H.264/yuv420p at 960×540, 24 fps, with fast-start MP4 layout. `/media/{basketball,hockey,soccer,football}.mp4` supports HEAD, a single standard byte range, suffix ranges and 206/416 responses. A bounded readable stream supplies bytes directly; Kafka never carries video fragments. All matches of a sport reuse its original synthetic loop. There is no adaptive bitrate, HLS live ingest, real-time audiovisual feed, DRM or score overlay burned into the video. “Broadcast” refers to the portal presentation; the stage/quarter is a deterministic fixture label, not a ticking live clock.
+Media is H.264/yuv420p, 960×540, 24 fps, fast-start MP4. `/media/{basketball,hockey,soccer,football}.mp4` supports HEAD, one standard/suffix byte range and 206/416. A bounded stream serves bytes; Kafka carries no video. Matches reuse their sport's loop. No adaptive bitrate, HLS ingest, DRM, live audiovisual feed or burned-in score overlay exists. Stage/quarter labels are deterministic fixtures, not clocks.
 
-Scores, viewer preferences and playback positions live in the **single-partition**, replication-factor-one `sports.events` topic. Keys are match IDs. The small lab deliberately gives all events one total partition order; a production design would partition by domain key and explicitly reconcile cross-partition projections.
+`sports.events` has one partition, RF1, match-ID keys and total event order. Records contain `schema: 1`, stable `id`, `kind`, `matchId`, server receipt `at`, plus:
 
-Records have `schema: 1`, a stable `id`, `kind`, `matchId` and server receipt timestamp `at`. Score records add `side`, `delta`, optional `expectedRevision`; preference records add `viewerId`, `enabled` and (for follows) `side`; telemetry records add `viewerId`, `position` in seconds. The shared log starts an ephemeral consumer group on every process startup, replays from the beginning and resolves readiness after the startup high watermark. Replay has no external side effects. The projection deduplicates terminal operation IDs and applies only the first valid record for an ID. Invalid direct topic records are logged/count as invalid and do not mutate the domain.
+| Kind | Additional fields |
+| --- | --- |
+| Score | `side`, `delta`, optional `expectedRevision` |
+| Preference | `viewerId`, `enabled`; follows also `side` |
+| Telemetry | `viewerId`, `position` in seconds |
 
-The server synchronously reserves each HTTP operation ID before append. Reusing an ID with identical input returns its observed operation rather than publishing again; changing its input returns 409. Domain updates happen only in consumer callbacks. Failed/timed-out append can mean **unknown outcome**, not “not published.” The same process preserves this uncertainty, and a later consumer record can resolve it. Do not blindly retry, especially with a new ID: check the operation, inspect the topic and establish what happened. After an app restart, an unobserved operation may return 404; absence from an in-memory map is not proof it never reached the broker.
+Startup uses an ephemeral consumer group, replays from the beginning through the pre-start high watermark, then becomes ready. Replay has no external effects. Only consumer callbacks change domain state. The projection applies the first valid record per terminal operation ID; invalid direct topic records are logged/counted without mutation.
+
+HTTP reserves IDs synchronously before append. Identical reuse returns the observed operation; changed input returns 409. Failed/timed-out append can be **unknown**, not absent. The process preserves uncertainty until consumption resolves it. Inspect operation/topic before retrying; never blindly use a new ID. After restart, an unobserved ID can return 404 without proving non-publication.
 
 ## API and metrics reference
 
-| Endpoint | Meaning |
+| Endpoint | Contract |
 | --- | --- |
-| `GET /health` | 200 `{ready:true}` after replay; 503 during initialization. |
-| `GET /api/state?viewer=ID` | Fixtures plus projected scores/revisions, this viewer's preferences/playback, latest 60 consumed events and metrics. |
-| `GET /api/feed?viewer=ID` | SSE `state` snapshots after consumed events and every ten seconds; slow clients are closed rather than buffered indefinitely. Maximum 100 streams. |
-| `POST /api/events` | Bounded JSON input; same-origin browser mutations; event schema validation; 200 completed/error or 202 pending, 503 unknown publish outcome. |
-| `GET /api/operations/ID` | Pending/unknown/completed/error operation, event, error and consumed offset; 404 means not observed in this process. |
-| `GET /metrics` | Plain Prometheus exposition, no metrics library required. |
+| `GET /health` | 200 `{ready:true}` after replay; 503 initializing |
+| `GET /api/state?viewer=ID` | Fixtures, scores/revisions, viewer preferences/playback, latest 60 events, metrics |
+| `GET /api/feed?viewer=ID` | SSE `state` after consumption/every ten seconds; max 100 streams; slow clients closed |
+| `POST /api/events` | Bounded JSON/schema/origin validation; 200 completed/error, 202 pending, 503 unknown publication |
+| `GET /api/operations/ID` | Pending/unknown/completed/error, event/error/offset; 404 not observed in this process |
+| `GET /metrics` | Prometheus text |
 
-IDs must contain 1–80 ASCII letters, digits, underscores or hyphens. Mutations require `application/json`; untrusted browser origins receive 403. This is not authentication: command-line clients have no Origin requirement. Local viewer identifiers are demonstration identities, not accounts. Any local client can submit score events or query another viewer's preferences. Do not expose these ports publicly.
+IDs allow 1–80 ASCII letters/digits/underscores/hyphens. Mutations require `application/json`; untrusted browser origins receive 403. Origin checks are not authentication: CLI needs no Origin, viewer IDs are not accounts, and any local client can score or inspect another viewer. Keep ports private.
 
-Metrics include `sports_applied_total`, `sports_rejected_total`, `sports_invalid_total`, `sports_duplicates_total`, `sports_publish_errors_total`, `sports_media_requests_total`, `sports_play_total`, `sports_pause_total`, `sports_heartbeat_total` and `sports_active_viewers`. Active viewers are those with a projected playing session whose latest timestamp is less than 30 seconds old, counted once across matches. A heartbeat does not turn a paused viewer into a playing viewer. Visibility limits background-tab telemetry; counts are demo activity estimates, not billing or fraud-resistant audience analytics. Domain/telemetry counters rebuild through replay; media requests and publish failures describe the current process only.
+Metrics: `sports_applied_total`, `sports_rejected_total`, `sports_invalid_total`, `sports_duplicates_total`, `sports_publish_errors_total`, `sports_media_requests_total`, `sports_play_total`, `sports_pause_total`, `sports_heartbeat_total`, `sports_active_viewers`. Active viewers have projected playing sessions younger than 30 seconds, counted once across matches. Heartbeats never start paused sessions; background visibility limits telemetry. Counts are estimates, not billing/fraud-resistant analytics. Domain/telemetry counters replay; media requests/publication failures are process-local.
 
 ## Replay and meaningful verification
 
-```bash
-./labs/run sports restart app
-curl --fail "$APP/health"
-curl --fail "$APP/api/state?viewer=reader" | jq '.matches'
-just check sports
-just test sports
-```
+App-only restart retains broker data; readiness precedes reconstructed scores/preferences. `fixtures.mjs` provides a deterministic baseline; later scores are retained additive events, not random timers. Retention is 24 hours: an expired prefix cannot recover a lifetime scoreboard.
 
-An app-only restart retains the broker volume. Wait for readiness, then the same retained log reconstructs the scores and preferences. The seeded baseline in `fixtures.mjs` is deterministic; all later scores are retained additive events, not random timers. The broker's lab retention is finite (24 hours), so an expired prefix cannot reconstruct an authoritative lifetime scoreboard. Keep this project disposable. Do not mistake RF1, one host or a retained Docker volume for a recovery strategy.
-
-`labs/sports/e2e.sh` requires the started runner project and the pinned shell's Node, curl/jq and FFmpeg tools. It exercises four sport routes, retrieves every actual media file, asserts MP4 range bytes and H.264 properties with ffprobe, decodes frames with FFmpeg, emits/consumes scores, checks duplicate IDs and stale revisions, tests follow/watchlist removal and telemetry, verifies origin/validation errors, metrics/SSE, then restarts **only app** and compares replayed state. It does not claim native browser playback from an API check. For browser verification, play the clip and confirm advancing `currentTime`, pause it, navigate across sports and confirm consumed telemetry/score changes; check keyboard focus, captions, narrow layout and theme switching.
+`labs/sports/e2e.sh` requires a running project and pinned Node/curl/jq/FFmpeg. It checks four routes, all media, range bytes, ffprobe H.264 properties, decoded frames, consumed scores, duplicate/stale operations, preference removal, telemetry, validation/origin errors, metrics/SSE and app-only restart equality. **API checks do not prove native playback.** Browser checks must observe advancing `currentTime`, pause/navigation, consumed telemetry/scores, keyboard focus, captions, narrow layout and themes. Use `just check sports`/`just test sports` as described in [commands](../reference/commands.md).
 
 ## Source research, rights and pinning
 
-Primary sources were read on **2026-10-13** to decide fixture identity and media boundaries. Source observations are not asset licenses:
+Sources read **2026-10-13** establish fixture mapping, not asset licenses:
 
-| Primary source | What it establishes / design consequence |
+| Source | Boundary |
 | --- | --- |
-| [Air Bud Entertainment: World of Air Bud](https://www.airbud.com/air-bud) | Producer descriptions distinguish basketball in *Air Bud*, Timberwolves/football in *Golden Receiver*, soccer in *World Pup*, baseball and beach volleyball in later films. The lab selects four sports rather than incorrectly labelling every sequel basketball. |
-| [Disney: Air Bud: Golden Receiver](https://movies.disney.com/air-bud-golden-receiver) | Disney independently names the school football Timberwolves. This is **not** a Minnesota NBA franchise reference. The basketball Timberwolves exhibition is a lab fixture association, not a claim of a licensed roster or canonical game. |
-| [Disney: The Mighty Ducks](https://movies.disney.com/the-mighty-ducks) | The 1992 film description explicitly identifies pee-wee hockey. Mighty Ducks is placed on the ice, not a real NHL team roster. Northstar Blades and the fixture score/venue are original lab inventions. |
-| [Warner Bros. Discovery's Space Jam announcement, May 7, 2026](https://www.prnewswire.com/news-releases/warner-bros-discovery-tips-off-the-30th-anniversary-of-space-jam-302765723.html) | The issuer names Tune Squad versus Monstars and carries a Warner Bros. copyright/trademark notice. The lab uses the original rivalry as **text only**; it does not substitute the later film's Goon Squad, download the offered press assets or claim broadcast rights. This is one issuer's release, not independent licensing corroboration. |
-| [U.S. Copyright Office: What Does Copyright Protect?](https://www.copyright.gov/help/faq/faq-protect.html) | Names/titles are not protected by copyright in isolation, but names may have trademark protection and logo artwork may have copyright. Textual references are not a blanket trademark or character-use clearance. |
-| [U.S. Copyright Office: permission and fair-use FAQ](https://www.copyright.gov/help/faq/faq-fairuse.html) | Online availability and educational purpose do not automatically authorize copies or entertainment performance; there is no universal safe clip duration. The conservative implementation excludes posters, film stills/clips, logos, voices and soundtracks completely. |
-| [FFmpeg filter documentation](https://ffmpeg.org/ffmpeg-filters.html#drawbox) | `color`, `drawbox`, `drawgrid` and time-based `overlay` allow original procedural generation with no third-party visual inputs. The exact filter graph lives in `default.nix`. |
-| [RFC 9110, HTTP range requests](https://www.rfc-editor.org/rfc/rfc9110.html#name-range-requests) | MP4 seeking uses local HTTP byte ranges instead of treating the Kafka event stream as a media transport. This lab supports one range, not multipart range responses. |
+| [Air Bud producer descriptions](https://www.airbud.com/air-bud) | Basketball in *Air Bud*, football in *Golden Receiver*, soccer in *World Pup*; later films include baseball/beach volleyball. Sequels are not all basketball. |
+| [Disney: Golden Receiver](https://movies.disney.com/air-bud-golden-receiver) | School football Timberwolves, not Minnesota's NBA franchise. Basketball association is a lab fixture, not licensed/canonical roster. |
+| [Disney: The Mighty Ducks](https://movies.disney.com/the-mighty-ducks) | Pee-wee hockey, not an NHL roster. Northstar Blades, scores and venues are lab inventions. |
+| [Warner Bros. Space Jam announcement, May 7, 2026](https://www.prnewswire.com/news-releases/warner-bros-discovery-tips-off-the-30th-anniversary-of-space-jam-302765723.html) | Tune Squad/Monstars, not the sequel's Goon Squad. Text only; no press assets. Issuer copyright/trademark notice is not independent licensing corroboration. |
+| [Copyright scope](https://www.copyright.gov/help/faq/faq-protect.html) | Names/titles alone lack copyright, but may carry trademarks; logos may have copyright. No blanket clearance. |
+| [Permission/fair-use FAQ](https://www.copyright.gov/help/faq/faq-fairuse.html) | Online availability/education are not automatic authorization; no universally safe clip duration. No posters, stills, clips, logos, voices or soundtracks are used. |
+| [FFmpeg filters](https://ffmpeg.org/ffmpeg-filters.html#drawbox) | `color`, `drawbox`, `drawgrid`, timed `overlay`; exact original-generation graph in `default.nix`. |
+| [RFC 9110 ranges](https://www.rfc-editor.org/rfc/rfc9110.html#name-range-requests) | Local MP4 seeking; one range, not multipart. |
 
-The title/fixture references are neither endorsements nor proof of rights to exploit a franchise. The primary descriptions settle the sport mapping, but do **not** establish a complete territorial chain of title, sublicensing authority or trademark clearance; those remain unknown and must be reviewed for public/commercial use. Replace reference names with original names if the use requires that boundary. The synthetic clips are original geometric animations, not altered copyrighted clips; plain system fonts and lab-written CSS/HTML supply the visual identity. No remote font, analytics script, CDN or image is loaded. ESPN inspiration is editorial hierarchy only; no ESPN marks/assets are reproduced.
+Territorial chain of title, sublicensing and trademark clearance remain **unknown**. References imply neither endorsement nor exploitation rights. Public/commercial distribution needs qualified rights review; substitute original names when required. Geometric clips, system fonts and lab CSS/HTML copy no assets; no remote fonts, analytics, CDN or images load. ESPN influence is editorial hierarchy only.
 
-The root `flake.lock` pins Nixpkgs, thereby Node/FFmpeg and encoder dependencies; `labs/common` pins the KafkaJS dependency to 2.2.4 and the shared Compose configuration supplies the exact broker/Console image pins. Sports adds no npm package and fetches no binary outside these inputs. Updating the lock or common pins changes the build inputs; inspect those files for the exact versions/digests rather than assuming upstream `latest`. FFmpeg generation happens in a Nix derivation and outputs are copied into the immutable application image. Browser H.264 support and codec/patent suitability for the intended deployment still require review.
+Root `flake.lock` pins Node/FFmpeg/encoders; shared KafkaJS is 2.2.4 and shared Compose pins broker/Console. Sports adds no npm package or extra binary download. Clips are built in Nix and copied into the immutable image. Review browser H.264 support and codec/patent suitability; lock updates change inputs.
 
 ## What a production regional service needs
 
-The demo intentionally separates *logical* media and control planes but shares one app process/host; this is not physical fault isolation. Production needs licensed rights by event, sport, territory and time window; entitlement/authentication, geographic enforcement and applicable privacy/retention policy; redundant ingest and transcode; multiple bitrate ladders/manifests, object storage origins and regionally redundant CDN delivery; and secure signed media authorization with monitored player quality metrics.
+Planes are logically separate but share a process/host, not fault isolation. Production requires territorial/time-window rights, entitlement/geographic enforcement, privacy/retention policy, redundant ingest/transcode, bitrate ladders/manifests, object origins, regional CDN, signed authorization and player-quality monitoring.
 
-For the control plane, use replicated brokers across failure domains, workload-appropriate partitioning, authoritative durable materialized views/snapshots, schema evolution, idempotency retained beyond event retention and authorized score producers. Define recovery point/time objectives independently for media manifests/objects, score events, viewer preferences and live-state services. Replicate to the recovery region, fence old writers during failover, rehearse consumer rehydration and avoid counting replayed telemetry as fresh viewing. [Redpanda's disaster-recovery documentation](https://docs.redpanda.com/current/manage/disaster-recovery/) describes cross-region Shadowing and topic/cluster restore; availability and prerequisites depend on the pinned edition/version. The single local broker here provides none of those multi-region guarantees. A recovered score service cannot repair lost media, and a playable cached clip cannot prove scoreboard freshness.
+Control state needs replicated failure domains, domain partitioning/cross-partition reconciliation, durable views/snapshots, schema evolution, long-lived IDs and authorized scorers. Set separate RPO/RTO for media, scores, preferences and live services; fence writers and rehearse rehydration without treating old telemetry as fresh viewing. [Redpanda recovery](https://docs.redpanda.com/current/manage/disaster-recovery/) depends on pinned edition/version; this broker supplies no regional guarantee. Recovered scores cannot repair lost media; cached playback cannot prove fresh scores.
 
-Revisit the research if fixtures/franchises change, any protected asset is added, distribution becomes public/commercial, territorial rights are required, or the broker/browser/toolchain pins change. Obtain qualified rights advice instead of treating this lab as legal clearance.
+Revisit rights research when fixtures/assets/distribution/territories or broker/browser/toolchain pins change. This lab is not legal clearance.

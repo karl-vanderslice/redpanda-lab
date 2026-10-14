@@ -1,68 +1,49 @@
 # Agent messaging: two agents, one ordered conversation
 
-This lab runs **two genuinely separate agent containers**. `planner` and `reviewer` each have their own Node worker, private fx home, loopback relay and independent upstream `vercel-labs/fx` invocations. They coordinate only through Redpanda records. A third app container serves **Relay**, a violet/neutral operations transcript. A fourth container serves a project-pinned, CPU-friendly **SmolLM2-135M-Instruct Q8_0** model with llama.cpp.
-
-No host model, provider account, API key, credential directory or ambient service is mounted. The agents do not invoke the unrelated JSON-viewer executable also named `fx`.
+Two separate agent containers coordinate only through Redpanda. `planner` and `reviewer` each own a Node worker, private fx home, loopback relay and independent **Vercel fx** invocations. `app` serves the Relay transcript; a fourth container runs SmolLM2-135M-Instruct Q8_0 with llama.cpp. No host model, account, API key, credential directory or ambient service is mounted. This is not the unrelated `fx` JSON viewer.
 
 ## Start and observe
 
-From the repository's Nix development environment:
+Use the [common environment and lifecycle commands](../reference/commands.md):
 
 ```bash
 just up agent-messaging
 ./labs/run agent-messaging urls
 ```
 
-Open the app URL reported by the runner. Open the separately reported Redpanda Console URL to inspect the event topic. The project-derived Compose name, network, volumes and loopback host ports are isolated from the other labs.
-
-1. Submit a small English task such as **“Plan a small community book swap in three steps.”**
-2. Watch **Planner / proposal** move from pending to running to completed. The text comes from actual local inference, not a fixture.
-3. **Reviewer / critique** consumes the completed proposal and returns a risk and improvement.
-4. **Planner / synthesis** consumes both texts and returns a final plan.
-5. Inspect the agent IDs, stable step IDs, fx model, version and elapsed time below each message. Console shows the corresponding ordered records.
-6. Select an older conversation to recover its full transcript. **Pause updates** freezes the visible view without stopping agents; **Resume updates** displays the latest snapshot. The light/dark toggle remembers a choice when browser storage is available.
-
-The UI deliberately shows completed messages rather than token-by-token fragments: a model stream is not a durable result until its `step.completed` record is consumed. SSE makes the event transcript live at each durable transition.
-
-```bash
-just test agent-messaging
-./labs/run agent-messaging logs
-./labs/run agent-messaging down
-```
-
-The E2E script uses real local inference and bounded waits, checks both independent agent identities and all three results, resubmits the same task ID, publishes a duplicate record through the real `rpk` interface and observes event-ID deduplication, checks invalid/conflicting/foreign-origin submissions, restarts each worker, verifies zero new inference effects on replay, and restarts the UI projection without changing the transcript. It requires the lab already running; root tooling owns setup/teardown. It does not assert the tiny model's answer quality.
+Submit a short English task, for example “Plan a small community book swap in three steps.” Routing is fixed: **planner proposal → reviewer critique → planner synthesis**. Each stage shows pending/running/completed or failed, stable step/agent IDs, model/version and elapsed time. Wording comes from actual inference, not fixtures. The UI displays completed messages only: streamed progress is not durable until `step.completed` is consumed. SSE updates durable transitions; **Pause updates** freezes only the view. Older conversations remain selectable; theme persists when storage works.
 
 ## Architecture and ownership
 
 ```text
-Browser → app → task.submitted ─────────────────────────┐
-                                                      │
-Redpanda / agent-messaging.events.v1 / partition 0      │
-  planner:  step.started → fx proposal → step.completed◀┘
-  reviewer: step.started → fx critique → step.completed
+Browser → app → task.submitted
+                    │
+Redpanda / agent-messaging.events.v1 / partition 0
+  planner:  step.started → fx proposal  → step.completed
+  reviewer: step.started → fx critique  → step.completed
   planner:  step.started → fx synthesis → step.completed
-                                                      │
-Browser ← app projection ←────────────────────────────┘
+                    │
+Browser ← app projection
 
 Each worker's fx → 127.0.0.1:18080/v1 → model:8080/v1
 ```
 
-All domain records use the single topic **`agent-messaging.events.v1`**, one partition, replication factor one. The message key is `taskId`. A completed result includes `agentId`, `instanceId`, `stepId`, model/provider metadata, actual `final_output`, usage and timing. `instanceId` is a random process boot identity; `agentId` is the stable role (`planner` or `reviewer`). A user task follows exactly **proposal → critique → synthesis**. Generated wording is model-dependent; routing is deterministic.
+One topic, one partition, RF1; key `taskId`. Results contain `agentId`, random boot `instanceId`, `stepId`, model/provider metadata, actual `final_output`, usage and timing. Stable agent roles and random process identity are distinct.
 
-The app and both agents replay the topic into independent in-memory projections. There is no direct planner-to-reviewer HTTP request. Every callback checks the schema, stage, actor and predecessor, ignores duplicate operation IDs, and changes only the projection. External effects begin **only after** the shared log's pre-start high-watermark replay barrier resolves. HTTP append success is not treated as domain success: the app waits until its consumer observes the submitted task, and agents wait until their accepted start is observed before invoking fx.
+App/agents replay into independent projections; no planner-to-reviewer HTTP exists. Callbacks validate schema/stage/actor/predecessor, deduplicate IDs and update state only. External effects wait for pre-start high-watermark replay. App submission waits for consumer observation; agents await their accepted start before invoking fx. Append acknowledgment is not domain completion.
 
 ### Record and state contracts
 
-| Record | Stable event ID | Meaning |
+| Record | Stable `eventId` | Transition |
 | --- | --- | --- |
-| `task.submitted` | `<taskId>:submitted` | Immutable user task, initially pending |
-| `step.started` | `<taskId>:<stage>:started` | Running step and owning process boot ID |
-| `step.completed` | `<taskId>:<stage>:completed` | Successful fx `final_output`, makes the next stage eligible |
-| `step.failed` | `<taskId>:<stage>:failed` | Actual inference failure or interruption, stops the workflow |
+| `task.submitted` | `<taskId>:submitted` | Immutable task, pending |
+| `step.started` | `<taskId>:<stage>:started` | Running, owned by boot ID |
+| `step.completed` | `<taskId>:<stage>:completed` | Successful `final_output`; enables successor |
+| `step.failed` | `<taskId>:<stage>:failed` | Inference failure/interruption; stops workflow |
 
-All records contain `schema: 1`, `taskId`, `eventId`, `type` and an informational UTC `at`. Step records add `stage`, `stepId`, `agentId` and `instanceId`. Ordering comes from broker offsets, **not wall-clock timestamps**. Steps start pending, become running only on a recorded claim, and end completed or failed. A failure prevents downstream execution.
+Envelope: `schema: 1`, `taskId`, `eventId`, `type`, informational UTC `at`. Steps add `stage`, `stepId`, `agentId`, `instanceId`. Offsets, not timestamps, order transitions. A recorded claim is required for running; failure blocks successors.
 
-The domain reducer ignores a duplicate event ID and duplicate task ID. A duplicate HTTP request with the same task ID and text returns the original projection; a different task with the same ID returns `409`. During concurrent submissions, the first consumed record wins. Keep the original ID when reconciling an ambiguous submission. Do not automatically retry with a new ID.
+Reducer ignores duplicate event/task IDs. HTTP same-ID/same-text repeats return the original projection; changed text returns 409. Concurrent submissions are first-consumed-wins. Keep the original ID for ambiguous submissions; never automatically replace it.
 
 ### Restart, replay and the deliberate interruption rule
 
@@ -72,26 +53,22 @@ The domain reducer ignores a duplicate event ID and duplicate task ID. A duplica
 ./labs/run agent-messaging restart app
 ```
 
-Completed outputs are replayed verbatim, never regenerated. Pending steps with no recorded start can run once the required predecessor is complete and replay is ready. A recorded running step whose worker restarts **fails as interrupted** if replay contains no terminal result. It is not silently rerun: inference may already have happened even when publication or acknowledgment failed. This conservative rule trades automatic recovery for visible uncertainty and avoids inventing exactly-once external inference.
+Completed outputs replay verbatim. Unstarted pending steps become eligible after predecessor completion/replay. A restarted worker's recorded running step with no terminal result **fails as interrupted**, never silently reruns: inference may have happened before publication/ack failed. If completion wins the restart race, it survives; inspect offsets. Submit a new task only after accepting that decision.
 
-For a hands-on failure exercise, submit a task and restart the currently running worker. If the restart occurs before its result record is accepted, the transcript says interrupted and later steps do not run. If completion wins the race, that real completed result is preserved instead. Inspect offsets rather than assuming which action won. Submit a new task only after consciously accepting that decision.
-
-An fx process is bounded to 100 seconds, one agent step and 128 KiB captured stdout. An empty/invalid JSON result, nonzero process or fx exit status, unexpected tool call, oversized final answer or failed local relay produces a failed step; there is no substitute answer. Publish failure or consumer-observation timeout is **unknown**, not rejection. The worker stops and its `unless-stopped` restart policy rebuilds from the log to determine whether its result exists. A broker-unavailable startup remains unready rather than accepting tasks.
-
-The lab has a disposable 24-hour retained log and no snapshots. After retention removes history, older state cannot be reconstructed. This is not a durable production task database.
+Fx is bounded to 100 seconds, one step and 128 KiB captured stdout. Empty/invalid JSON, nonzero process/fx exit, unexpected tool call, oversized answer or failed relay causes failure, never a substitute answer. Publication failure/observation timeout is **unknown**, not rejection; the worker stops and `unless-stopped` restarts it to reconstruct whether the result exists. Broker-unavailable startup stays unready. The 24-hour log has no snapshots; expired history cannot recover old tasks.
 
 ## The actual fx integration
 
-`labs/agent-messaging/fx.nix` packages upstream **fx v0.0.13**, tag commit **`4d966e272cfc4296cdf703f409480088cf2e72ba`**, as a native release executable. The checked-in fixed-output release hashes are:
+`fx.nix` packages native upstream **v0.0.13**, commit `4d966e272cfc4296cdf703f409480088cf2e72ba`:
 
 | Platform | Release tarball SHA-256 |
 | --- | --- |
 | Linux x86_64 | `53a3b30ce1541048f8fa4b42b7bc68161466bb2e3708db104449a58af3807430` |
 | Linux aarch64 | `78f6a8171193a1d2033f93d1b5a2940ea4a62147daf60a37ae670a9bf85f12e9` |
 
-The repository's `flake.lock` pins Nixpkgs. Its stock `pkgs.fx` is **antonmedv/fx 40.0.0**, a JSON viewer, so the lab deliberately uses a local `fx` binding for the genuine Vercel harness. `default.nix` calls `common.mkNodeImage` with `extraContents = [ fx pkgs.bash pkgs.coreutils ]`; all three Node roles share that image and select their role through `LAB_ROLE`. Model repository/revision/content hash and llama.cpp tooling are fixed in the root's shared model image definition, not downloaded at runtime. `/model/model.gguf` is inside `${LAB_MODEL_IMAGE}`.
+Locked Nixpkgs `pkgs.fx` is antonmedv/fx 40.0.0; the lab uses a local Vercel `fx` binding. `default.nix` adds `[ fx pkgs.bash pkgs.coreutils ]` through `common.mkNodeImage`; all Node roles share the image and select `LAB_ROLE`. Root shared model declarations pin repository/revision/hash and llama.cpp. `${LAB_MODEL_IMAGE}` contains `/model/model.gguf`; runtime downloads nothing.
 
-Each worker creates this private profile in `/tmp/fx-home/.fx/settings.json`:
+Private `/tmp/fx-home/.fx/settings.json`:
 
 ```json
 {
@@ -122,7 +99,7 @@ Each worker creates this private profile in `/tmp/fx-home/.fx/settings.json`:
 }
 ```
 
-Its real invocation, with generated prompt text sent through stdin, is:
+Generated prompts enter stdin; the actual invocation is:
 
 ```bash
 FX_PROVIDER=local FX_MODEL=lab-small FX_PERMISSION_MODE=ask \
@@ -130,40 +107,37 @@ FX_PROVIDER=local FX_MODEL=lab-small FX_PERMISSION_MODE=ask \
   fx ask --json --no-save --no-color --system 'short role instructions' --
 ```
 
-`inference.mjs` uses an argument-vector process spawn, not a shell-interpolated task. It passes an allowlisted environment, a private empty workspace and short planner/reviewer system instructions. No `--full-access`, login, auto-review cloud request, MCP server or host credentials are used. The v0.0.13 Chat Completions adapter actually omits tool schemas for `first_call_tool_choice: none` and rejects unexpected tool calls. The relay also rejects requests containing tools. The generated content published to Redpanda is exactly the successful JSON `final_output`, not the broader progress `output` field.
+`inference.mjs` uses argument-vector spawn, allowlisted environment, empty private workspace and short role instructions, not shell-interpolated tasks. No `--full-access`, login, cloud auto-review, MCP or host credentials. The pinned adapter omits tool schemas for `first_call_tool_choice: none` and rejects unexpected calls; relay rejects tools too. Only successful JSON `final_output`, never progress `output`, is published.
 
-Fx requires HTTPS except loopback for custom connections. The Node relay therefore listens only on `127.0.0.1:18080` inside each agent container, not a host-published proxy. It accepts only POST `/v1/chat/completions` and forwards to the fixed internal model endpoint, without credentials or redirects. Input and duration are bounded. Generation uses temperature 0.2 and a 256-token cap. A native llama.cpp [GBNF grammar](https://github.com/ggml-org/llama.cpp/blob/master/grammars/README.md) restricts each answer to at most 220 ASCII characters ending in model-generated terminal punctuation. This fits the token allowance without trusting this tiny model to stop rambling on instruction alone. The harness must still exit successfully with a `final_output`; `OutputTruncated` remains a failure, and partial progress is never promoted to a completed result. The format is constrained, not the accuracy or usefulness of the advice. Browser tasks cannot supply arbitrary URLs.
+Fx requires HTTPS except loopback. Each relay is container-local `127.0.0.1:18080`, accepts only POST `/v1/chat/completions`, and forwards to the fixed internal model without credentials/redirects. Input/duration are bounded; tasks cannot supply URLs. Temperature is 0.2; cap 256 tokens. [GBNF](https://github.com/ggml-org/llama.cpp/blob/master/grammars/README.md) limits output to 220 ASCII characters ending in generated terminal punctuation. This constrains format, not accuracy. Successful harness exit/`final_output` remains required; `OutputTruncated` fails and partial progress is never promoted.
 
-The model image starts `llama-server -m /model/model.gguf --host 0.0.0.0 --port 8080 -c 8192 -np 1 -t 2 --alias lab-small --jinja`. Compose inherits that command rather than overriding its two-thread bound. Only the app's port is published. Agents and model run nonroot, with read-only application files, dropped capabilities and bounded writable `/tmp` tmpfs. They have no host bind mounts.
+Model command:
+
+```text
+llama-server -m /model/model.gguf --host 0.0.0.0 --port 8080 -c 8192 -np 1 -t 2 --alias lab-small --jinja
+```
+
+Compose retains the two-thread bound. Only app is host-published. Agents/model are nonroot, read-only, capability-dropped, with bounded `/tmp` tmpfs and no host binds.
 
 ## HTTP and operational interfaces
 
-| Endpoint | Interface |
+| Endpoint | Contract |
 | --- | --- |
-| `GET /health` | `{ready, role, agentId, instanceId}`, 200 once replay/recovery is ready, otherwise 503 |
-| `GET /metrics` | Prometheus text for readiness, task state, duplicate/rejected events and actual inference success/failure counters |
-| `POST /api/tasks` | JSON `{id, task}`; ID 8–80 ASCII letters/digits/underscore/hyphen, task 1–1200 characters; 202 observed new task, 200 existing task |
-| `GET /api/tasks` | Full projection, topic, consumed offset, replay readiness and duplicate/rejected counts |
-| `GET /api/tasks/<id>` | One task or 404 if not observed |
-| `GET /api/events` | SSE `snapshot` events for live durable transitions |
+| `GET /health` | `{ready,role,agentId,instanceId}`; 200 replay/recovery-ready, otherwise 503 |
+| `GET /metrics` | Readiness, task gauges, duplicate/rejected records, actual inference counters |
+| `POST /api/tasks` | `{id,task}`; ID 8–80 ASCII letters/digits/underscore/hyphen, task 1–1200 characters; 202 observed new task, 200 existing |
+| `GET /api/tasks` | Full projection, topic, offset, readiness, duplicate/rejected counts |
+| `GET /api/tasks/<id>` | One observed task; otherwise 404 |
+| `GET /api/events` | SSE `snapshot` transitions |
 
-Only `app` serves browser/task endpoints. Each private agent serves health/metrics on port 3000. Mutation requests use bounded JSON parsing and same-origin checks; this is local-lab origin protection, **not authentication**. `400`, `403`, `409`, `413` and `415` distinguish invalid input, origin, ID conflict, oversized body and media type. A `503` response with `status: "unknown"` includes the original task ID. The UI offers **Check uncertain submission** and will not blindly create another task.
-
-Example with an explicit durable client operation ID:
+Only app serves task/browser routes; private agents serve health/metrics on 3000. Bounded JSON and Origin checks are not authentication. Errors: 400 input, 403 origin, 409 ID conflict, 413 size, 415 media type. 503 `status:"unknown"` retains task ID. **Check uncertain submission** does not blindly create another task.
 
 ```bash
 app=$(./labs/run agent-messaging urls --json | jq -r .app)
-curl --fail --silent --show-error "$app/health"
-curl --fail --silent --show-error \
-  -H 'content-type: application/json' \
+curl -fsS -H 'content-type: application/json' \
   -d '{"id":"my-book-swap-task-001","task":"Plan a small community book swap in three steps."}' \
   "$app/api/tasks"
-curl --fail --silent --show-error "$app/api/tasks/my-book-swap-task-001"
-```
-
-Read agent diagnostics without publishing their ports:
-
-```bash
+curl -fsS "$app/api/tasks/my-book-swap-task-001"
 ./labs/run agent-messaging exec planner node -e \
   "fetch('http://127.0.0.1:3000/metrics').then(r=>r.text()).then(console.log)"
 ./labs/run agent-messaging exec reviewer node -e \
@@ -171,22 +145,24 @@ Read agent diagnostics without publishing their ports:
 ./labs/run agent-messaging rpk topic describe agent-messaging.events.v1
 ```
 
-Health means the process is replay-ready, not a promise that future model/broker requests will succeed. Inference counters are process-lifetime effects, intentionally zero after completed-task replay; task-state gauges are reconstructed domain state.
+Health is replay readiness, not future model/broker success. Inference counters are process-local effects, zero after completed-task replay; task gauges reconstruct.
+
+The E2E uses real inference/bounded waits to check both agents/three results, task/event deduplication via `rpk`, input/conflict/origin errors, worker replay without new inference and app transcript replay. It needs a running lab; root `just test agent-messaging` owns setup/disposal. It does not grade answer quality.
 
 ## What this does not claim
 
-SmolLM2's model card documents weak instruction following and reasoning at 135M parameters, possible inaccuracies, inconsistent logic and bias, and predominantly English output. Its function-calling claims concern the **1.7B** variant, not this model. Q8_0 makes it small enough for a local CPU demo; it does not turn it into a production reasoner. The reviewer can repeat, misunderstand or fail to improve a plan. The event choreography is the lesson, not autonomous judgment. Never use these outputs for consequential decisions without review.
+The 135M model has weak instruction following/reasoning, inaccuracies, inconsistent logic, bias and mostly English output. Function-calling claims apply to **1.7B**, not this variant. Review consequential output; Q8_0 and a reviewer role do not guarantee good judgment.
 
-This is a singleton-per-role lab. **Do not scale planner or reviewer replicas.** A stable domain step ID and replay deduplication are not distributed fencing. A production deployment needs partition ownership and a fenced epoch/lease or transactional claims, idempotent/fenced result writes, and reconciliation for external inference outcomes. Broker transactions can atomically publish records and consumed offsets, but cannot make an HTTP model invocation exactly once. Add durable snapshots/checkpoints, intentional retention, dead-letter/recovery policies, schema evolution, authn/authz, broker TLS/ACLs, restricted network egress, task quotas, operational alerts, and data/privacy controls before sharing beyond a local machine. User tasks and generated results are retained plaintext in this lab's topic.
+**Do not scale either role.** Stable IDs are not fencing. Production needs partition ownership, fenced leases/epochs or transactional claims, fenced/idempotent results and external-outcome reconciliation. Broker transactions cannot make model HTTP exactly once. Also required: recoverable snapshots/checkpoints, retention/schema/recovery policy, TLS/ACLs/auth, restricted egress, quotas, alerts and privacy controls. Tasks/results are plaintext in the topic.
 
-Across regions, retain tasks, step identities, ownership epochs and successful result records together, with the pinned model and harness artifacts available at the standby. Fence old role owners before resuming task execution. Replication lag can leave a model invocation without its durable completion record; surface that uncertainty and reconcile it instead of replaying the external effect. See [production and disaster recovery](../explanation/production.md) for the async loss window, licensed replication options and restore drills.
+Regional recovery must retain task/step/ownership/result identities and pinned artifacts together, fence old owners and reconcile inference without a completion record. Replication lag is not permission to repeat inference; see [production and disaster recovery](../explanation/production.md).
 
 ## Sources, pins and rights
 
-- [Upstream fx release v0.0.13](https://github.com/vercel-labs/fx/releases/tag/v0.0.13), [pinned CLI implementation](https://github.com/vercel-labs/fx/blob/4d966e272cfc4296cdf703f409480088cf2e72ba/src/core/cli/cli_ask.zig) and [pinned Chat Completions adapter](https://github.com/vercel-labs/fx/blob/4d966e272cfc4296cdf703f409480088cf2e72ba/src/gateway/chat_completions_protocol.zig): Apache-2.0. The package preserves LICENSE and THIRD_PARTY_NOTICES.
-- [Official custom model connections](https://fx.sh/docs/configure-fx/custom-model-connections.md), [noninteractive fx ask](https://fx.sh/docs/using-fx/fx-ask.md), [permissions](https://fx.sh/docs/configure-fx/permissions.md) and [configuration](https://fx.sh/docs/configure-fx/configuration.md). The website may evolve; the checked-in package pin and inspected v0.0.13 source define this lab's behavior.
-- [SmolLM2-135M-Instruct model card](https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct): Apache-2.0 weights and the stated capability limits. Consult the shared fixed-output GGUF source for quantization provenance.
-- [llama.cpp server](https://github.com/ggml-org/llama.cpp/tree/master/tools/server): MIT; provided by the locked Nixpkgs model image, not a floating runtime install.
-- [Redpanda transactions and transactional IDs](https://docs.redpanda.com/current/develop/transactions/): the relevant production fencing/atomic-publication boundary. Redpanda broker and Console pins/licenses are documented by shared lab infrastructure; this lab does not redistribute them under an invented license.
+- [fx release](https://github.com/vercel-labs/fx/releases/tag/v0.0.13), [pinned CLI](https://github.com/vercel-labs/fx/blob/4d966e272cfc4296cdf703f409480088cf2e72ba/src/core/cli/cli_ask.zig), [adapter](https://github.com/vercel-labs/fx/blob/4d966e272cfc4296cdf703f409480088cf2e72ba/src/gateway/chat_completions_protocol.zig): Apache-2.0; LICENSE/THIRD_PARTY_NOTICES retained.
+- Official [connections](https://fx.sh/docs/configure-fx/custom-model-connections.md), [ask](https://fx.sh/docs/using-fx/fx-ask.md), [permissions](https://fx.sh/docs/configure-fx/permissions.md), [configuration](https://fx.sh/docs/configure-fx/configuration.md). Pinned source, not evolving website, defines behavior.
+- [SmolLM2 card](https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct): Apache-2.0; shared fixed-output GGUF records quantization provenance.
+- [llama.cpp server](https://github.com/ggml-org/llama.cpp/tree/master/tools/server): MIT, locked Nixpkgs package.
+- [Redpanda transactions](https://docs.redpanda.com/current/develop/transactions/): production atomic-publication/fencing boundary; shared infrastructure retains vendor pins/licenses.
 
-The original UI uses no external fonts, images, CDN libraries or copied reference assets. Its visual direction follows the shared taste-book principles: editorial hierarchy, restrained violet accents, neutral surfaces and hairline panels.
+Original UI uses no copied assets, external fonts, images or CDN libraries.

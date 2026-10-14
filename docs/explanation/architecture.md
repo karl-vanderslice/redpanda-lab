@@ -1,32 +1,23 @@
-# How the explorer works
+# Explorer architecture
 
-The broker log is the source of truth for records and committed consumer offsets. The app's counters and recent event list are process-local views, not a durable database.
+Redpanda owns records and committed offsets. App counters and recent records are process-local, not a durable database.
 
-```mermaid
-flowchart LR
-    UI[Browser] -->|HTTP command| App[Producer and consumer app]
-    App -->|Kafka produce| RP[Three Redpanda brokers]
-    RP -->|Kafka consume| App
-    Console[Redpanda Console] --> RP
-    Prom[Prometheus] -->|scrape| RP
-    Prom -->|scrape| App
-    Grafana[Grafana] -->|query| Prom
-```
+Browser commands reach the app over HTTP; the app produces and consumes Kafka records. Console inspects Redpanda. Prometheus scrapes the brokers and app. Grafana queries Prometheus.
 
-## Why three brokers?
+## Brokers
 
-`lab.events` has six partitions and replication factor three. Each partition has a leader and replicas on the other brokers. This supports the broker-failure experiment: one process can stop while a majority remains available. All processes live on one host and share its failure domain, so this is not a multi-zone deployment.
+`lab.events` has six partitions with replication factor three: one leader and two followers per partition. One broker can stop while a majority remains. All brokers share one host failure domain, not independent zones.
 
-The brokers run `--mode=dev-container`, each with `--smp=1`, `--memory=1G`, and no reserved memory. These are local learning settings, not production sizing recommendations.
+Each runs `--mode=dev-container --smp=1 --memory=1G --reserve-memory=0M`. These are lab settings, not production sizing.
 
-## Why separate listeners?
+## Listeners
 
-Inside the private Compose network, services reach `redpanda-0:9092` through `redpanda-2:9092`. Host Kafka clients use the printed loopback ports. Advertised addresses must match where the client can connect; publishing a socket alone does not make an internal broker name reachable from the host.
+Container clients use `redpanda-0:9092` through `redpanda-2:9092`; host clients use printed loopback ports. Advertised addresses must be reachable from the client. Publishing a port does not resolve internal names on the host.
 
-Schema Registry and the HTTP Proxy run on broker zero. Console can inspect topics, consumer groups, schemas, and the Admin API. Prometheus scrapes the brokers' public metrics and the app every five seconds. Grafana ships a provisioned dashboard, so there is nothing to import manually.
+Schema Registry and HTTP Proxy are exposed through broker zero. Console inspects topics, groups, schemas, and the Admin API. Grafana's dashboard is provisioned; [telemetry](telemetry-and-delivery.md) describes scrapes and alerts.
 
-## Who owns the resources?
+## Ownership
 
-`lab` derives a Compose project name from the checkout's absolute path. It stores the port allocation and lifecycle lock under `${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/`. Containers own named data volumes; the repository holds only source/configuration. A moved checkout has a different identity. Dispose of the old checkout's lab before moving it, or retain its original path for cleanup.
+`lab` derives the Compose project from the checkout's absolute path. Port allocation and lifecycle locks live under `${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/`; data lives in named container volumes, not the repository. Dispose before moving a checkout, or retain its original path for cleanup.
 
-`up` and `down` serialize through `flock`. Container processes must not inherit the lock descriptor. Ports are probed before startup; another process can still bind between the probe and Compose. A bind failure is an error to diagnose, not permission to stop another process.
+`up` and `down` serialize with `flock`; containers must not inherit its descriptor. Port probes cannot prevent a later bind race. Diagnose collisions without stopping unrelated processes. See [commands](../reference/commands.md).

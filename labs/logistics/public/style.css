@@ -1,0 +1,12 @@
+.coordinates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+fieldset { min-width: 0; border: 1px solid currentColor; border-radius: .5rem; padding: .75rem; }
+input, select { max-width: 100%; }
+#map { display: block; width: 100%; height: auto; color: inherit; }
+#map text { font: 12px system-ui, sans-serif; fill: currentColor; }
+#map .axis { stroke: currentColor; opacity: .35; }
+#map .route { stroke: currentColor; stroke-width: 2; stroke-dasharray: 5 5; fill: none; }
+#map .driver { fill: currentColor; }
+#map .pickup { fill: none; stroke: currentColor; stroke-width: 2; }
+#map .destination { fill: currentColor; opacity: .55; }
+#receipts { overflow-wrap: anywhere; padding-inline-start: 1.5rem; }
+@media (max-width: 30rem) { .coordinates { grid-template-columns: 1fr; } }

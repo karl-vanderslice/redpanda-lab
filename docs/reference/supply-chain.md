@@ -15,7 +15,7 @@ The original app uses Confluent 1.11.0 and `@prometheus-io/client` 0.16.1. Broke
 
 ## Application and infrastructure lab pins
 
-The five new application images use `dockerTools.buildLayeredImage`, not an
+The Nix-built application images use `dockerTools.buildLayeredImage`, not an
 unlocked `apt` or runtime registry install. Their language runtime, native
 libraries and image construction come from the same locked Nixpkgs input.
 They contain no host home, npm configuration, API key or ambient model connection.
@@ -44,8 +44,10 @@ x86_64 only; a declared package or hash is not an ARM smoke test. Nix inputs and
 OCI digests identify artifacts, but do not prove all rebuilds are byte-identical,
 free of vulnerabilities, or suitable under every license. Host kernels, rootless
 mappings, browser codecs and container storage still affect behavior.
-An uncached first run needs source/image downloads. Once cached, applications
+An uncached first run needs source/image downloads. Once cached, local workflows
 do not need an external provider, media service, npm install or API credential.
+POS's optional Stripe/Square sandbox paths need network access and server-side
+test credentials. Credentials are runtime inputs, never Nix store contents.
 
 The first-party code uses the repository's MIT license. Application containers include that notice; the model image includes the hash-pinned Apache-2.0 license and the unmodified model card from the pinned quantized repository. The fx package preserves its upstream license and third-party notices. These files do not relicense upstream distributions or grant film or sports asset rights.
 

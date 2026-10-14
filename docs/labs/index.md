@@ -1,41 +1,46 @@
-# Choose an application lab
+# Choose a lab
 
-Start with the explorer if you want to learn partitions and consumer lag. Choose a domain lab when you want to see why an application needs the event log, not just how to connect a producer.
+Start with the [explorer](../tutorials/first-event.md) for partitions and consumer lag. Pick a domain below to see how an application uses the log.
 
-| Lab | Authoritative records | What you operate | Important limit |
-| --- | --- | --- | --- |
-| [Trading](trading.md) | Atomic command and matching outcomes | Rust CLI and web orders | One matcher; no balances, settlement or real money. |
-| [Sports](sports.md) | Scores, preferences and playback events | Multi-sport portal and score control room | Original synthetic clips, not licensed broadcasts. |
-| [Agent messaging](agent-messaging.md) | Tasks and ordered agent step transitions | Planner and reviewer, each invoking actual `fx` | Singleton per role; interrupted inference is not silently retried. |
-| [Scheduled agent chat](agent-chat.md) | Conversations, messages and job transitions | Web chat, future jobs and cancellation | One scheduler; model completion can become unknown after interruption. |
-| [Bitcoin paper trading](bitcoin.md) | Quotes, commands and exact paper-account outcomes | Historical price replay, automated entries/exits, positions and P&L | No live feed, exchange orders, wallets or profitability claim. |
-| [Terraform](terraform.md) | Terraform state identifies infrastructure; Redpanda stores broker records | Reviewed plans, drift and teardown | Infrastructure state is not a Kafka data backup. |
-| [Multi-jurisdiction sharding](jurisdictions.md) | Separate regional raw logs and a global summary log | Residency-aware writes, tenant partitions, export policy and region-specific outages | Same host, no legal/compliance or geographic resilience guarantee. |
+| Lab | What you operate |
+| --- | --- |
+| [IoT monitoring](iot.md) | Sensor readings, device history and temperature/battery alerts. |
+| [Point of Sale](pos.md) | Baskets, receipts, refunds and optional sandbox payments. |
+| [Logistics dispatch](logistics.md) | Driver positions, assignment, pickup, completion and cancellation. |
+| [Commodity trading](trading.md) | Rust CLI/web orders, matching and cancellation. |
+| [Bitcoin paper trading](bitcoin.md) | Historical candles, strategies and paper-account results. |
+| [Sports streaming](sports.md) | Scores, watchlists, synthetic video and playback events. |
+| [Agent messaging](agent-messaging.md) | Planner and reviewer, each invoking real `fx` with a local model. |
+| [Scheduled agent chat](agent-chat.md) | Conversations, future jobs and cancellation. |
+| [Jurisdiction sharding](jurisdictions.md) | Regional raw logs and a summary-only global projection. |
+| [Terraform cluster](terraform.md) | Reviewed plans, infrastructure drift and teardown. |
 
-## The same lifecycle, separate ownership
+## Run, inspect, dispose
 
 ```bash
 nix develop --no-update-lock-file
-just up sports
-just urls sports
-just logs sports app
-just rpk sports topic describe sports.events
-just check sports
-just down sports
+just up iot
+just urls iot
+just logs iot app
+just rpk iot topic describe iot.events.v1
+just restart iot app
+just down iot
 ```
 
-The five single-broker application labs keep their total-order projections explicit. The explorer and Terraform labs use three brokers for quorum experiments. The jurisdictions lab uses four independent clusters to distinguish jurisdiction sharding from partitioning within a region, with asynchronous summary-only federation. All run on the same host and use development settings. None demonstrates geographic resilience.
+Each lab owns its containers, network, ports and data. **`down` deletes that lab's history.** The ordinary application labs use one broker and one ordered topic. Explorer/Terraform use three brokers; jurisdictions uses four independent clusters. All run on the same host with development settings, not geographic failure isolation.
 
-Every application uses real Redpanda records. HTTP acceptance and broker acknowledgement are not interchangeable with consumer application. The pages show projection/operation state; the guides explain stable identifiers, deduplication, replay and uncertain outcomes. Redpanda does not generate model answers, deliver media bytes or wake timers by itself. The model server generates text, the sports server streams local MP4 files, and the chat application checks due jobs and records transitions through Redpanda.
+**Terraform requires plan review before apply or destroy.** Its Podman socket has the host user's authority. Read its guide before starting.
 
-`just test LAB` starts real containers, runs the domain workflow and disposes of that lab. It is not safe against data you want to keep. The Terraform test requires empty owned state and reviews exact saved plans before applying its known fixture. Runtime evidence stays outside the source checkout. Source checks are available independently through `just check LAB`; `just check` runs them all.
+## What the log proves
 
-Terraform's lifecycle adds a review boundary: `just up terraform` displays an infrastructure plan before asking for the project name. Read its guide before applying or destroying anything. The tool's Podman socket has the host user's authority even though the tool container is constrained.
+Applications rebuild their views from real broker records. An HTTP response or producer acknowledgement is not proof of consumer completion. Each guide explains operation IDs, replay and uncertain outcomes.
 
-## Visual and interaction choices
+Other work stays with its owner: the model generates answers, the sports server streams original synthetic clips, the scheduler checks due jobs, and payment providers process sandbox payments. No lab supplies production authorization, settlement, compliance or disaster recovery.
 
-The interfaces use original HTML/CSS, system fonts and local assets. The taste-book review selected two useful patterns: Getburnt's paper/ink editorial hierarchy and ElevenLabs' restrained product accents and generous spacing. Those references informed hierarchy, not branding, copied assets or external dependencies.
+The pages use local assets, keyboard controls and optional browser storage. IoT, POS and logistics share compact neutral layouts with blue accents. All new pages offer light/dark themes, initially following the system.
 
-Trading uses compact amber/ink operational panels; sports uses a slate/red editorial slate and a native video player; messaging uses neutral surfaces with violet stage accents; chat uses paper/cobalt conversation and scheduling controls; Bitcoin uses paper/amber accounting panels and a local price chart. Each offers keyboard-accessible controls and a remembered light/dark choice, initially following the system. Storage failure must not prevent operation. Narrow layouts and enlarged text are part of browser verification, not inferred from CSS.
+## Verify
 
-State labels describe real mechanisms. A connected scoreboard is not proof that video is playing. A completed agent step means a successful local harness result was retained, not that its advice is correct. A scheduled job is pending until its start transition wins the log order; cancellation after that cannot erase the model call. Production choices and recovery boundaries are in the domain guides and the [multi-region recovery explanation](../explanation/production.md).
+`just check LAB` validates sources and packaging, then builds the docs. `just check` covers all labs.
+
+**`just test LAB` discards existing application history**, starts a fresh real workflow and disposes it afterward. Terraform instead requires empty owned state and retains failed deployments. Reports remain outside the checkout. See [commands](../reference/commands.md) and [production boundaries](../explanation/production.md).

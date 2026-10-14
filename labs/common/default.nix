@@ -24,6 +24,7 @@ let
       src,
       extraContents ? [ ],
       command ? null,
+      sharedUI ? false,
     }:
     let
       labName = pkgs.lib.removePrefix "redpanda-" name;
@@ -31,6 +32,12 @@ let
         mkdir -p "$out/app/${labName}" "$out/app/common" "$out/app/node_modules" "$out/tmp"
         cp -R ${src}/. "$out/app/${labName}/"
         cp ${./log.mjs} "$out/app/common/log.mjs"
+        ${pkgs.lib.optionalString sharedUI ''
+          mkdir -p "$out/app/${labName}/public"
+          chmod u+w "$out/app/${labName}/public"
+          cp ${./public/lab.css} "$out/app/${labName}/public/lab.css"
+          cp ${./public/lab-theme.js} "$out/app/${labName}/public/lab-theme.js"
+        ''}
         cp ${./http.mjs} "$out/app/common/http.mjs"
         ln -s ${kafkaClient} "$out/app/node_modules/kafkajs"
         install -Dm644 ${../../LICENSE} "$out/share/licenses/redpanda-lab/LICENSE"

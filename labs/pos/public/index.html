@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Checkout · Redpanda labs</title>
+  <link rel="stylesheet" href="/lab.css">
+  <link rel="stylesheet" href="/pos.css">
+  <script type="module" src="/lab-theme.js"></script>
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#checkout">Skip to checkout</a>
+  <main class="shell">
+    <header class="toolbar">
+      <div><p class="eyebrow">Redpanda · Point of sale</p><h1>Checkout</h1><p class="muted">Cash receipts and sandbox payments, replayed from one ledger.</p></div>
+      <div class="actions"><button id="updates" type="button" aria-pressed="false">Pause updates</button><button id="theme" type="button">Switch theme</button></div>
+    </header>
+    <p id="connection" class="status" role="status">Connecting to the ledger…</p>
+    <section class="panel" aria-labelledby="basket-heading" id="checkout">
+      <h2 id="basket-heading">Basket</h2>
+      <form id="basket-form" class="stack">
+        <div class="basket-grid">
+          <label>Coffee · $3.50<input name="coffee" type="number" min="0" max="20" step="1" value="1" required></label>
+          <label>Sandwich · $7.25<input name="sandwich" type="number" min="0" max="20" step="1" value="0" required></label>
+          <label>Cookie · $2.25<input name="cookie" type="number" min="0" max="20" step="1" value="0" required></label>
+        </div>
+        <div class="basket-grid">
+          <label>Tender<select id="tender" name="tender"><option value="cash">Cash · local ledger</option><option value="stripe">Stripe · test mode</option><option value="square">Square · sandbox</option></select></label>
+          <label id="source-label" hidden>Public test source<select id="source" name="source" disabled></select></label>
+          <label>Checkout ID<input id="checkout-id" name="id" pattern="[a-zA-Z0-9_-]{1,80}" maxlength="80" required autocomplete="off" spellcheck="false"></label>
+        </div>
+        <p id="provider-state" class="muted">Cash records tender locally. No payment service is called.</p>
+        <div class="actions"><strong id="basket-total">Total $3.50</strong><button class="primary" type="submit" id="pay">Checkout</button><button type="button" id="new-checkout">New checkout ID</button><button type="button" id="lookup">Look up this ID</button></div>
+        <p class="muted">USD, integer cents, no tax or tips. Never enter card numbers or secret keys.</p>
+      </form>
+      <p id="message" role="status" class="status"></p>
+    </section>
+    <section class="metrics" aria-label="Receipt totals">
+      <div class="metric"><span>Gross sales</span><strong id="gross">$0.00</strong></div>
+      <div class="metric"><span>Full refunds</span><strong id="refunded">$0.00</strong></div>
+      <div class="metric"><span>Net sales</span><strong id="net">$0.00</strong></div>
+      <div class="metric"><span>Cash ledger balance</span><strong id="cash">$0.00</strong></div>
+    </section>
+    <section class="panel" aria-labelledby="receipts-heading">
+      <div class="toolbar"><h2 id="receipts-heading">Receipts &amp; operations</h2><span id="offset" class="muted">Offset —</span></div>
+      <p id="empty" class="muted">No receipts yet.</p>
+      <div class="table-wrap"><table><caption class="muted">Only completed operations affect totals. Pending or unknown operations need the same ID.</caption><thead><tr><th scope="col">Operation</th><th scope="col">Items</th><th scope="col">Total</th><th scope="col">Tender</th><th scope="col">Status</th><th scope="col">Action</th></tr></thead><tbody id="receipts"></tbody></table></div>
+    </section>
+    <details class="panel"><summary>Replay &amp; recovery</summary><p>One app owns the partition. Restart rebuilds receipts from Redpanda without calling providers. Resume reconciles a known provider object, or repeats the original idempotent request within 23 hours. Unknown is not paid or rolled back.</p><p>Copy your operation ID before leaving. A full refund reserves its receipt even if the provider result is uncertain. Cash is a local accounting ledger, not a connected cash drawer.</p><p id="provider-summary" class="muted"></p></details>
+  </main>
+</body>
+</html>

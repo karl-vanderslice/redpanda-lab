@@ -19,6 +19,9 @@
 - Persist Terraform port/Console choices at planning, not inspection; release them only after a reviewed, verified empty destroy.
 - Keep Zensical theme/search usable when browser storage is denied, with page-local preference state and no storage-policy bypass.
 - Add a multi-jurisdiction lab with separate EU, US, APAC and global clusters, deterministic tenant sharding, three-partition regional logs, summary-only federation, an operator web page and real regional/global outage and replay checks.
+- Add IoT sensor alerts, POS cash receipts/full refunds with optional Stripe and Square sandbox adapters, and synthetic logistics dispatch.
+- Share a neutral light/dark layout across the new apps, with keyboard controls, storage fallback and enlarged-text reflow.
+- Shorten onboarding and lab guides; retain command contracts, replay rules, provider uncertainty and disposal boundaries.
 
 ## Initial polish
 

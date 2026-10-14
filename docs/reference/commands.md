@@ -2,7 +2,7 @@
 
 Run `nix develop --no-update-lock-file` at the repository root before using `just`. Direct `./lab` and `./labs/run` commands enter the same environment automatically. Nix supplies the CLIs; Linux user namespaces, subordinate UID/GID mappings and cgroup delegation remain host prerequisites.
 
-`LAB` is `explorer`, `trading`, `sports`, `agent-messaging`, `agent-chat`, `bitcoin`, `terraform`, or `jurisdictions`. Lifecycle commands default to `explorer` where shown. Terraform adds an explicit plan-review boundary.
+`LAB` is `explorer`, `iot`, `pos`, `logistics`, `trading`, `sports`, `agent-messaging`, `agent-chat`, `bitcoin`, `terraform`, or `jurisdictions`. Lifecycle commands default to `explorer` where shown. Terraform adds an explicit plan-review boundary.
 
 | Command | Effect |
 | --- | --- |
@@ -20,13 +20,17 @@ Run `nix develop --no-update-lock-file` at the repository root before using `jus
 | `just docs` / `just docs-serve` | Build/preview Zensical outside the checkout; preview requests a free high loopback port. |
 | `just lock` | Regenerate the original explorer's public npm lockfile without host installation. Not a blanket dependency update. |
 
-See each [lab guide](../labs/index.md) before using domain-specific options. `just check` validates sources and packaging; `just test` exercises runtime behavior. Neither is a production deployment or multi-region recovery test.
+Domain options are in the [lab guides](../labs/index.md). `check` validates sources; `test` exercises real services. Neither proves production readiness.
 
-The sports, agent messaging, scheduled chat, Bitcoin and jurisdictions clients use KafkaJS's built-in **uncompressed/GZIP** support. The application APIs publish uncompressed records. For deliberate manual application-record fixtures, select `rpk topic produce --compression none` and preserve the documented schema. Stock `rpk` can otherwise publish Snappy, which these minimal clients cannot decode. Unsupported codecs stop their authoritative consumers; inspect logs and reset only the disposable lab, rather than retrying against its poisoned log. Production clients need an explicit, tested codec contract across all producers. See [KafkaJS compression](https://kafka.js.org/docs/producing#compression).
+## Compression
 
-## Choose ports
+KafkaJS application labs support **uncompressed/GZIP**; their APIs publish uncompressed records. Manual fixtures need the documented schema and `rpk topic produce --compression none`. Stock `rpk` can select Snappy, which these clients cannot decode.
 
-The explorer and five application labs select an available high-port block on first startup and retain it until successful `down`. For example:
+An unsupported codec stops the authoritative consumer. Inspect logs, then dispose only the affected lab; retrying does not repair its log. Production needs a tested producer/consumer codec contract. [KafkaJS reference](https://kafka.js.org/docs/producing#compression).
+
+## Ports
+
+The explorer and single-broker apps allocate a free high-port block on first startup, retained until successful `down`:
 
 ```bash
 LAB_PORT_BASE=53000 just up trading
@@ -35,7 +39,7 @@ just urls trading
 
 The explorer permits bases 49152–65520; application labs permit 49152–65530. `LAB_PORT_BASE` only selects allocation when no saved state exists. Do not delete saved port state while containers run. Changing checkout paths changes resource identity.
 
-| Offset | Explorer | Five application labs |
+| Offset | Explorer | Single-broker application labs |
 | --- | --- | --- |
 | 0 | App | App |
 | 1 | Console | Console |
@@ -46,9 +50,9 @@ The explorer permits bases 49152–65520; application labs permit 49152–65530.
 | 6 | Broker zero Admin API | Not allocated |
 | 10, 11, 12 | External Kafka listeners | Not allocated |
 
-Terraform uses its own persisted path-derived block. Set `LAB_TF_PORT_BASE=59000` before its first plan if needed (49152–65520). Its thirteen endpoints and state/socket overrides are explained in the [Terraform guide](../labs/terraform.md). A collision fails; it does not silently reallocate an approved infrastructure target.
+Terraform uses a persisted path-derived block, with thirteen endpoints. `LAB_TF_PORT_BASE=59000` selects a base before the first plan (49152–65520). A collision fails rather than changing an approved target. [Terraform state/socket options](../labs/terraform.md).
 
-Jurisdictions publishes only its operator gateway on a single free port (49152–65535). `LAB_PORT_BASE` selects that port before first startup. The Kafka and Admin APIs remain on container networks. Use `./labs/run jurisdictions outage REGION` and `recover REGION` to stop/start one owned broker, where `REGION` is `eu`, `us`, `apac` or `global`. See its [architecture walkthrough](../labs/jurisdictions.md) for export and recovery semantics.
+Jurisdictions publishes one gateway port (49152–65535); Kafka and Admin APIs stay on container networks. `LAB_PORT_BASE` selects that port before startup. `./labs/run jurisdictions outage REGION` / `recover REGION` stop/start an owned broker (`eu`, `us`, `apac`, `global`). [Export and recovery rules](../labs/jurisdictions.md).
 
 All published ports are loopback-only and unauthenticated. Non-root app users, read-only roots, dropped capabilities and bounded input do not replace authentication. Terraform's Podman socket has broad host-user authority, not a container-isolation guarantee.
 
@@ -60,4 +64,4 @@ just rpk explorer topic describe lab.events -p
 just rpk explorer group describe lab-explorer
 ```
 
-The internal `REDPANDA_LAB_SHELL` recursion guard is not a supported route for supplying ambient tools. Keep commands inside the declared shell. Local cache/state paths and retained evidence may contain prompts or records; use synthetic data and manage retention deliberately.
+`REDPANDA_LAB_SHELL` is an internal recursion guard, not an ambient-tool override. Commands use the declared Nix shell. Caches and evidence can contain prompts or records; use synthetic data and retain it deliberately.

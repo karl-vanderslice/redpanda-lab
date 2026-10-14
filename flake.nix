@@ -28,6 +28,9 @@
           "agent-chat"
           "bitcoin"
           "jurisdictions"
+          "iot"
+          "pos"
+          "logistics"
         ] (name: import (./labs + "/${name}/default.nix") { inherit pkgs common; });
     in
     {

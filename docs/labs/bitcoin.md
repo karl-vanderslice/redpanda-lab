@@ -1,53 +1,52 @@
 # Bitcoin paper trading
 
-This lab watches a historical BTC/USD stream and trades one paper position. Redpanda stores the observed quotes, commands and execution outcomes. A web interface shows the resulting cash, position, fees and profit or loss. There is no exchange order endpoint, wallet or private key.
+Replay historical BTC/USD closes into one paper position. Redpanda stores observed quotes, commands and outcomes; the browser projects cash, position, fees and P&L. There is no exchange order endpoint, wallet or private key.
 
 ## Start and watch
 
+Use the [common environment and lifecycle commands](../reference/commands.md):
+
 ```bash
-nix develop --no-update-lock-file
 just up bitcoin
 just urls bitcoin
 ```
 
-Open the app URL. Select **Play replay** to consume one historical hour every two seconds. The chart draws only consumed closes and their moving averages. The account begins with $10,000 of paper cash and no Bitcoin. Source time and local execution-observation time are separate fields.
+**Play replay** consumes one historical hour every two seconds. The chart shows only consumed closes/averages; source time and local observation time remain separate. Initial cash is $10,000, with no BTC.
 
-Use **Pause replay** to stop future timer steps after its pause command is consumed. **Consume next quote** advances a paused feed by one close. Disable **Automatic paper trading** before using **Buy with 25% of cash** or **Sell position**. Manual fills use the displayed historical close. There is only one long position; no shorts or pyramiding.
-
-The feed ends rather than wrapping prices into a different market timeline. To start a new account:
-
-```bash
-just down bitcoin
-just up bitcoin
-```
-
-Both commands operate only on this lab's resource identity. `down` deletes its paper history.
+**Pause replay** stops future timer steps once consumed. **Consume next quote** advances a paused feed once. Disable **Automatic paper trading** before **Buy with 25% of cash** or **Sell position**; manual fills use the displayed close. Only one long position exists: no shorts or pyramiding. The feed ends without wrapping. To reset, use `just down bitcoin` then `just up bitcoin`; **down deletes paper history**.
 
 ## What the strategy does
 
-The arithmetic means of the last 3 and 8 **observed** hourly closes define a target regime. Until eight closes exist, it holds. If the short mean is greater than the long mean, the target is long; otherwise it is flat. At the **next** close, a flat account enters the long regime using 25% of its available cash. An open position exits in full when the previously observed target is flat. Equality selects flat.
+Arithmetic means of the last 3 and 8 observed hourly closes select the target: hold until eight exist; long if short mean exceeds long mean, otherwise flat (including equality). At the **next** close, a flat account enters with 25% of available cash; an open position exits fully if the prior target was flat. This prevents reading a close and claiming an earlier fill, but does not model execution quality. This capture enters at close nine and exits at close twenty-three; the workflow checks that delay.
 
-The next-close delay prevents the strategy from both reading a candle's closing value and claiming an execution before that candle completed. It does not model real execution quality. This capture produces an automatic entry at the ninth observed close and an exit at the twenty-third; the public workflow check guards that one-close delay.
+Each fill charges 10 basis points (0.1%). `BigInt` products/division produce integer USD cents and satoshis (100 million/BTC):
 
-The paper engine charges 10 basis points (0.1%) on each fill. It uses `BigInt` for products and division, then records integer USD cents and Bitcoin satoshis (100 million satoshis per BTC):
+- Entry quantity rounds down to fit notional plus fee in budget; entry notional/fees round up to cents.
+- Sale proceeds round down; exit fee rounds up.
+- Cost basis includes entry fee; realized P&L includes both fees.
+- Unrealized P&L is last-close mark minus basis, without hypothetical exit fee. Equity is cash plus mark, not guaranteed realizable proceeds.
 
-- Entry quantity rounds down so notional plus the entry fee fits its cash budget.
-- Entry notional and fees round up to cents. Sale proceeds round down; the exit fee rounds up.
-- Cost basis includes the entry fee. Realized P&L includes both charged fees.
-- Unrealized P&L uses the last observed close minus cost basis, without deducting a hypothetical exit fee.
-- Marked equity is cash plus that position mark. It is not a promise of realizable exchange proceeds.
-
-The invariant is `cash + open cost basis = initial cash + realized P&L`. The replayed calculation must agree with the recorded outcome before the projection can change.
+`cash + open cost basis = initial cash + realized P&L`. Recomputed outcomes must match the recorded result before projection changes.
 
 ## Why the broker is authoritative
 
-One app container owns the command queue and quote timer. Each command computes an outcome against the latest consumed account, appends a single record with the command, quote if applicable, fill if applicable and resulting state, then waits for its own consumer to apply it. Only that consumer changes the account.
+One app owns the queue/timer. Against the latest consumed account, it computes and appends **one record** containing command, optional quote/fill and resulting state, then awaits its consumer. Only consumption changes the account.
 
-On restart, a fresh consumer rebuilds from offset zero before the app becomes ready. It recomputes each transition and compares it with the saved result. Stable command IDs prevent duplicate fills. A changed fixture hash, contradictory outcome, missing retained prefix or unsupported codec fails closed rather than resetting the account silently. The broker is real; the balances and execution model are paper-only.
-
-A consumed pause wins the command order before later timers can publish a quote. Restarting a running replay resumes from the next unconsumed fixture position at the normal pace, not by inventing missed market updates. This is one owner, not a distributed trading coordinator.
+Restart replays from zero before readiness, recomputing transitions and comparing saved results. Stable IDs prevent duplicate fills. Changed fixture hash, contradictory outcome, missing retained prefix or unsupported codec fails closed, never silently resets cash. A consumed pause precedes later timer publications. A running replay resumes at the next unconsumed fixture position at normal pace, without invented missed quotes. This is one owner, not distributed coordination.
 
 ## API and inspection
+
+| Route | Contract |
+| --- | --- |
+| `GET /api/state` | Source, consumed prices, strategy, account, fills, receipts, replay progress |
+| `POST /api/commands` | `{ "id": "unique-id", "kind": "step" }`; kinds `play`, `pause`, `step`, `auto-on`, `auto-off`, `buy`, `sell` |
+| `GET /api/commands/ID` | Original consumed receipt and broker record |
+| `GET /api/stream` | Complete state snapshots over SSE |
+| `GET /metrics` | Quotes, fills, position, cash, realized P&L, duplicate records |
+
+Domain rejection: 409 with retained rejected outcome. Conflicting ID: 409 without a new command. Shape errors/reserved internal `tick-` prefix: 400 before publication. Errors distinguish `outcomeUnknown:true` after uncertain publication from `false` before any attempt.
+
+Publication/projection-ack uncertainty stops new commands. On response loss, the browser retains **ID and action**, blocks replacements and stores the pair when storage works. Lookup releases a known receipt; 404 does not prove non-publication. Inspect the topic and restart a faulted owner before **Resolve original command**, which explicitly sends the same ID/action. Contradictory duplicate outcomes stop the owner. There is no automatic mutation retry.
 
 ```bash
 just rpk bitcoin topic describe bitcoin.paper.v1
@@ -57,34 +56,20 @@ just check bitcoin
 just test bitcoin
 ```
 
-| Route | Purpose |
-| --- | --- |
-| `GET /api/state` | Source, consumed prices, strategy, account, fills, receipts and replay progress. |
-| `POST /api/commands` | JSON `{ "id": "unique-id", "kind": "step" }`; kinds: `play`, `pause`, `step`, `auto-on`, `auto-off`, `buy`, `sell`. |
-| `GET /api/commands/ID` | Original consumed receipt, including its broker record. |
-| `GET /api/stream` | Complete state snapshots over server-sent events. |
-| `GET /metrics` | Consumed quotes, fills, position, cash, realized P&L and duplicate records. |
-
-A domain rejection returns HTTP 409 and a retained rejected outcome; a conflicting existing ID returns 409 without reusing it for a new command. Shape errors and the reserved internal `tick-` ID prefix return 400 before publication. Error responses distinguish `outcomeUnknown:true` after an uncertain publication from `outcomeUnknown:false` before any attempt.
-
-If publication or projection acknowledgment becomes uncertain, the owner stops new commands. If the browser loses a response, it retains the original **ID and action**, blocks replacement commands, and saves that pair when local storage works. Lookup can release a known receipt; a 404 is not proof of failed publication. Inspect the topic and restart a faulted owner before using **Resolve original command**. That button explicitly submits the same ID and action, never a new operation. A consumed ID returns its original receipt; contradictory duplicate outcomes stop the owner rather than executing a second effect. This is not an automatic retry or a claim that lookup absence proves failure.
-
-`just test bitcoin` starts by deleting this lab's existing disposable account, then proves integer accounting against an independent oracle, manual position errors, stable IDs, timer-ID separation, actual pacing and pause, next-close automatic entries/exits, finite feed completion, duplicate broker records, exact restart replay and cleanup. Do not run it against history you want to keep.
+**`just test bitcoin` deletes the disposable account first.** It checks independent integer accounting, manual errors, stable/timer IDs, pacing/pause, next-close strategy, finite completion, duplicate records, exact restart replay and cleanup.
 
 ## Source data and reproducibility
 
-`labs/bitcoin/candles.json` contains an attributed response captured on 13 October 2026 from the public [Coinbase Exchange historical candles endpoint](https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=3600&start=2026-10-11T00:00:00Z&end=2026-10-12T00:00:00Z). The file records the URL, time range, capture date and six-field schema. Its SHA256 is included in every broker record and exposed by `/api/state`.
+`labs/bitcoin/candles.json` is an attributed public [Coinbase Exchange capture](https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=3600&start=2026-10-11T00:00:00Z&end=2026-10-12T00:00:00Z), captured 13 October 2026. It records URL, range, date and six-field schema; every broker record and `/api/state` include its SHA256.
 
-The API returned a candle beginning at the end boundary. The lab deliberately filters bucket starts into the half-open UTC window `[11 October, 12 October)`, sorts chronologically, and uses field 4, the close. Each close becomes available at its bucket start plus one hour. The 24 retained closes replay without runtime market-data access.
+The response included an end-boundary bucket. The lab filters starts into `[11 October, 12 October)` UTC, sorts chronologically and uses field 4 (close), available at bucket start plus one hour. The 24 closes need no runtime data access.
 
-Coinbase's [primary documentation](https://docs.cdp.coinbase.com/api-reference/exchange-api/rest-api/products/get-product-candles) warns that historical rates can be incomplete, omits intervals without ticks, caps responses at 300 candles, and advises against frequent historical polling. For a real feed, use the venue's trade/book and WebSocket protocols, reconcile sequence gaps, and evaluate its terms, permissions and data rights. Attribution and a source hash are provenance, not a grant of commercial redistribution rights.
+[Coinbase documentation](https://docs.cdp.coinbase.com/api-reference/exchange-api/rest-api/products/get-product-candles) warns of incomplete history, missing no-tick intervals, a 300-candle cap and frequent-polling limits. Real feeds need venue trade/book/WebSocket protocols and gap reconciliation. Evaluate terms/permissions/data rights: attribution and hashes do not grant commercial redistribution.
 
-The Node application and KafkaJS client use the same locked Nix packaging as the other application labs. Ports, volumes, the single ordered topic and network are separate. The fixed strategy is in `engine.mjs`; changing the dataset or execution policy requires an intentionally fresh disposable account, not an unnoticed historical reinterpretation. See [supply-chain pins](../reference/supply-chain.md).
+Node/KafkaJS use shared locked Nix packaging with separate ports, volume, network and ordered topic. Changing `engine.mjs` strategy or dataset requires an intentionally fresh disposable account, not historical reinterpretation. See [supply-chain pins](../reference/supply-chain.md).
 
 ## Production boundaries
 
-This app is not an execution gateway or a representative performance study. It excludes spread, liquidity, partial fills, exchange latency, funding, tax and custody. The captured day and strategy are not investment advice or evidence of expected returns.
+No spread, liquidity, partial fills, latency, funding, tax or custody is modeled. One captured day is neither a performance study nor investment advice. Production paper trading needs retained data, source/arrival times, gap/correction policy; real execution also needs venue reconciliation, execution-report identity, risk limits and uncertain-order handling. Broker acknowledgment does not prove a venue trade.
 
-A production paper engine needs independently retained market data with source/arrival timestamps, gaps and correction policy. Real execution also needs venue reconciliation, execution-report identity, risk limits and explicit handling of uncertain order acceptance. A broker acknowledgment alone does not prove a venue trade.
-
-For multiple regions, fence the active account owner and reconcile positions before a new writer starts. Protect the market-data history, strategy version, cash, cost basis, fees, stable command IDs and last consumed offset together. Async cross-region replication has a nonzero loss window; broker replication on this host is not regional recovery. Rehearse a restore and measure RPO/RTO before making claims. See [production and disaster recovery](../explanation/production.md).
+Regional recovery must fence the account owner and restore market history, strategy version, cash, basis, fees, IDs and offset consistently, then reconcile positions. Async replication has a loss window; this host is not regional recovery. Measure restore RPO/RTO; see [production and disaster recovery](../explanation/production.md).

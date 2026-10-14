@@ -1,36 +1,40 @@
 # Publish your first event
 
-By the end of this tutorial you will see the same record in the app and Redpanda Console, then create and drain a consumer backlog.
+Publish one record, find it in the app and Console, then drain a consumer backlog.
 
-## 1. Start the stack
+## Start
 
-From the repository root:
+From the repository root, with the [host prerequisites](../reference/commands.md) met:
 
 ```bash
 nix develop --no-update-lock-file
 just up
 ```
 
-The command builds the app, starts the containers, waits for the three-node cluster and all browser services, then prints their URLs. Open **Stream app**. If startup fails, use [troubleshooting](../how-to/troubleshooting.md); a timeout leaves containers available for diagnosis.
+Startup builds the app, waits for the three brokers and browser services, and prints URLs. Open **Stream app**. A timeout leaves containers intact; see [troubleshooting](../how-to/troubleshooting.md).
 
-## 2. Follow one record
+## Publish
 
-Use the app's produce form. Give the event a key such as `warehouse-1`, choose a kind, and enter a JSON object as its payload. Submit once. The producer reports an event ID, partition, and offset when Redpanda acknowledges delivery. Watch the record appear in the consumed event list.
+Submit the produce form once:
 
-Open the printed Console URL, choose `lab.events`, and find the event ID. A partition is an ordered stream within a topic. An offset identifies a record's position in that partition, not a global position across the cluster.
+- Key: `warehouse-1`
+- Kind: `sensor.reading`
+- Payload: `{"celsius":20}`
 
-Produce another event with the same key. With the same partition count and partitioner, it maps to the same partition. Different keys can share a partition; six partitions do not mean six distinct keys.
+The acknowledgment shows an event ID, partition, and offset. Find that ID in **Recent records** and in Console's `lab.events` topic.
 
-## 3. Build a backlog
+Submit another event with the same key. With unchanged partition count and partitioner, both use the same partition. Different keys can share a partition. Offsets are partition-local, not cluster-wide.
 
-Pause the consumer. Start the generator at **50 events per second for 30 seconds**. Watch committed lag grow while the consumed count stays still. Grafana displays the same consumer backlog alongside broker health and request traffic. Resume the consumer and watch lag return to zero.
+## Drain a backlog
 
-The pause applies to the shared consumer, not just your browser. Another browser can change it. One callback already in progress can finish before pause settles.
+Pause the **Shared consumer**, then run the generator at **50 events/second for 30 seconds**. Committed lag grows while consumption stops; Grafana shows the backlog, broker health, and request traffic. Resume consumption and wait for lag to reach zero.
 
-## 4. Dispose of the lab
+Pause affects every browser. Another browser can change it; an in-progress callback can finish before pause settles.
+
+## Dispose
 
 ```bash
 just down
 ```
 
-This deletes the records and telemetry volumes for this checkout. Downloaded upstream images and Nix caches remain reusable. To keep exploring, leave the stack running and use `just urls` to find it again.
+This erases this checkout's records and telemetry volumes, not downloaded upstream images or Nix caches. To keep exploring, leave it running; `just urls` prints its endpoints.

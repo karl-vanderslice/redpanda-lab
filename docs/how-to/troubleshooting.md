@@ -1,18 +1,18 @@
 # Diagnose startup and delivery failures
 
-Start with `just status` and `just logs`. A readiness timeout leaves containers intact so you can inspect them. Do not repeat a data mutation merely because its HTTP request timed out.
+Start with `just status` and `just logs`. Readiness timeouts leave containers intact. Never repeat a mutation solely because its HTTP request timed out.
 
-| Symptom | Check and recovery |
+| Symptom | Check or recovery |
 | --- | --- |
-| Podman cannot create a user namespace or map IDs | Confirm the host permits user namespaces and has subordinate UID/GID ranges and privileged mapping helpers. Nix supplies Podman, not host policy. Do not switch silently to rootful containers. |
-| Port already in use | Keep other processes running. Dispose of this lab, then select another `LAB_PORT_BASE` on startup. |
-| Image pull returns `toomanyrequests` | Authenticate interactively with `podman login registry-1.docker.io`, or wait for the registry limit. Never put a password in command arguments. |
-| Broker or app not ready | Inspect service logs and `just rpk explorer cluster health` (or the selected lab name). Readiness includes assignments and internal topic leaders. |
-| Consumer lag does not drain | Check shared pause state, consumer-group assignment, and broker health. App counters are not lag. |
-| Produce request times out | Outcome is unknown. Search Console by event ID before considering a new request. |
-| `down` warns about app-image removal | Runtime disposal can still have succeeded. Read the original Podman error and remove only the named optional image later. |
-| A moved checkout leaves old containers | The project identity includes the absolute path. Use the old checkout path/state to dispose of its project; do not globally prune. |
+| User namespace or ID mapping fails | Check host user-namespace policy, subordinate UID/GID ranges, and privileged mapping helpers. Nix supplies Podman, not host policy. Do not silently switch to rootful containers. |
+| Port occupied | Leave other processes running. `just down` erases this lab's data; then choose another `LAB_PORT_BASE` for `just up`. See [port allocation](../reference/commands.md#ports). |
+| Pull returns `toomanyrequests` | Run `podman login registry-1.docker.io` interactively or wait. Never pass passwords as arguments. |
+| Broker or app not ready | Inspect logs and `just rpk explorer cluster health`, substituting the selected lab where applicable. Readiness includes consumer assignments and internal topic leaders. |
+| Lag does not drain | Check shared pause state, group assignment, and broker health. App counters are not lag. |
+| Produce times out | Outcome unknown. Inspect Console before sending again; search by event ID if available. |
+| `down` warns about app-image removal | Runtime disposal may have succeeded. Read the Podman error; remove only the named optional image later. |
+| Old containers after moving checkout | Identity includes the absolute path. Dispose using the old path/state, never global prune. |
 
-Registry names are fully qualified. A host's `docker.io` mirror is not the intended source for these explicit `registry-1.docker.io` references. Do not copy host npm credentials or registry configuration into a container build.
+Explicit `registry-1.docker.io` references do not use the host's `docker.io` mirror. Keep host npm credentials and registry configuration out of container builds.
 
-If you need a fresh experiment, `just down` then `just up` creates empty data volumes. This is reset, not recovery: all previous records and telemetry are gone.
+`just down` followed by `just up` creates empty volumes. It is reset, not recovery: previous records and telemetry are erased.

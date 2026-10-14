@@ -6,10 +6,10 @@ if [[ ${REDPANDA_LAB_SHELL:-0} != 1 ]]; then
 fi
 name=${1:-help}
 case "$name" in
-  trading|sports|agent-messaging|agent-chat|bitcoin) ;;
+  trading|sports|agent-messaging|agent-chat|bitcoin|iot|pos|logistics) ;;
   terraform) shift; exec bash "$root/labs/terraform/lab" "$@" ;;
   jurisdictions) shift; exec bash "$root/labs/jurisdictions/lab" "$@" ;;
-  *) printf 'Usage: labs/run {trading|sports|agent-messaging|agent-chat|bitcoin|terraform|jurisdictions} {up|down|status|urls [--json]|logs|rpk|exec|restart}\n'; exit 2 ;;
+  *) printf 'Usage: labs/run {trading|sports|agent-messaging|agent-chat|bitcoin|iot|pos|logistics|terraform|jurisdictions} {up|down|status|urls [--json]|logs|rpk|exec|restart}\n'; exit 2 ;;
 esac
 shift
 command=${1:-help}
@@ -89,6 +89,7 @@ JS
       agent-chat) topic=agent-chat-events ;;
       agent-messaging) topic=agent-messaging.events.v1 ;;
       bitcoin) topic=bitcoin.paper.v1 ;;
+      iot|pos|logistics) topic="$name.events.v1" ;;
     esac
     if ! compose exec -T redpanda rpk topic describe "$topic" -X brokers=redpanda:9092 >/dev/null 2>&1; then
       compose exec -T redpanda rpk topic create "$topic" -p 1 -r 1 -c retention.ms=86400000 -X brokers=redpanda:9092

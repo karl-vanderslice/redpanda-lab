@@ -1,34 +1,42 @@
-# Read delivery and telemetry correctly
+# Delivery and telemetry
 
-A producer acknowledgment, a consumed event, and a committed offset describe different stages. They are not interchangeable success counters.
+Acknowledgment, consumption, and offset commit are separate stages.
 
 ## Delivery promises
 
-The app uses `@confluentinc/kafka-javascript` 1.11.0 and its bundled librdkafka 2.16.0. Its native producer enables idempotence and `acks=all`. Internal producer retries do not duplicate the same delivery, but a second HTTP request is a new operation. This is not end-to-end exactly-once processing.
+The explorer uses `@confluentinc/kafka-javascript` 1.11.0 with bundled librdkafka 2.16.0, producer idempotence, and `acks=all`. Native retries do not duplicate the same delivery; another HTTP request creates a new operation. This is not end-to-end exactly-once processing.
 
-A produce timeout leaves completion **unknown**. The record may already exist. Search Console for the event ID before deciding whether to send a new operation. The app does not automatically retry a timed-out HTTP mutation.
+A produce timeout means **outcome unknown**. Inspect Console before resubmitting; search by event ID if available. HTTP mutations are not automatically retried.
 
-The consumer group is `lab-explorer`. Processing is at-least-once. Successful offsets are committed every second, so failover or process interruption can redeliver records. `Consumed` can exceed `Produced`. Process counters reset when the app restarts.
+Group `lab-explorer` processes at-least-once and commits successful offsets every second. Failover or interruption can redeliver records: `Consumed` may exceed `Produced`. App counters reset on restart.
 
-Readiness requires leaders for all six replicated partitions, all three broker IDs in metadata, and the consumer's actual six-partition assignment. Calling `consumer.run()` is not proof of readiness. The lifecycle script also waits for a healthy three-node Admin API overview and the web services.
+Native delivery has a 30-second budget and 10-second broker acknowledgment timeout. Elections and reassignment can stall requests. Pause intent survives reassignment.
+
+Readiness requires six replicated partitions with leaders, three broker IDs in metadata, and actual six-partition consumer assignment, not merely `consumer.run()`. Startup also waits for a healthy three-node Admin API overview and web services.
 
 ## What the charts mean
 
-Lag comes from topic watermarks and broker-stored committed group offsets, queried by a separate admin client. It is not computed by subtracting the app's two counters. A backlog can remain after records are processed but before offsets commit.
+A separate admin client queries watermarks and broker-stored committed offsets for lag. Counter subtraction is not lag; processed records can remain uncommitted.
 
-Prometheus scrapes every five seconds, so a chart does not update instantly. The dashboard covers production and consumption, committed lag, delivery latency, broker availability, requests, and resource use. The three provisioned alert rules detect broker unavailability, under-replication, and paused-consumer lag growth. There is no Alertmanager or notification delivery.
+Prometheus scrapes every five seconds. Grafana covers production, consumption, committed lag, creation-to-consumption latency (including backlog time), broker availability, requests, and resource use.
 
-Native delivery has a 30-second budget and a 10-second broker acknowledgment timeout. Leader election and consumer group reassignment can briefly stall requests. Requested pause intent is reapplied after assignments.
+Provisioned alerts have delays:
+
+- Broker scrape unavailable: 30 seconds; not Kafka readiness.
+- Under-replication: live lagging replicas for one minute, not unreachable replicas. Missing series leaves the rule inactive, not proof of health.
+- Paused-consumer lag: positive and increasing over the last minute, sustained for 30 seconds.
+
+No Alertmanager or notification delivery is configured.
 
 ## Useful endpoints
 
-| Endpoint | Meaning |
+| Endpoint | Result |
 | --- | --- |
-| `GET /api/stats` | Readiness, current counters, recent events, lag, and generator state. |
-| `POST /api/produce` | Produce a keyed event; a 201 response includes ID, partition, and string offset. |
-| `POST /api/consumer` | Set the shared boolean pause state. |
-| `POST /api/generator` | Start one bounded generator; concurrent generators are rejected. |
-| `POST /api/generator/stop` | Stop the current generator. |
-| `GET /metrics` | App metrics in Prometheus format, with `lab_*` names. |
+| `GET /api/stats` | Readiness, counters, recent records, lag, generator state. |
+| `POST /api/produce` | Keyed event; 201 includes ID, partition, string offset. |
+| `POST /api/consumer` | Shared boolean pause state. |
+| `POST /api/generator` | One bounded generator; concurrent starts rejected. |
+| `POST /api/generator/stop` | Stop generator; in-flight sends can complete. |
+| `GET /metrics` | Prometheus app metrics with `lab_*` names. |
 
-Payloads must be JSON objects. The generator allows at most 100 events per second. Use the UI's validation feedback rather than assuming invalid input entered the log.
+Payloads must be JSON objects. Generator limit: 100 events/second. Rejected input does not enter the topic; the UI reports validation errors.
