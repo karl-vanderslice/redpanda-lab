@@ -1,4 +1,4 @@
-# Commands and configuration
+# Commands
 
 Run commands from the checkout root. `just` recipes require the declared development shell:
 

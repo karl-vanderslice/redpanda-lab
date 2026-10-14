@@ -36,6 +36,9 @@
 - Add original company SVG marks without external assets; retain the exchange's strict style CSP.
 - Wrap trading tickets and agent headings when narrow screens use enlarged text.
 - Check Console's supported GET routes and use the Terraform URLs persisted during apply.
+- Keep narrow documentation headings compact without shrinking body text or wrapping hidden permalinks.
+- Wrap SIEM controls by their text width and remove repeated unit wording from the trading ticket.
+- Include the explorer's page, stylesheet, script and company mark in replay source hashes.
 
 ## Initial polish
 

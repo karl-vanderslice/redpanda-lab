@@ -4,7 +4,7 @@ title: Audit every lab for missing routes and assets
 status: In Progress
 assignee: []
 created_date: '2026-10-14 10:44'
-updated_date: '2026-10-14 11:52'
+updated_date: '2026-10-14 13:59'
 labels: []
 dependencies: []
 ordinal: 29000
@@ -39,4 +39,6 @@ The reusable public-workflow HTTP check passed on all fifteen first-party web ap
 The source-matched chat cancellation after case preserved Display paused, aria-pressed=true and enabled conversation creation. Before and after browser artifacts retain the exact real-request delay and pause actions. Full just check passed in 25.39 seconds after the HTTP, cancellation and command-reference changes. Terraform live Console and lifecycle validation is now running in the task-owned empty-state fixture.
 
 Terraform created the reviewed healthy cluster, but the new checker incorrectly required HEAD support from the pinned upstream Console: its root returned 405 rather than 200. This is an unsupported-method boundary, not a broken supported GET page. Owned app HEAD assertions remain strict; the Console branch audits its supported GET page and declared assets. The failed task-owned deployment is retained while its exact saved destroy plan is reviewed before a fresh full lifecycle run.
+
+All sixteen real public workflows passed: thirteen source-8b9 child scenarios, corrected reviewed Terraform lifecycle (80.98s), explorer broker/consumer/Prometheus/Grafana failover (69.68s), and jurisdiction residency/outage/five-field export/replay (64.26s). Exact reports, logs and hashes retained in the registered run. Final native network audit passed on all fifteen first-party apps with no failed supported browser requests or page errors. Native storage-denied keyboard/reload/read APIs passed all fifteen after correcting two harness assumptions, not changing valid APIs or tri-state theme semantics. Independent image review found unreadable SIEM letter-column buttons; fixed the existing flex basis and proved every label word stays whole at 320px/root32. Trading duplicated unit prose fixed and all market selections exercised. All 43 actual docs pages passed 320px/root40 article reflow. Latest full just check passed 24.27s. Production SVG detail review identified six edge labels crossing dashed boundaries; that final legibility correction remains open.
 <!-- SECTION:NOTES:END -->

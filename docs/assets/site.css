@@ -130,6 +130,11 @@
 
 @media (max-width: 40rem) {
   .md-typeset { font-size: .86rem; }
+  .md-typeset h1 { font-size: 1.3em; }
+  .md-typeset h2 { font-size: 1.15em; }
+  .md-typeset h3 { font-size: 1.05em; }
+  .md-typeset :is(h1, h2, h3) { position: relative; }
+  .md-typeset :is(h1, h2, h3) .headerlink { position: absolute; margin-left: .2rem; }
   .blueprint-controls :is(button, a) { flex: 1 1 auto; }
 }
 

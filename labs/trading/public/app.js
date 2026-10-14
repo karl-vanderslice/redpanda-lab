@@ -108,8 +108,8 @@ function render() {
   }
   const contract = data.commodities.find(c => c.symbol === selected);
   $('book-title').textContent = `${contract.name} / ${selected}`;
-  $('book-unit').textContent = `One unit = one ${contract.unit}. One tick = USD 0.01 per unit.`;
-  $('quantity-help').textContent = `One unit = one ${contract.unit}.`;
+  $('book-unit').textContent = `One unit = ${contract.unit}. One tick = USD 0.01 per unit.`;
+  $('quantity-help').textContent = `One unit = ${contract.unit}.`;
   priceHelp();
   const orders = data.orders.filter(o => o.commodity === selected);
   renderBook(orders, $('bids'), 'buy', contract.unit); renderBook(orders, $('asks'), 'sell', contract.unit);
