@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-labelledby="title">
+  <title id="title">Commonfield Dispatch</title>
+  <rect x="3" y="3" width="58" height="58" rx="12" fill="#faf8f1"/>
+  <g fill="none" stroke="#674153" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 17h36v30H14Z"/><path d="M23 24v16m7-16h13m-13 8h13m-13 8h9"/>
+  </g>
+</svg>

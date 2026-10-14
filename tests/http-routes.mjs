@@ -4,6 +4,8 @@ import { randomUUID } from 'node:crypto';
 const base = new URL(process.argv[2]);
 const scenario = process.argv[3];
 const checked = new Set();
+// Console's pinned upstream root rejects HEAD; owned static handlers support it.
+const staticHead = scenario !== 'terraform';
 const types = new Map([
   ['.html', /^text\/html\b/], ['.css', /^text\/css\b/],
   ['.js', /^(?:text|application)\/javascript\b/], ['.mjs', /^(?:text|application)\/javascript\b/],
@@ -34,7 +36,7 @@ async function resource(url, expectedType, head = true) {
   return new TextDecoder().decode(body);
 }
 
-const html = await resource(base, /^text\/html\b/);
+const html = await resource(base, /^text\/html\b/, staticHead);
 // The owned pages use quoted attributes. Inspect the served document, not source files.
 for (const [tag] of html.matchAll(/<(?:script|link|img|source|video|audio|track)\b[^>]*>/gi)) {
   if (/^<link\b/i.test(tag) && !/\brel=["'][^"']*\b(?:stylesheet|icon|preload)\b/i.test(tag)) continue;
@@ -42,12 +44,12 @@ for (const [tag] of html.matchAll(/<(?:script|link|img|source|video|audio|track)
     const url = new URL(value, base);
     if (url.origin !== base.origin || value.startsWith('#')) continue;
     const extension = url.pathname.match(/\.[a-z0-9]+$/i)?.[0]?.toLowerCase();
-    const text = await resource(url, types.get(extension));
+    const text = await resource(url, types.get(extension), staticHead);
     if (extension !== '.css' || text === undefined) continue;
     for (const [, value] of text.matchAll(/url\(\s*["']?([^\s"')]+)["']?\s*\)/gi)) {
       const dependency = new URL(value, url);
       if (dependency.origin === base.origin && !value.startsWith('#')) {
-        await resource(dependency, types.get(dependency.pathname.match(/\.[a-z0-9]+$/i)?.[0]?.toLowerCase()));
+        await resource(dependency, types.get(dependency.pathname.match(/\.[a-z0-9]+$/i)?.[0]?.toLowerCase()), staticHead);
       }
     }
   }

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-labelledby="title">
+  <title id="title">Cedarline Supply</title>
+  <rect x="3" y="3" width="58" height="58" rx="12" fill="#fbf9f4"/>
+  <g fill="none" stroke="#245e65" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M13 16h38v34H13Zm0 17h38M32 16v34"/><path d="M20 22h5m14 0h5m-24 17h5m14 0h5"/>
+  </g>
+</svg>

@@ -40,7 +40,7 @@ pass 'reviewed saved plan creates 3 brokers, Console, network and 3 data volumes
 "$run" health
 info=$("$run" urls --json)
 node "$lab/../../tests/http-routes.mjs" "$(jq -er '.console' <<<"$info")" terraform
-pass 'Console page and declared assets answer supported GET and HEAD requests'
+pass 'Console page and declared assets answer supported GET requests'
 for broker in 0 1 2; do
   podman --remote=false inspect "$project-broker-$broker" | jq -e --arg p "$project" \
     '.[0].State.Running==true and .[0].Config.Labels["io.redpanda.lab.project"]==$p and .[0].HostConfig.Memory==1073741824 and all(.[0].HostConfig.PortBindings[] []; .HostIp=="127.0.0.1")' >/dev/null || fail "broker-$broker runtime contract"

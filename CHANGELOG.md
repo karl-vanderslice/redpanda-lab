@@ -33,6 +33,9 @@
 - Check live pages, assets, MIME types, read APIs and missing-path boundaries in the public E2Es. Link Schema Registry to its subjects view.
 - Support static HEAD requests and classify malformed paths as client errors without hiding operating failures.
 - Keep intentional chat refresh cancellation separate from service outages when pausing the display.
+- Add original company SVG marks without external assets; retain the exchange's strict style CSP.
+- Wrap trading tickets and agent headings when narrow screens use enlarged text.
+- Check Console's supported GET routes and use the Terraform URLs persisted during apply.
 
 ## Initial polish
 

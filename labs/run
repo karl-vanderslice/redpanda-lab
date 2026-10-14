@@ -47,7 +47,7 @@ urls() {
   if [[ ${1:-} == --json ]]; then
     jq -n --arg app "http://127.0.0.1:$APP_PORT" --arg console "http://127.0.0.1:$CONSOLE_PORT" --arg admin "http://127.0.0.1:$ADMIN_PORT" --arg proxy "http://127.0.0.1:$PROXY_PORT" --arg project "$LAB_PROJECT" '{app:$app,console:$console,admin:$admin,proxy:$proxy,project:$project}'
   else
-    printf '%s app: http://127.0.0.1:%s\nConsole: http://127.0.0.1:%s\nAdmin: http://127.0.0.1:%s\nHTTP Proxy: http://127.0.0.1:%s\nKafka: 127.0.0.1:%s\nProject: %s\n' "$name" "$APP_PORT" "$CONSOLE_PORT" "$ADMIN_PORT" "$PROXY_PORT" "$KAFKA_PORT" "$LAB_PROJECT"
+    printf '%s app: http://127.0.0.1:%s\nConsole: http://127.0.0.1:%s\nAdmin ready: http://127.0.0.1:%s/v1/status/ready\nProxy topics: http://127.0.0.1:%s/topics\nKafka: 127.0.0.1:%s\nProject: %s\n' "$name" "$APP_PORT" "$CONSOLE_PORT" "$ADMIN_PORT" "$PROXY_PORT" "$KAFKA_PORT" "$LAB_PROJECT"
   fi
 }
 wait_ready() {

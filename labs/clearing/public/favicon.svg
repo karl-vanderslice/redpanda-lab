@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-labelledby="title">
+  <title id="title">Northbridge Ledgerworks</title>
+  <rect x="3" y="3" width="58" height="58" rx="12" fill="#fcfcf9"/>
+  <g fill="none" stroke="#244c73" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15 16h13v32H15Zm21 0h13v32H36Z"/><path d="M23 27h18m-5-5 5 5-5 5M41 39H23m5-5-5 5 5 5"/>
+  </g>
+</svg>

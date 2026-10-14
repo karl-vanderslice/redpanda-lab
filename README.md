@@ -1,6 +1,6 @@
 # Redpanda Lab
 
-Run a local application, follow its records in Redpanda, and see what survives a restart.
+Run a local application, follow its records in Redpanda, and see what survives a restart. [Read the guide](https://karl-vanderslice.github.io/redpanda-lab/).
 
 ## Start the explorer
 

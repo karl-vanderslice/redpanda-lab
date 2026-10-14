@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-labelledby="title">
+  <title id="title">Clockwork Correspondence</title>
+  <rect x="3" y="3" width="58" height="58" rx="12" fill="#fdfbff"/>
+  <g fill="none" stroke="#644094" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15 15h34v29H30L19 52v-8h-4Z"/><circle cx="32" cy="29" r="9"/><path d="M32 23v6l5 3"/>
+  </g>
+</svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-labelledby="title">
+  <title id="title">Meridian Ledger Alliance</title>
+  <rect x="3" y="3" width="58" height="58" rx="12" fill="#f4f7fc"/>
+  <g fill="none" stroke="#234c8c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="32" cy="17" r="6"/><circle cx="17" cy="45" r="6"/><circle cx="47" cy="45" r="6"/><path d="M29 23l-9 16m15-16 9 16m-21 6h18"/>
+  </g>
+</svg>

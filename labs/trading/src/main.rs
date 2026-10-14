@@ -450,6 +450,10 @@ fn handle(mut req: Request, state: Shared, jobs: mpsc::SyncSender<Job>) {
                 include_str!("../public/style.css"),
                 "text/css; charset=utf-8",
             )),
+            "/favicon.svg" => Some((
+                include_str!("../public/favicon.svg"),
+                "image/svg+xml; charset=utf-8",
+            )),
             _ => None,
         };
         if let Some((body, mime)) = static_file {

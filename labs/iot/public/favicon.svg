@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-labelledby="title">
+  <title id="title">Cryowell Instruments</title>
+  <rect x="3" y="3" width="58" height="58" rx="12" fill="#edf4f8"/>
+  <g fill="none" stroke="#17577e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M27 16a5 5 0 0 1 10 0v22a10 10 0 1 1-10 0Z"/><path d="M32 25v19m10-20h7m-7 8h5"/><circle cx="32" cy="45" r="3" fill="#17577e" stroke="none"/>
+  </g>
+</svg>

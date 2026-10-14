@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-labelledby="title">
+  <title id="title">Courtside Assembly</title>
+  <rect x="3" y="3" width="58" height="58" rx="12" fill="#fffdf8"/>
+  <g fill="none" stroke="#873717" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="13" y="19" width="38" height="27" rx="1"/><path d="M32 19v27m-19-17h7v9h-7m38-9h-7v9h7"/><circle cx="32" cy="32.5" r="5"/>
+  </g>
+</svg>

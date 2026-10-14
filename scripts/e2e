@@ -33,8 +33,8 @@ finish() {
     fi
     printf -- '- Exit status: %s\n' "$status"
     printf -- '- Tools: %s, %s, Node %s, %s\n' "$(podman --remote=false --version)" "$(nix --version)" "$(node --version)" "$(just --version)"
-    printf -- '- Inputs/assertions: the checked-in lab e2e.sh exercises its documented domain fixtures against real containers; Bitcoin uses attributed historical prices and a paper account. Scenario output is in [workflow.log](workflow.log).\n'
-    printf -- '- Setup, diagnosis, cleanup: [runtime.log](runtime.log). Terraform scenarios own their lifecycle and saved-plan evidence.\n\n'
+    printf -- "- Contract: \`labs/%s/e2e.sh\` and \`tests/http-routes.mjs\`. Observed output: [workflow.log](workflow.log).\n" "$name"
+    printf -- '- Setup and cleanup: [runtime.log](runtime.log).\n\n'
     printf '## Source snapshot\n\n```text\n'
     cat "$report_dir/source-sha256.txt"
     printf '```\n'

@@ -4,7 +4,7 @@ title: Audit every lab for missing routes and assets
 status: In Progress
 assignee: []
 created_date: '2026-10-14 10:44'
-updated_date: '2026-10-14 11:43'
+updated_date: '2026-10-14 11:52'
 labels: []
 dependencies: []
 ordinal: 29000
@@ -37,4 +37,6 @@ Real source-matched HTTP baseline retained in http-route-baseline.json: explorer
 The reusable public-workflow HTTP check passed on all fifteen first-party web apps after real failed-before cases. Supported root/static GET and HEAD requests, CSS dependencies, sports deep links, JSON read APIs and expected missing/malformed path responses passed. The deployed Pages crawl passed 102 resources across 43 HTML documents and 939 fragment references at commit 52416cc. Media/range and complete per-app browser coverage remain open. The chat browser reproduced a separate bug: cancelling a real manual refresh by pausing falsely disabled writes as an outage; the owner-invalidation fix is awaiting actual after proof.
 
 The source-matched chat cancellation after case preserved Display paused, aria-pressed=true and enabled conversation creation. Before and after browser artifacts retain the exact real-request delay and pause actions. Full just check passed in 25.39 seconds after the HTTP, cancellation and command-reference changes. Terraform live Console and lifecycle validation is now running in the task-owned empty-state fixture.
+
+Terraform created the reviewed healthy cluster, but the new checker incorrectly required HEAD support from the pinned upstream Console: its root returned 405 rather than 200. This is an unsupported-method boundary, not a broken supported GET page. Owned app HEAD assertions remain strict; the Console branch audits its supported GET page and declared assets. The failed task-owned deployment is retained while its exact saved destroy plan is reviewed before a fresh full lifecycle run.
 <!-- SECTION:NOTES:END -->
