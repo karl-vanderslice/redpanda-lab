@@ -91,6 +91,8 @@ const server = createServer(async (req, res) => {
       admissible();
       if (url.pathname === '/api/fixtures') {
         const commands = fixture(input);
+        // Reject the whole fixture before any prefix can be published.
+        if (commands.at(-1).eventTime > Date.now() + 300000) throw fail(400, 'Fixture eventTime is more than five minutes ahead of the owner clock.');
         const receipts = await serialize(async () => {
           const outcomes = [];
           for (const command of commands) outcomes.push(await publish(command));

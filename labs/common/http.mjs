@@ -10,11 +10,14 @@ export function decodePath(value) {
   return decoded;
 }
 
+const loopbackHosts = new Set(['127.0.0.1', 'localhost', '[::1]']);
+
 export function assertLocalMutation(req) {
   if (req.headers.origin) {
     let origin;
     try { origin = new URL(req.headers.origin); } catch { throw httpError(403, 'Invalid request origin'); }
-    if (origin.host !== req.headers.host || origin.protocol !== 'http:') throw httpError(403, 'Cross-origin mutations are not allowed');
+    // Host equality alone accepts a DNS-rebinding name that resolves to loopback.
+    if (origin.host !== req.headers.host || origin.protocol !== 'http:' || !loopbackHosts.has(origin.hostname)) throw httpError(403, 'Cross-origin mutations are not allowed');
   }
   if (!/^application\/json(?:\s*;|$)/i.test(req.headers['content-type'] || '')) throw httpError(415, 'Use application/json');
 }
@@ -39,19 +42,23 @@ export function sendJson(res, status, value) {
   res.end(JSON.stringify(value));
 }
 
+// Media and JSON APIs have their own handlers; static roots serve only these files.
+const staticTypes = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml', '.vtt': 'text/vtt; charset=utf-8' };
+
 export async function serveFile(req, res, publicRoot) {
   if (req.method !== 'GET' && req.method !== 'HEAD') return false;
   const pathname = decodePath(new URL(req.url, 'http://localhost').pathname);
   const root = resolve(publicRoot);
   const path = resolve(root, `.${pathname === '/' ? '/index.html' : pathname}`);
   if (!path.startsWith(root + sep)) throw httpError(403, 'Invalid file path');
-  const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json', '.mp4': 'video/mp4', '.vtt': 'text/vtt; charset=utf-8' };
+  const type = staticTypes[extname(path)];
+  if (!type) return false;
   let body;
   try { body = await readFile(path); } catch (error) {
     if (['ENOENT', 'EISDIR', 'ENOTDIR', 'ENAMETOOLONG'].includes(error.code)) return false;
     throw error;
   }
-  res.writeHead(200, { 'content-type': types[extname(path)] || 'application/octet-stream', 'content-length': body.length, 'x-content-type-options': 'nosniff' });
+  res.writeHead(200, { 'content-type': type, 'content-length': body.length, 'x-content-type-options': 'nosniff' });
   res.end(req.method === 'HEAD' ? undefined : body);
   return true;
 }

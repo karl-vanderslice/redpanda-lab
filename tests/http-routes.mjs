@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
+import http from 'node:http';
 
 const base = new URL(process.argv[2]);
 const scenario = process.argv[3];
@@ -94,4 +95,27 @@ if (scenario !== 'terraform') {
     await response.arrayBuffer();
     console.log(`PASS intentional ${expected} ${url.href}`);
   }
+}
+
+// A rebinding page reaches the loopback listener with a matching foreign Host
+// and Origin. Fetch cannot set Host, so use the raw client.
+const mutationPaths = {
+  explorer: '/api/generator/stop', trading: '/api/commands', sports: '/api/events', 'agent-messaging': '/api/tasks',
+  'agent-chat': '/api/conversations', bitcoin: '/api/commands', iot: '/api/readings', pos: '/api/checkouts',
+  logistics: '/api/commands', 'event-log': '/api/commands', siem: '/api/telemetry', activity: '/api/commands',
+  inventory: '/api/commands', clearing: '/api/transfers', jurisdictions: '/api/events',
+};
+if (mutationPaths[scenario]) {
+  const host = `rebind.example:${base.port}`;
+  const status = await new Promise((resolve, reject) => {
+    const req = http.request(new URL(mutationPaths[scenario], base), {
+      method: 'POST', timeout: 15000,
+      headers: { host, origin: `http://${host}`, 'content-type': 'application/json' },
+    }, response => { response.resume(); response.on('end', () => resolve(response.statusCode)); });
+    req.on('timeout', () => req.destroy(new Error('Rebinding probe timed out')));
+    req.on('error', reject);
+    req.end('{}');
+  });
+  assert.equal(status, 403, `Rebinding origin mutation ${mutationPaths[scenario]}`);
+  console.log(`PASS intentional 403 rebinding origin POST ${mutationPaths[scenario]}`);
 }

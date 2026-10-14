@@ -94,6 +94,16 @@ result=$(curl -fsS --max-time 25 "$url/api/commands" -H 'Content-Type: applicati
 assert "$result" '.status == "accepted"' 'Browser same-origin order entry reaches the real engine'
 operation "$prefix-web" >/dev/null
 cli cancel --id "$prefix-cancel-web" --order-id "$prefix-web" >/dev/null
+# A foreign exact duplicate can land before the next proposal is appended.
+# Replay must accept the proposal and assign priority from its real offset.
+offset=$(cli status "$prefix-web" | jq -er '.offset')
+record=$("${runner[@]}" rpk topic consume trading.exchange.v1 --offset "$offset" --num 1 --format '%v\n')
+printf '%s\n' "$record" | "${runner[@]}" rpk topic produce trading.exchange.v1 --key "\"$prefix-web\"" --compression none >/dev/null
+result=$(order "$prefix-after-duplicate" buy 20000 1)
+assert "$result" '.status == "accepted"' 'Proposal after a foreign exact duplicate replays without an invariant fault'
+result=$(cli order-status "$prefix-after-duplicate")
+assert "$result" ".sequence > $offset" 'Order priority uses its consumed offset'
+cli cancel --id "$prefix-cancel-after-duplicate" --order-id "$prefix-after-duplicate" >/dev/null
 curl -fsS "$url/metrics" | jq -Rs -e 'contains("exchange_trades_total")' >/dev/null || fail 'Missing trade metric'
 printf 'PASS: Prometheus metrics expose executed trades\n'
 before=$(curl -fsS "$url/api/state")

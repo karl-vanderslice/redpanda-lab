@@ -107,10 +107,19 @@ fn commodity_known(name: &str) -> bool {
 }
 fn valid_id(id: &str) -> bool {
     !id.is_empty()
+        && id != "."
+        && id != ".."
         && id.len() <= 96
         && id
             .bytes()
             .all(|c| c.is_ascii_alphanumeric() || b"-_.".contains(&c))
+}
+fn loopback_host(host: &str) -> bool {
+    let name = match host.rsplit_once(':') {
+        Some((name, port)) if !port.is_empty() && port.bytes().all(|c| c.is_ascii_digit()) => name,
+        _ => host,
+    };
+    matches!(name, "127.0.0.1" | "localhost" | "[::1]")
 }
 fn commodities() -> Value {
     json!([
@@ -210,6 +219,17 @@ fn effects(state: &State, c: &Command) -> Vec<Event> {
     }
     events
 }
+// Priority comes from the consumed offset. A proposal's provisional sequence can
+// differ when another record lands before its append, so it is not an invariant.
+fn without_sequence(events: &[Event]) -> Result<Value, String> {
+    let mut value = serde_json::to_value(events).map_err(|e| e.to_string())?;
+    for event in value.as_array_mut().into_iter().flatten() {
+        if let Some(order) = event.get_mut("order").and_then(Value::as_object_mut) {
+            order.remove("sequence");
+        }
+    }
+    Ok(value)
+}
 fn apply(state: &mut State, record: Record, offset: i64) -> Result<(), String> {
     match record {
         Record::Barrier { schema: 1, .. } => {}
@@ -226,9 +246,7 @@ fn apply(state: &mut State, record: Record, offset: i64) -> Result<(), String> {
                 return Ok(());
             }
             // Verify the stored outcome against the deterministic reducer before applying it.
-            if serde_json::to_value(effects(state, &command)).map_err(|e| e.to_string())?
-                != serde_json::to_value(&events).map_err(|e| e.to_string())?
-            {
+            if without_sequence(&effects(state, &command))? != without_sequence(&events)? {
                 return Err(format!(
                     "Execution at offset {offset} violates the matching invariant"
                 ));
@@ -524,12 +542,11 @@ fn handle(mut req: Request, state: Shared, jobs: mpsc::SyncSender<Job>) {
     let content_ok = get_header("Content-Type")
         .map(|v| v.split(';').next() == Some("application/json"))
         .unwrap_or(false);
+    // Host equality alone accepts a DNS-rebinding name that resolves to loopback.
     let origin_ok = get_header("Origin")
         .map(|origin| {
             get_header("Host")
-                .map(|host| {
-                    origin == format!("http://{host}") || origin == format!("https://{host}")
-                })
+                .map(|host| origin == format!("http://{host}") && loopback_host(host))
                 .unwrap_or(false)
         })
         .unwrap_or(true);

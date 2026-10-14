@@ -86,14 +86,16 @@ function normalizeSquare(operation, response) {
   const { code, data } = response;
   const isSale = operation.command.kind === 'checkout';
   const object = isSale ? data?.payment : data?.refund;
+  const paymentMethodDecline = code >= 400 && code < 500 && data?.errors?.some(error => error.category === 'PAYMENT_METHOD_ERROR' && ['CARD_DECLINED', 'GENERIC_DECLINE', 'EXPIRED_CARD', 'CVV_FAILURE'].includes(error.code));
   if (!object) {
-    const declined = !operation.providerId && code >= 400 && code < 500 && data?.errors?.some(error => error.category === 'PAYMENT_METHOD_ERROR' && ['CARD_DECLINED', 'GENERIC_DECLINE', 'EXPIRED_CARD', 'CVV_FAILURE'].includes(error.code));
+    const declined = !operation.providerId && paymentMethodDecline;
     return declined ? observed('declined', null, code) : unknown(code, 'provider-response-unknown', operation.providerId);
   }
   const valid = /^[A-Za-z0-9_-]{1,192}$/.test(object.id || '') && object.amount_money?.amount === operation.details.amountCents && object.amount_money?.currency === 'USD'
     && (isSale ? object.location_id === operation.scope.split(':')[1] : object.payment_id === operation.details.paymentId)
     && (!operation.providerId || object.id === operation.providerId);
   if (!valid) return unknown(code, 'provider-response-unknown', operation.providerId);
+  if (isSale && object.status === 'FAILED' && paymentMethodDecline) return observed('declined', object.id, code);
   if (code < 200 || code >= 300) return unknown(code, 'provider-response-unknown', object.id);
   if (object.status === 'COMPLETED') return observed('completed', object.id, code);
   if (['FAILED', 'CANCELED', 'REJECTED'].includes(object.status)) return observed('declined', object.id, code);

@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { createReadStream } from 'node:fs';
-import { stat, readFile } from 'node:fs/promises';
+import { stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { connectLog } from '../common/log.mjs';
@@ -158,10 +158,6 @@ const server = createServer(async (req, res) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     if (['GET', 'HEAD'].includes(req.method) && url.pathname.startsWith('/media/')) { await media(req, res, url.pathname); return; }
     res.setHeader('Cache-Control', 'no-store');
-    if (req.method === 'GET' && url.pathname === '/captions.vtt') {
-      res.setHeader('Content-Type', 'text/vtt; charset=utf-8');
-      res.end(await readFile(join(publicRoot, 'captions.vtt'))); return;
-    }
     if (req.method === 'GET' && url.pathname === '/health') { sendJson(res, ready ? 200 : 503, { ready }); return; }
     if (req.method === 'GET' && url.pathname === '/api/state') { sendJson(res, 200, snapshot(url.searchParams.get('viewer') ?? 'guest')); return; }
     if (req.method === 'GET' && url.pathname.startsWith('/api/operations/')) {
@@ -188,7 +184,7 @@ const server = createServer(async (req, res) => {
       const existing = operations.get(event.id);
       if (existing) {
         if (existing.signature !== signature) throw failure(409, 'Operation ID already belongs to a different event.');
-        sendJson(res, existing.status === 'completed' || existing.status === 'error' ? 200 : 202, existing); return;
+        sendJson(res, existing.status === 'unknown' ? 503 : existing.status === 'completed' || existing.status === 'error' ? 200 : 202, existing); return;
       }
       // Register synchronously before append, so concurrent identical requests cannot publish twice.
       operations.set(event.id, { id: event.id, signature, event, status: 'pending', error: null });

@@ -43,8 +43,6 @@ async function publish(command) {
   // Shutdown drains commands already admitted; only a log fault blocks that drain.
   if (!ready) throw fail(503, fault || 'The event log is not ready.', { commandId: command.id, outcomeUnknown: uncertain === command.id });
   const record = { schema: 1, fixtureId, at: Date.now(), command, result: decide(model, command) };
-  checkRecord(record, command.id);
-  if (!isDeepStrictEqual(record.result, decide(model, command))) throw new Error('Invalid candidate inventory outcome');
   let deadline;
   const consumed = new Promise(resolve => waiters.set(command.id, resolve));
   try {

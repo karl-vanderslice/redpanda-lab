@@ -1,6 +1,7 @@
 import http from 'node:http';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { spawn } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
+import { promisify } from 'node:util';
 import { pipeline } from 'node:stream/promises';
 import { Readable } from 'node:stream';
 import { readJson, sendJson } from '../common/http.mjs';
@@ -8,12 +9,17 @@ import { readJson, sendJson } from '../common/http.mjs';
 const home = '/tmp/fx-home';
 const workspace = '/tmp/fx-workspace';
 const model = 'lab-small';
+// Durable results record the executable that ran, not a second copy of the Nix pin.
+let harnessVersion;
 const modelUrl = new URL(process.env.MODEL_URL || 'http://model:8080/v1');
 // A relay is not a general forward proxy: one internal service, no redirects,
 // one completion path, loopback listener only, no forwarded credentials.
 if (modelUrl.href !== 'http://model:8080/v1') throw new Error('MODEL_URL must be the confined model service http://model:8080/v1');
 
 export async function startInference() {
+  const { stdout } = await promisify(execFile)('fx', ['--version'], { timeout: 10000, env: { PATH: process.env.PATH, HOME: home, FX_AUTO_UPGRADE: '0', FX_HERDR: '0' } });
+  harnessVersion = stdout.trim();
+  if (!/^\d+\.\d+\.\d+$/.test(harnessVersion)) throw new Error(`Unexpected fx version output: ${harnessVersion}`);
   await mkdir(`${home}/.fx`, { recursive: true, mode: 0o700 });
   await mkdir(workspace, { recursive: true, mode: 0o700 });
   await writeFile(`${home}/.fx/settings.json`, JSON.stringify({
@@ -105,7 +111,7 @@ export async function infer(task, stage, onChild) {
     }
     if (result.tool_calls?.length) throw new Error('Unexpected fx tool call: this lab permits text-only local inference.');
     return { text: result.final_output, inference: {
-      harness: 'vercel-labs/fx', harnessVersion: '0.0.13', model: result.model,
+      harness: 'vercel-labs/fx', harnessVersion, model: result.model,
       provider: 'local', steps: result.steps, usage: result.usage, durationMs: Date.now() - started,
     } };
   } finally { clearTimeout(timer); onChild(null); }

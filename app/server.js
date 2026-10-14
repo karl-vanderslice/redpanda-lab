@@ -254,9 +254,21 @@ function requireReady() {
 
 const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 const contentTypes = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml' };
+const loopbackHosts = new Set(['127.0.0.1', 'localhost', '[::1]']);
+
+// Browsers send Origin on POST. CLI callers may omit it but must still send JSON.
+function assertLocalMutation(req) {
+  if (req.headers.origin) {
+    let origin;
+    try { origin = new URL(req.headers.origin); } catch { throw new HttpError(403, 'Invalid request origin.'); }
+    if (origin.host !== req.headers.host || origin.protocol !== 'http:' || !loopbackHosts.has(origin.hostname)) throw new HttpError(403, 'Cross-origin mutations are not allowed.');
+  }
+  if (!/^application\/json(?:\s*;|$)/i.test(req.headers['content-type'] || '')) throw new HttpError(415, 'Use application/json.');
+}
 
 async function route(req, res) {
   const url = new URL(req.url, 'http://localhost');
+  if (req.method === 'POST') assertLocalMutation(req);
   if (req.method === 'GET' && url.pathname === '/api/stats') {
     return send(res, 200, { ...state, topic: TOPIC, group: GROUP, generator: generatorState(), links });
   }

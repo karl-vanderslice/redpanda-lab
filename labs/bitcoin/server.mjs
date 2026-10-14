@@ -10,7 +10,7 @@ const publicRoot = fileURLToPath(new URL('./public/', import.meta.url));
 const kinds = new Set(['play', 'pause', 'step', 'auto-on', 'auto-off', 'buy', 'sell']);
 const operations = new Map(); const waiters = new Map(); const clients = new Map();
 const prices = []; const trades = [];
-let model = initial(); let ready = false; let lastOffset = null; let duplicates = 0; let fault = null;
+let model = initial(); let ready = false; let lastOffset = null; let duplicates = 0; let fault = null; let uncertain = null;
 let queue = Promise.resolve(); let ticker; let stopping = false;
 const fail = (status, message, details = {}) => Object.assign(new Error(message), { status, outcomeUnknown: false, ...details });
 function validate(value) {
@@ -22,13 +22,18 @@ function snapshot() {
     replay: { index: model.index, total: quotes.length, playing: model.playing, automatic: model.automatic, signal: model.signal, ended: model.index === quotes.length - 1 },
     prices, trades, commands: [...operations.values()].map(({ id, kind, at, offset, result }) => ({ id, kind, at, offset, accepted: result.accepted, reason: result.reason })) };
 }
-function push(res, client) {
+const frame = () => `event: state\ndata: ${JSON.stringify(snapshot())}\n\n`;
+function push(res, client, data = frame()) {
   if (client.blocked) { client.dirty = true; return; }
   client.dirty = false;
   // A false write still buffers this frame. Drain only flushes a newer snapshot.
-  client.blocked = !res.write(`event: state\ndata: ${JSON.stringify(snapshot())}\n\n`);
+  client.blocked = !res.write(data);
 }
-function notify() { for (const [res, client] of clients) push(res, client); }
+function notify() {
+  if (!clients.size) return;
+  const data = frame();
+  for (const [res, client] of clients) push(res, client, data);
+}
 function armTicker() {
   clearTimeout(ticker);
   if (!ready || stopping || !model.playing) return;
@@ -64,12 +69,13 @@ await log.ready;
 ready = true;
 
 async function publish(command) {
-  if (!ready || stopping) throw fail(503, fault || 'The paper ledger is not ready.', { commandId: command.id });
+  // A consumed receipt is authoritative even after a later fault stops writes.
   const prior = operations.get(command.id);
   if (prior) {
     if (prior.kind !== command.kind) throw fail(409, 'This id already belongs to a different command.');
     return prior;
   }
+  if (!ready || stopping) throw fail(503, fault || 'The paper ledger is not ready.', { commandId: command.id, outcomeUnknown: uncertain === command.id });
   const record = { schema: 1, fixtureSha256, ...command, at: Date.now(), result: transition(model, command.kind) };
   let deadline;
   const consumed = new Promise(resolve => waiters.set(command.id, resolve));
@@ -82,7 +88,7 @@ async function publish(command) {
   } catch (error) {
     // Observed application is stronger proof than a lost producer acknowledgment.
     if (operations.has(command.id)) return operations.get(command.id);
-    ready = false;
+    ready = false; uncertain = command.id;
     fault = `Outcome unknown for ${command.id}. Look up this id and inspect the log before restarting. Do not submit a replacement command.`;
     clearTimeout(ticker); notify();
     console.error(fault, error);

@@ -159,7 +159,7 @@ const server = createServer(async (req, res) => {
           const previous = operations.get(event.id);
           if (previous) {
             if (JSON.stringify(previous.event) !== JSON.stringify(event)) throw error(409, 'Operation id already belongs to different input');
-            return sendJson(res, previous.status === 'completed' ? 200 : 202, previous);
+            return sendJson(res, previous.status === 'completed' ? 200 : previous.status === 'unknown' ? 503 : 202, previous);
           }
           const partition = tenants[event.tenantId].partition;
           const operation = { status: 'pending', event, partition };
