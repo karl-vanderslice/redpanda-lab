@@ -1,11 +1,11 @@
 ---
 id: RPLAB-30
 title: 'Run the full adversarial quality, architecture and presentation pass'
-status: In Progress
+status: Done
 assignee:
   - '@omp'
 created_date: '2026-10-14 18:10'
-updated_date: '2026-10-14 20:10'
+updated_date: '2026-10-14 20:17'
 labels:
   - quality
   - architecture
@@ -29,7 +29,7 @@ The user requests a complete adversarial review of the current repository, inclu
 - [x] #5 Inventory actual TUI artifacts and visually exercise the present supported terminal interfaces; distinguish upstream limits and absence from first-party implementation.
 - [x] #6 Compare the full relevant Zensical feature set with pinned version 0.0.62, apply supported reader-useful features, and verify docs navigation, search, code actions, diagrams and GitHub Pages.
 - [x] #7 Run all affected public E2Es from fresh isolated paths, including sports and clearing, and the full project gates on the integrated source; update source, contracts and guides together.
-- [ ] #8 Retain replayable evidence and an outcome, make signed Conventional Commits, push the exact verified tip, verify hosted checks and Pages, and leave the checkout clean with remote master matching.
+- [x] #8 Retain replayable evidence and an outcome, make signed Conventional Commits, push the exact verified tip, verify hosted checks and Pages, and leave the checkout clean with remote master matching.
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -51,4 +51,12 @@ Fixed and reproduced: trading replay fault after a foreign exact duplicate (prov
 Reductions: runtime-only image inputs (README-only edits change 0/14 image derivations, was 14/14), shared Nixpkgs per system (dev shell eval 2.4-2.8s -> 1.6-2.0s, RSS 487->339 MB), static type map hoist, dead sports captions route and inventory re-validation, compact status, startup timeout signals children, exported docs stage removed.
 Declined: superseded image removal (images shared by ID across checkouts); F9 shutdown order not reproduced in bitcoin or 3 sports cycles. Upstream Console/Prometheus findings documented, not patched. Provider credential paths and screen readers unverified.
 Verification: just check x2 and prek passed; all 16 just test E2Es passed on an isolated integrated copy, including new rebinding and duplicate oracles; integrated docs and clearing pages inspected in both themes.
+
+Pushed b4d0c47 (four signed commits) to origin/master. GitHub Actions run 38629920914 passed repository gates and deployed Pages; https://karl-vanderslice.github.io/redpanda-lab/labs/trading/ serves the new trading replay text and breadcrumbs. Committed tree matched the E2E-tested integrated copy byte for byte.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Ran an adversarial review of runtime, domain, CLI, TUI, web UI and docs surfaces with isolated reviewers, then fixed every reproduced defect: trading replay after foreign duplicates, honest unknown-retry responses (Bitcoin, sports, jurisdictions), partial SIEM fixtures, POS refund confirmation, frozen uncertain jurisdiction input, paused automatic reads in five UIs, activity focus, DNS-rebinding origins, the shared image-tag race, control-boundary contrast and sports reflow. Reduced image inputs, Nix evaluation (dev shell 2.4-2.8s to 1.6-2.0s) and dead code; added Zensical breadcrumbs, section tracking and titled commands. All 16 E2Es, just check and prek passed; hosted checks and Pages verified. Limits: provider credential paths, screen readers and upstream Console/Prometheus defects remain outside first-party proof; superseded-image cleanup declined.
+<!-- SECTION:FINAL_SUMMARY:END -->
