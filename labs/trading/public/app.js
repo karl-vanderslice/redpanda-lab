@@ -87,11 +87,15 @@ function renderBook(orders, target, side, unit) {
 }
 function emptyRow(target, count, text) { const row = element('tr'), cell = element('td', text, 'empty'); cell.colSpan = count; row.append(cell); target.append(row); }
 const marketNodes = new Map(), orderNodes = new Map(), cancelling = new Set();
+// Static cards reserve the strip's height, so reading state does not shift the page.
+for (const button of $('markets').querySelectorAll('.market[data-symbol]')) {
+  marketNodes.set(button.dataset.symbol, button);
+  button.addEventListener('click', () => changeCommodity(button.dataset.symbol));
+}
 function render() {
   const data = snapshot;
   $('connection').textContent = data.ready ? 'Ready / replay complete' : 'Not ready / trading paused';
   $('offset').textContent = data.error || `Next log offset ${integer(data.next_offset)} · consumed state`;
-  if (!marketNodes.size) $('markets').replaceChildren();
   for (const c of data.commodities) {
     let button = marketNodes.get(c.symbol);
     if (!button) {
@@ -100,7 +104,7 @@ function render() {
       button.addEventListener('click', () => changeCommodity(c.symbol));
       marketNodes.set(c.symbol, button); $('markets').append(button);
     }
-    button.setAttribute('aria-pressed', String(c.symbol === selected));
+    button.disabled = false; button.setAttribute('aria-pressed', String(c.symbol === selected));
     const history = data.trades.filter(t => t.commodity === c.symbol), last = history.at(-1);
     button.children[0].textContent = c.name;
     button.children[1].textContent = usd(last?.price_ticks ?? c.illustrative_ticks);
@@ -125,7 +129,7 @@ function render() {
     if (!row) {
       row = element('tr');
       for (let i = 0; i < 6; i++) row.append(element('td'));
-      const button = element('button', 'Cancel'); button.type = 'button'; button.setAttribute('aria-label', `Cancel order ${o.id}`);
+      const button = element('button', 'Cancel'); button.type = 'button';
       button.addEventListener('click', async () => {
         if (button.disabled) return;
         const id = newId('cancel'); $('lookup-id').value = id; cancelling.add(o.id); button.disabled = true;
@@ -141,6 +145,7 @@ function render() {
     row.children[4].textContent = o.status;
     const button = row.children[5].firstElementChild, closed = o.remaining <= 0 || o.status === 'cancelled';
     button.disabled = closed || !data.ready || cancelling.has(o.id); button.textContent = closed ? 'Closed' : 'Cancel';
+    button.setAttribute('aria-label', `${closed ? 'Closed' : 'Cancel'} order ${o.id}`);
   }
   if (!orders.length) emptyRow($('orders'), 6, 'No orders for this commodity. Orders appear after broker consumption.');
   const trades = data.trades.filter(t => t.commodity === selected).slice().reverse();

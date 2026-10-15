@@ -9,13 +9,13 @@
 </head>
 <body>
 <a class="skip" href="#main">Skip to exchange</a>
-<header><a class="brand" href="/" aria-label="Amber Commodity Exchange home"><span class="mark" aria-hidden="true">A / C</span><span>Amber<span class="brand-sub">Commodity Exchange</span></span></a><div class="header-actions"><span class="simulation">Local exchange lab</span><button id="theme" type="button">Change theme</button></div></header>
+<header><a class="brand" href="/"><span class="mark" aria-hidden="true">A / C</span><span>Amber <span class="brand-sub">Commodity Exchange</span></span></a><div class="header-actions"><span class="simulation">Local exchange lab</span><button id="theme" type="button">Change theme</button></div></header>
 <main id="main">
 <section class="desk-heading" aria-labelledby="desk-title"><div><p class="eyebrow">ORDER DESK</p><h1 id="desk-title">Commodity markets</h1></div><div class="controls"><button id="refresh" type="button">Refresh state</button><button id="live" type="button" aria-pressed="true">Pause view updates</button></div></section>
 <div class="log-strip"><strong id="connection" role="status">Connecting…</strong><span id="offset">Waiting for exchange state</span><code>trading.exchange.v1 / partition 0</code></div>
 <p id="view-status" class="muted">View updates every 2 seconds. Pausing the view does not stop the exchange.</p>
 <p class="notice">Illustrative prices, not market data. No money, accounts, delivery or financial advice. One tick = USD 0.01 per commodity unit.</p>
-<section class="market-strip" aria-label="Commodity contracts" id="markets"><p class="empty">Contract prices appear after state is read.</p></section>
+<section class="market-strip" aria-label="Commodity contracts" id="markets"><button class="market" type="button" data-symbol="WHEAT" aria-pressed="true" disabled><strong>Wheat</strong><span class="market-price">—</span><small>one metric tonne · waiting for state</small></button><button class="market" type="button" data-symbol="COPPER" aria-pressed="false" disabled><strong>Copper</strong><span class="market-price">—</span><small>one metric tonne · waiting for state</small></button><button class="market" type="button" data-symbol="COFFEE" aria-pressed="false" disabled><strong>Coffee</strong><span class="market-price">—</span><small>one 60 kg bag · waiting for state</small></button></section>
 <div class="workspace">
 <section class="panel ticket" aria-labelledby="entry-title"><div class="section-heading"><span class="eyebrow">01 / ORDER ENTRY</span><h2 id="entry-title">Limit order</h2></div>
 <form id="order-form">

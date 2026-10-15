@@ -2,12 +2,12 @@
 
 ## Unreleased
 
+- Reserve the trading contract strip with static cards so first state no longer shifts the page. Name the brand link and closed order buttons by their visible text.
 - State that concurrent identical agent-messaging submissions can each append, while consumption ignores the later copy and starts no second inference.
 - Name the exact generator controls, work-ledger page areas and activity follow button in the guides, and describe `restart` as a log rebuild rather than an image rebuild.
-- Keep trading replay, conflict, pending and unavailable responses outside the exchange-state lock, including pipelined replies waiting for an earlier request. Accept case-insensitive loopback hostnames without relaxing the foreign-Host or same-origin boundary.
+- Release the trading exchange-state lock before every HTTP response, including GET reads and pipelined replay, conflict, pending and unavailable command replies, so a slow or pipelined reader cannot retain it. Serialize borrowed read models and ordered map values directly, and reuse immutable commodity metadata. Accept case-insensitive loopback hostnames without relaxing the foreign-Host or same-origin boundary.
 - Report failed native Compose start, stop and restart actions instead of accepting an old healthy app as proof of a completed restart. Record local tool and native-client patches in E2E source hashes.
 - Keep native code blocks keyboard-scrollable after hydration and resize. Give overflowing content-tab labels a named keyboard-scroll region without replacing radio selection, and explain Console's loaded-result window when finding an older event.
-- Serialize borrowed trading read models and ordered map values directly, and reuse immutable commodity metadata. Release the matching-state lock before writing GET responses, so a slow reader cannot retain it.
 - Accept case-insensitive trading JSON media types and parameters in the public order-entry workflow.
 - Separate development-shell entry from startup commands and identify the first consumed event by its visible key, partition and offset before checking its ID.
 - Keep closed documentation navigation out of the keyboard order. Bound the floating table of contents and drawer at enlarged text, support keyboard disclosure and Escape, and let Search close without dismissing its background drawer. Make Markdown tables keyboard-scrollable and separate overlapping floating controls.
