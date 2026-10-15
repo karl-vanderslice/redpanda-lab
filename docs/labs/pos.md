@@ -1,17 +1,33 @@
+---
+description: Complete a cash checkout and full refund, then learn how durable receipts differ from optional provider outcomes and settlement.
+---
+
 # Point of sale: Counterlane Market
 
 Counterlane Market is a fictional checkout desk with a quantity basket, receipts and full refunds. Its synthetic USD catalog prices coffee at 350 cents, sandwich at 725 and cookie at 225. Cash is a local tender ledger, not a connected drawer; there is no tax, tip or inventory model. Optional Stripe test-mode and Square sandbox adapters make real HTTP requests, but their runtime behavior remains unverified without authorized credentials.
 
-## Run
+## Start with a cash receipt {#run}
 
 Use the [shared setup and lifecycle](./index.md). From the repository root:
 
-```bash
+```bash title="Start the local till"
 labs/run pos up
 labs/run pos urls
 ```
 
-Open the reported app URL, choose quantities and Cash, then submit Checkout. **Full refund** first asks you to confirm the checkout ID and full amount; cancelling creates, stores and sends nothing. A confirmed refund reserves the entire receipt amount once. Only completed operations affect totals; pending or unknown provider responses do not count as sales or refunds.
+Open the reported app URL. Cash needs no credentials and makes no provider request.
+
+1. Leave **Coffee quantity** at **1**, Sandwich and Cookie at **0**, and **Tender** at **Cash · local ledger**. The basket total is $3.50, or 350 integer cents.
+2. Keep the generated **Checkout ID** and select **Checkout** once. Wait for its `completed` receipt. Gross sales, net sales and cash ledger balance each increase by 350 cents.
+3. In **Receipt ledger**, select **Full refund** for that sale. Check the checkout ID and full amount in the browser confirmation. Cancelling creates, stores and sends no refund command.
+4. Confirm the refund. Once it completes, refunded cents increase by 350; net sales and cash balance return to their earlier values. The sale and refund remain in the ledger.
+5. Select **New checkout ID** before preparing another sale. Submitted basket fields stay locked so an unresolved operation cannot silently become different input.
+
+A confirmed full refund reserves that receipt amount once. Only completed operations affect totals; pending or unknown provider responses do not count as sales or refunds. Do not use a new checkout ID to escape an uncertain result: follow [original-operation recovery](#recover-the-original-operation).
+
+!!! note "Optional providers are a separate experiment"
+
+    Cash proves the local accounting workflow, not Stripe or Square connectivity. Read [sandbox configuration](#sandbox-configuration-and-api-provenance) before enabling either adapter. Provider runtime behavior remains unverified without authorized credentials; never enter card numbers or secret keys in the page.
 
 ## Ledger and accounting
 

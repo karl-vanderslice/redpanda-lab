@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { connectLog } from '../common/log.mjs';
-import { assertLocalMutation, readJson, sendJson, serveFile } from '../common/http.mjs';
+import { assertLocalRequest, assertLocalMutation, readJson, sendJson, serveFile } from '../common/http.mjs';
 import { topic, fixtureId, limit, initial, validate, decide, applyResult, fail } from './model.mjs';
 
 const publicRoot = fileURLToPath(new URL('./public/', import.meta.url));
@@ -72,6 +72,7 @@ function snapshot() {
 }
 const server = createServer(async (req, res) => {
   try {
+    assertLocalRequest(req);
     const url = new URL(req.url, 'http://localhost');
     if (req.method === 'GET' && url.pathname === '/health') { sendJson(res, ready && !stopping ? 200 : 503, { ready: ready && !stopping, fault }); return; }
     if (req.method === 'GET' && url.pathname === '/api/state') { sendJson(res, 200, snapshot()); return; }

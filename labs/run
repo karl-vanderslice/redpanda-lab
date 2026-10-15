@@ -36,7 +36,6 @@ ports() {
 }
 ports
 export LAB_APP_IMAGE="localhost/redpanda-$name:nix" LAB_MODEL_IMAGE=localhost/redpanda-lab-model:nix
-export REDPANDA_PROXY_URL=http://redpanda:8082
 compose() {
   local limit=() status=0
   # Without --foreground, timeout signals Compose's Podman children too.

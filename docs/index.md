@@ -1,6 +1,12 @@
+---
+description: Run a local Redpanda application, inspect its records, and learn what acknowledgment, replay, and recovery do and do not guarantee.
+---
+
 # Redpanda Lab
 
-Learn event logs through local applications. Start with Signal Harbor Works, the three-broker explorer, then choose a domain workflow.
+Run an application, inspect the records behind its decisions, then interrupt it and see what the log can reconstruct. These experiments use real Redpanda brokers on your Linux workstation, with fictional organizations and synthetic data.
+
+Start with the explorer if partitions and consumer lag are new to you. Then follow one application command through a receipt and a rebuild. The production blueprints show responsibilities that the local experiments deliberately do not implement.
 
 ## Run the explorer
 
@@ -22,16 +28,35 @@ Open **Stream app**. The [first-event tutorial](tutorials/first-event.md) takes 
 
 ## Choose a route
 
-| You want to… | Read |
-| --- | --- |
-| Operate a domain application | [Choose a lab](labs/index.md) |
-| Interrupt a broker without deleting its data | [Failure and recovery](how-to/failure-and-recovery.md) |
-| Find commands, ports or build options | [Command reference](reference/commands.md) |
-| Diagnose startup or uncertain delivery | [Troubleshooting](how-to/troubleshooting.md) |
-| Understand the explorer | [Architecture](explanation/architecture.md) and [delivery and telemetry](explanation/telemetry-and-delivery.md) |
-| Change a resource or client setting | [Tuning and operating limits](reference/tuning.md) |
-| Plan beyond a single-host lab | [Production and recovery](explanation/production.md) and [proposed blueprints](blueprints/index.md) |
-| Review artifact identity and licenses | [Supply chain](reference/supply-chain.md) |
+<div class="grid cards" markdown>
+
+-   **Learn the event-streaming basics**
+
+    Publish one event, find its partition and offset, and build a consumer backlog.
+
+    [Publish your first event](tutorials/first-event.md)
+
+-   **Follow an application decision**
+
+    Create a work item, inspect its immutable receipt, and reconstruct the same view from the broker.
+
+    [Follow a command through replay](tutorials/command-and-replay.md)
+
+-   **Explore a domain**
+
+    Choose telemetry, inventory, trading, media, agents or regional federation. Each guide explains its own decision and recovery boundaries.
+
+    [Choose an application lab](labs/index.md)
+
+-   **Plan beyond one host**
+
+    Compare the running lab with the identity, storage, ownership and recovery work a production system would require.
+
+    [Read the production blueprints](blueprints/index.md)
+
+</div>
+
+Already running a lab? Use [commands and ports](reference/commands.md) for the exact interface, [troubleshooting](how-to/troubleshooting.md) for a failure, and [tuning and operating limits](reference/tuning.md) before changing resources or retention. [Supply-chain notes](reference/supply-chain.md) describe artifact identity and licenses.
 
 ## Read and explore this site
 

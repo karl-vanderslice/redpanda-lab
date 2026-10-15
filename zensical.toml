@@ -10,6 +10,7 @@ extra_javascript = ["assets/site-controls.js", "assets/blueprint-viewer.js"]
 nav = [
   { "Start here" = "index.md" },
   { "First event" = "tutorials/first-event.md" },
+  { "Command and replay" = "tutorials/command-and-replay.md" },
   { "Application labs" = [
     { "Choose a lab" = "labs/index.md" },
     { "IoT monitoring" = "labs/iot.md" },
@@ -67,6 +68,7 @@ features = [
   "navigation.footer",
   "toc.follow",
   "content.code.copy",
+  "content.code.annotate",
   "search.highlight",
 ]
 

@@ -1,3 +1,7 @@
+---
+description: Use seeded public profiles to read, like, and follow local articles, then distinguish recorded opens from verified human attention.
+---
+
 # Commonfield Dispatch
 
 Commonfield Dispatch is a fictional publisher and public reading room. One Node owner records original local articles, profiles, follows, likes, feed preferences and article opens in `activity.events.v1`. Its consumer alone changes the in-memory projection. No external news service, asset download, sign-in or private messaging runs.
@@ -6,14 +10,24 @@ Commonfield Dispatch is a fictional publisher and public reading room. One Node 
 
 Use the [shared setup and lifecycle commands](../reference/commands.md):
 
-```bash
+```bash title="Start the public reading room"
 ./labs/run activity up
 ./labs/run activity urls --json
 ```
 
-Create or select a public profile, follow an author, choose all posts or followed authors, publish a dispatch and open an article. The read ledger shows consumed opens, distinct public profile IDs and current likes, not verified people or attention. Close article, or Escape from inside it, returns focus to the Read button that opened it, or to the profile selector if that post is no longer in the feed. Anyone with lab access can act as any profile and inspect all data. Use synthetic text only.
+Open the app. You can use the two logged fixture profiles and articles without creating content first:
 
-First startup consumes `fixture-commonfield-v1`, installing two original profiles (`cf-mara`, `cf-ellis`) and articles (`cf-bench`, `cf-route`) without interactions. Fixture labels remain visible; no popularity counts are seeded. The browser polls every two seconds while visible. Pause stops automatic reads and discards one already in flight, not commands; explicit commands still consume and refresh receipts. Refresh works while paused. Optional storage preserves viewer/pending-command choices; denied storage falls back to memory.
+1. In **Acting as**, select **Ellis Reed · cf-ellis · fixture**. Until you choose a profile, the feed's reading and interaction controls remain unavailable.
+2. On **A bench is a small agreement**, select **Read local article**. The article opens and one consumed read is recorded for that public profile.
+3. Select **Close article**, or press ++escape++ from inside it. Focus returns to the Read button that opened it, or to the profile selector if that post has left the feed.
+4. Select **Like** on the article's card. It becomes **Unlike** after the consumed decision.
+5. Follow **Mara Vale** under **Authors to follow**, then choose **Followed authors only**. On the untouched fixture, the feed contains Mara's article rather than both fixture articles.
+
+Compare the read ledger with the feed. Opening the same article again records another open, but it does not create another distinct reader ID. A public profile is not a verified person, and an open is not evidence of attention. Anyone with lab access can act as any profile and inspect all data. Use synthetic text only.
+
+First startup consumes `fixture-commonfield-v1`, installing profiles `cf-mara` and `cf-ellis` and articles `cf-bench` and `cf-route` without interactions. Fixture labels remain visible; no popularity counts are seeded. After the first workflow, use the profile and publishing forms to add your own synthetic dispatch.
+
+The browser polls every two seconds while visible. **Pause updates** stops automatic reads and discards one already in flight, not commands; explicit commands still consume and refresh receipts. **Refresh** works while paused. Optional storage preserves viewer/pending-command choices; denied storage falls back to memory.
 
 ## Commands and state
 
@@ -36,7 +50,7 @@ A read ID identifies one open. Retrying it adds no read; opening again with a ne
 
 ## HTTP API
 
-Mutations require POST JSON, `Content-Type: application/json`, a body no larger than 16,384 bytes and a matching Origin when provided. Origin validation is not authentication or authorization.
+Mutations require POST JSON, `Content-Type: application/json`, a body no larger than 65,536 bytes and a matching Origin when provided. The 64 KiB transport limit accommodates the maximum article text even when Unicode is escaped in JSON; field limits still apply. Origin validation is not authentication or authorization.
 
 | Route | Result |
 | --- | --- |
@@ -80,7 +94,7 @@ Run one owner only; its queue is not a distributed lease. Under the [full-prefix
 | --- | --- |
 | `KAFKA_BROKERS` | Comma-separated addresses; default/Compose `redpanda:9092` |
 | `LAB_APP_IMAGE`, `APP_PORT` | Runner-owned image and loopback publication; container listens on 3000 |
-| Topic, body limit, waits | Fixed in source: `activity.events.v1`, 16,384 bytes, 30-second append and consumer-completion deadlines |
+| Topic, body limit, waits | Fixed in source: `activity.events.v1`, 65,536 bytes, 30-second append and consumer-completion deadlines |
 
 There are no session-window, feed-limit, analytics-expiry or deletion environment knobs. Counts are lifetime retained opens and reader IDs, not time-window analytics. See [shared producer and codec settings](../reference/tuning.md#client-knobs-belong-to-their-client) and [container limits](../reference/tuning.md#container-declarations-need-host-evidence). The image uses UID/GID 10001, a read-only root, 16 MiB tmpfs, dropped capabilities and no-new-privileges.
 

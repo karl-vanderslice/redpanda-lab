@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import { createHash, randomUUID } from 'node:crypto';
 import { Kafka, logLevel } from 'kafkajs';
-import { assertLocalMutation, readJson, sendJson, serveFile } from '../common/http.mjs';
+import { assertLocalRequest, assertLocalMutation, readJson, sendJson, serveFile } from '../common/http.mjs';
 
 const regions = ['eu', 'us', 'apac'];
 // Residency is operator-owned, never chosen by a command or its network location.
@@ -118,6 +118,7 @@ async function upstream(service, path, options = {}) {
 
 const server = createServer(async (req, res) => {
   try {
+    if (role === 'gateway') assertLocalRequest(req);
     const url = new URL(req.url, 'http://localhost');
     if (req.method === 'GET' && url.pathname === '/health') return sendJson(res, 200, { ready, role, region, brokerAvailable: role === 'gateway' ? undefined : await brokerAvailable() });
     if (role === 'gateway') {

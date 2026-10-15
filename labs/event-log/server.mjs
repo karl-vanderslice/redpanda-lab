@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { connectLog } from '../common/log.mjs';
-import { assertLocalMutation, decodePath, readJson, sendJson, serveFile } from '../common/http.mjs';
+import { assertLocalRequest, assertLocalMutation, decodePath, readJson, sendJson, serveFile } from '../common/http.mjs';
 import { initial, validate, decide, applyResult, fail } from './model.mjs';
 
 const topic = 'event-log.events.v1';
@@ -100,6 +100,7 @@ async function rebuild() {
 }
 const server = createServer(async (req, res) => {
   try {
+    assertLocalRequest(req);
     const url = new URL(req.url, 'http://localhost');
     if (req.method === 'GET' && url.pathname === '/health') { sendJson(res, ready && !stopping ? 200 : 503, status()); return; }
     if (req.method === 'GET' && url.pathname === '/api/status') { sendJson(res, 200, status()); return; }

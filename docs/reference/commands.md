@@ -77,6 +77,10 @@ Edit the Markdown under `docs/`; `zensical.toml` owns navigation, and `docs-them
 
 The pinned Zensical build already supports titled language fences, tables, non-collapsible admonitions, keyboard-key notation and ordinary relative Markdown links. Use a visible warning before a destructive command, not a collapsed detail or code annotation. Give command fences a language and a task-oriented `title="..."`; omit shell prompts so copied commands remain runnable. Keep prerequisites and uncertainty in prose even when an image illustrates them.
 
+Use native card grids for distinct index destinations, content tabs for complete alternative workflows, and definition lists for terms. Page descriptions help identify a guide before opening it. Code annotations explain optional local details; never hide prerequisites, disposal warnings or unknown-outcome procedures in a popup. The [command-and-replay tutorial](../tutorials/command-and-replay.md) demonstrates these choices.
+
+`docs/assets/site-controls.js` bridges the pinned theme's label controls, annotated code and shadow-root search. Its filter selectors target Zensical 0.0.62. Before changing that pin, check keyboard navigation, code scrolling/copying, tooltip dismissal and search with filters open and closed in both themes. Tab and Shift+Tab must stay inside an open search overlay. Escape must restore the Search trigger and make the page interactive again.
+
 The strict build checks internal page links and heading anchors. Preview the staged output after an edit; a successful build does not prove readable diagrams, keyboard interaction or narrow-screen layout. The site deliberately uses full-page loads so its small storage, native-control and blueprint adapters initialize on each page; do not enable instant navigation without migrating and exercising all three.
 
 ## Ports
@@ -105,7 +109,15 @@ Terraform persists a path-derived block with thirteen endpoints. `LAB_TF_PORT_BA
 
 Jurisdictions publishes one gateway port, in 49152–65535; Kafka and Admin APIs remain on container networks. `LAB_PORT_BASE` selects the port before startup. `./labs/run jurisdictions outage REGION` and `recover REGION` stop/start one owned broker (`eu`, `us`, `apac`, `global`). See its [export and recovery rules](../labs/jurisdictions.md).
 
-All published ports are loopback-only and unauthenticated. Browser mutations must send JSON and, when an Origin is present, come from the same loopback origin (`127.0.0.1`, `localhost` or `[::1]`); this rejects DNS-rebinding names that resolve to loopback. Command-line requests may omit Origin. Nonroot app users, read-only roots, Origin checks and bounded inputs do not replace authorization. Terraform's Podman socket grants host-user authority. Resource identity depends on the absolute checkout path; dispose before moving it or keep the original path for cleanup.
+### Local HTTP boundary
+
+All published ports are loopback-only and unauthenticated. First-party application requests must use a loopback Host: `127.0.0.1`, `localhost` or `[::1]`. A foreign hostname is rejected before reads or writes, including a DNS-rebinding name that resolves to loopback.
+
+Browser mutations must send JSON and, when an Origin is present, come from the same loopback origin. Command-line requests may omit Origin. These checks, nonroot app users, read-only roots and bounded inputs do not authorize local callers. Use synthetic data.
+
+Explorer permits its internal Prometheus scrape at `app:3000/metrics`. Internal agent and federation services retain their container addresses. Terraform's upstream Console and the other upstream tools keep their own HTTP behavior; the first-party guard does not modify them.
+
+Terraform's Podman socket grants host-user authority. Resource identity depends on the absolute checkout path: dispose before moving it, or keep the original path for cleanup.
 
 ## Compression
 

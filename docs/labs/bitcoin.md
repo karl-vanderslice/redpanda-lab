@@ -1,3 +1,7 @@
+---
+description: Replay one fixed day of Bitcoin closes, inspect next-close paper fills and fees, and recover the same account from the log.
+---
+
 # Beacon Ridge Research
 
 Beacon Ridge Research is a fictional paper-strategy desk. One Node/KafkaJS owner replays an offline BTC/USD candle fixture, records commands and complete outcomes in Redpanda, and serves the browser's account and chart. There is no live exchange connection, order-routing endpoint, wallet or private key.
@@ -6,14 +10,25 @@ Beacon Ridge Research is a fictional paper-strategy desk. One Node/KafkaJS owner
 
 Use the [common prerequisites and lifecycle reference](../reference/commands.md). From the repository root:
 
-```bash
+```bash title="Start the offline paper-strategy desk"
 ./labs/run bitcoin up
 ./labs/run bitcoin urls
 ```
 
-Play replay advances one historical hour every two seconds. The account starts with 1,000,000 USD cents, or USD 10,000, and zero BTC. The chart shows only consumed closes and averages. Pause replay stops future timer steps once its command is consumed; Consume next quote advances once. View pause holds browser presentation, not ledger replay or trading. Explicit refresh can still read state.
+Open the app and wait for the ledger. A fresh account starts with 1,000,000 USD cents ($10,000) and zero BTC. If earlier quotes or trades are present, inspect that history rather than assuming a reset.
 
-Disable automatic trading before a manual buy or sell. A buy uses 25% of available cash; a sell closes the whole position at the displayed close. Only one long position exists, with no shorts or pyramiding. The finite feed stops at the final close and never wraps. `./labs/run bitcoin down` followed by `up` starts a fresh account and deletes the previous paper history.
+1. Select **Consume next quote**. The chart and displayed close advance by one historical hour; the replay remains paused.
+2. Leave **Automatic paper trading** enabled and select **Play replay**. The owner consumes one historical hour every two seconds.
+3. On the unchanged fixture, inspect the automatic buy at close nine and sell at close twenty-three in **Paper fills**. Each uses the preceding observed signal, not the signal computed from its own fill price.
+4. Let the finite 24-close feed finish. Compare cash, position, fees and realized P&L. The feed does not wrap, and the chart contains only consumed closes and averages.
+
+**Pause replay** stops future timer steps after its command is consumed. **Pause view updates** only holds browser presentation; it does not pause replay or trading. **Refresh state** can still read the account while the view is paused.
+
+For a separate manual-trading experiment, disable **Automatic paper trading** and consume at least one quote before selecting **Buy with 25% of cash**. A manual sell closes the entire open position at the displayed close. Only one long position exists, with no shorts or pyramiding.
+
+!!! warning "Resetting destroys the paper history"
+
+    `./labs/run bitcoin down` deletes this account's broker history. A later `up` creates a fresh account; it does not preserve the preceding research run. An [app-only restart](#log-and-recovery) keeps the log.
 
 ## Strategy and accounting
 

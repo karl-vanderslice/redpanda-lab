@@ -2,7 +2,7 @@ import http from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { connectLog } from '../common/log.mjs';
-import { readJson, sendJson, serveFile, assertLocalMutation } from '../common/http.mjs';
+import { readJson, sendJson, serveFile, assertLocalRequest, assertLocalMutation } from '../common/http.mjs';
 import { createState, topic, agentFor, validId } from './state.mjs';
 import { startInference, infer } from './inference.mjs';
 
@@ -19,6 +19,7 @@ let log; let relay;
 const snapshot = () => ({ ...state.snapshot(), ready, role, agents: ['planner', 'reviewer'] });
 function announce() {
   for (const waiter of waiters) waiter();
+  if (!listeners.size) return;
   const frame = `event: snapshot\ndata: ${JSON.stringify(snapshot())}\n\n`;
   for (const [res, client] of listeners) {
     // A large frame can exceed highWaterMark even for a fast client.
@@ -71,6 +72,7 @@ async function pump() {
       if (!selected) break;
       const { task, step } = selected;
       await publish(task, step, 'step.started');
+      if (stopping) break;
       // Only the instance whose start was accepted may perform inference.
       if (step.instanceId !== instanceId) continue;
       let result;
@@ -93,6 +95,7 @@ const server = http.createServer(async (req, res) => {
   res.setHeader('cache-control', 'no-store');
   res.setHeader('content-security-policy', "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
   try {
+    if (role === 'app') assertLocalRequest(req);
     const url = new URL(req.url, 'http://localhost');
     if (req.method === 'GET' && url.pathname === '/health') return sendJson(res, ready ? 200 : 503, { ready, role, agentId: role === 'app' ? null : role, instanceId });
     if (req.method === 'GET' && url.pathname === '/metrics') {
@@ -132,7 +135,7 @@ const server = http.createServer(async (req, res) => {
       assertLocalMutation(req);
       if (!ready) return sendJson(res, 503, { error: 'Log replay is not ready. Wait for readiness before submitting.' });
       const body = await readJson(req);
-      if (!body || typeof body !== 'object' || Array.isArray(body) || !validId(body.id) || typeof body.task !== 'string' || !body.task.trim() || body.task.trim().length > 1200) {
+      if (!validId(body.id) || typeof body.task !== 'string' || !body.task.trim() || body.task.trim().length > 1200) {
         return sendJson(res, 400, { error: 'Provide an 8–80 character task ID and a task of 1–1200 characters.' });
       }
       const text = body.task.trim();

@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { connectLog } from '../common/log.mjs';
-import { assertLocalMutation, readJson, sendJson, serveFile } from '../common/http.mjs';
+import { assertLocalRequest, assertLocalMutation, readJson, sendJson, serveFile } from '../common/http.mjs';
 
 const topic = 'iot.events.v1';
 const publicRoot = fileURLToPath(new URL('./public/', import.meta.url));
@@ -127,6 +127,7 @@ function serialize(action) {
 
 const server = createServer(async (req, res) => {
   try {
+    assertLocalRequest(req);
     const url = new URL(req.url, 'http://localhost');
     if (req.method === 'GET' && url.pathname === '/health') {
       sendJson(res, ready && !stopping ? 200 : 503, { ready: ready && !stopping }); return;

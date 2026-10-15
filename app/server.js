@@ -228,7 +228,6 @@ class HttpError extends Error {
 }
 
 async function readJson(req) {
-  if (!(req.headers['content-type'] ?? '').startsWith('application/json')) throw new HttpError(415, 'Send JSON with Content-Type: application/json.');
   let size = 0;
   const chunks = [];
   for await (const chunk of req) {
@@ -236,11 +235,14 @@ async function readJson(req) {
     if (size > MAX_BODY) throw new HttpError(413, 'Request body exceeds 64 KiB.');
     chunks.push(chunk);
   }
+  let value;
   try {
-    return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    value = JSON.parse(Buffer.concat(chunks).toString('utf8'));
   } catch {
     throw new HttpError(400, 'Request body is not valid JSON.');
   }
+  if (!isObject(value)) throw new HttpError(400, 'Request body must be a JSON object.');
+  return value;
 }
 
 function send(res, status, body, type = 'application/json; charset=utf-8') {
@@ -255,6 +257,7 @@ function requireReady() {
 const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 const contentTypes = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml' };
 const loopbackHosts = new Set(['127.0.0.1', 'localhost', '[::1]']);
+const loopbackAuthority = /^(?:127\.0\.0\.1|localhost|\[::1\])(?::[0-9]{1,5})?$/i;
 
 // Browsers send Origin on POST. CLI callers may omit it but must still send JSON.
 function assertLocalMutation(req) {
@@ -268,6 +271,8 @@ function assertLocalMutation(req) {
 
 async function route(req, res) {
   const url = new URL(req.url, 'http://localhost');
+  // Prometheus scrapes the container address; public reads still reject rebinding hosts.
+  if (!(url.pathname === '/metrics' && req.headers.host === 'app:3000') && !loopbackAuthority.test(req.headers.host || '')) throw new HttpError(403, 'Use a loopback request host.');
   if (req.method === 'POST') assertLocalMutation(req);
   if (req.method === 'GET' && url.pathname === '/api/stats') {
     return send(res, 200, { ...state, topic: TOPIC, group: GROUP, generator: generatorState(), links });

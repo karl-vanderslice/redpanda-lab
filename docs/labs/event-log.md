@@ -1,6 +1,12 @@
+---
+description: Inspect immutable accepted and rejected work-item decisions and rebuild the exact projection from the actual Kafka log.
+---
+
 # Event log and rebuild: Folio Harbor Archives
 
 Folio Harbor Archives is a fictional archival work-item desk. Redpanda stores complete accepted and rejected command outcomes; the item index and ruled execution ledger are volatile projections. The app can close its owner, discard projection memory and reconstruct it from the actual Kafka log. It stores no archival file bytes and connects to no external archive.
+
+New to this workbench? Follow the [command-and-replay tutorial](../tutorials/command-and-replay.md) first. This guide is the reference for its revision checks, immutable receipts and recovery boundary.
 
 ## Run
 

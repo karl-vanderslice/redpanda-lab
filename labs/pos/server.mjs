@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { connectLog } from '../common/log.mjs';
-import { assertLocalMutation, readJson, sendJson, serveFile } from '../common/http.mjs';
+import { assertLocalRequest, assertLocalMutation, readJson, sendJson, serveFile } from '../common/http.mjs';
 import { catalog, sources, fail, identifier, checkout, refund, empty, requestDetails, same, totals } from './model.mjs';
 import { configuration, requireProvider, providerScope, invoke } from './providers.mjs';
 
@@ -149,6 +149,7 @@ function respondOperation(res, operation) {
 }
 const server = createServer(async (req, res) => {
   try {
+    assertLocalRequest(req);
     const path = new URL(req.url, 'http://localhost').pathname;
     if (req.method === 'GET' && path === '/health') return sendJson(res, ready ? 200 : 503, { ready });
     if (req.method === 'GET' && path === '/api/state') return sendJson(res, 200, snapshot());

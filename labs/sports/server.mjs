@@ -4,7 +4,7 @@ import { stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { connectLog } from '../common/log.mjs';
-import { readJson, sendJson, serveFile, assertLocalMutation } from '../common/http.mjs';
+import { readJson, sendJson, serveFile, assertLocalRequest, assertLocalMutation } from '../common/http.mjs';
 import { fixtures, sports } from './fixtures.mjs';
 
 const topic = 'sports.events.v2';
@@ -154,6 +154,7 @@ async function media(req, res, pathname) {
 }
 const server = createServer(async (req, res) => {
   try {
+    assertLocalRequest(req);
     const url = new URL(req.url, 'http://localhost');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     if (['GET', 'HEAD'].includes(req.method) && url.pathname.startsWith('/media/')) { await media(req, res, url.pathname); return; }

@@ -1,3 +1,7 @@
+---
+description: Trace a real local fx task through proposal, critique, and synthesis, with durable handoffs and explicit interrupted-attempt outcomes.
+---
+
 # Relay Loom Cooperative
 
 Relay Loom Cooperative is a fictional task desk with two separate agent workers. `planner` proposes, `reviewer` critiques, then `planner` synthesizes. Each owns a Node worker, private fx home, loopback relay and independent Vercel Labs fx invocation. `app` serves the transcript; an internal llama.cpp container supplies SmolLM2-135M-Instruct Q8_0. No host model, account, API key, credential directory or ambient service is mounted.
@@ -6,12 +10,21 @@ Relay Loom Cooperative is a fictional task desk with two separate agent workers.
 
 Use the [shared setup and lifecycle commands](../reference/commands.md):
 
-```bash
+```bash title="Start the local agent task desk"
 ./labs/run agent-messaging up
 ./labs/run agent-messaging urls --json
 ```
 
-Submit a short English task, such as “Plan a small community book swap in three steps.” The desk shows proposal, critique and synthesis lanes with stable task/step/agent IDs, pending/running/completed/failed states, recorded model metadata, output and elapsed milliseconds. Text is real inference, not a fixture. Streamed progress is not a durable result; only consumed `step.completed` output appears as completion.
+Open the app and wait for log readiness. Under **New task**:
+
+1. Enter `Plan a small community book swap in three steps.` in **Task for the agents**.
+2. Select **Send to planner** once. The desk records a stable task ID and selects its transcript.
+3. Follow **Proposal**, **Critique** and **Synthesis** in order. Planner owns the first and third stages; reviewer owns the second. Each stage must consume its predecessor's completion before its inference becomes eligible.
+4. Inspect the completed lanes' output, task/step/agent IDs, harness/model metadata and elapsed seconds. These are real `fx` invocations against the local model, not seeded answers.
+
+Only consumed `step.completed` output is a durable result. A running indicator or streamed progress is not completion. If a stage fails, inspect its error; successors stay blocked and the lab does not regenerate an uncertain model effect automatically.
+
+After completion, restart only the transcript app with `./labs/run agent-messaging restart app`. The same recorded outputs return from replay without another inference. Restarting a worker during a running stage is a different [interruption experiment](#replay-and-interruption), not a way to improve an answer.
 
 SSE updates durable snapshots. Pause freezes automatic display updates while receiving the latest snapshot; agents continue running. Refresh reads `/api/tasks` once while paused. Resume renders cached state. Explicit task submission, lookup and selection still show their requested view while paused. Theme follows the system until a stored/manual choice; denied storage leaves choices usable in memory.
 

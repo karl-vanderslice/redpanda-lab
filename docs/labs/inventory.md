@@ -1,17 +1,32 @@
+---
+description: Receive, reserve, fulfill, and transfer stock while checking whole-unit conservation and replayable movement receipts.
+---
+
 # Inventory: Cedarline Supply
 
 Cedarline Supply is a fictional two-location stock desk. Redpanda stores its versioned catalog, initial stock, reservations and complete movement outcomes; one consumer owns the visible stock sheet. Receiving, transferring and fulfillment are local accounting commands, not scanner observations, supplier deliveries or physical shipments. No inventory database or warehouse system is connected.
 
-## Run
+## Run the stock desk {#run}
 
 Use the [shared setup and lifecycle](./index.md). From the repository root:
 
-```bash
+```bash title="Start the inventory desk"
 labs/run inventory up
 labs/run inventory urls
 ```
 
-Receive stock, reserve available units, then release or fulfill that reservation. Transfer moves unreserved stock between North warehouse and Quay stockroom in one record. Reservation IDs remain stable for the reservation's lifetime; each new command has its own ID. Polling preserves inputs. Pause also discards an automatic read already in flight; Refresh still reads state.
+Open the app and wait for the consumed stock sheet. The figures below assume the untouched catalog; with existing history, compare each movement with the current quantities rather than resetting the lab.
+
+1. In **Stock workbench**, keep the generated **Command id**. Choose **Receive stock**, **Field tote**, **North warehouse** and **2** whole units. Select **Record movement**. North's on-hand and available stock each rise from 12 to 14.
+2. Select **New id**, then **Reserve units**. Keep the same product and location, enter **5** units and an unused reservation ID such as `tote-order-001`. Record the movement. North still has 14 on hand, but 5 are reserved and only 9 are available.
+3. Select **New id**, then **Fulfill reservation** and the same reservation ID. Record it. North now has 9 on hand and none reserved. The reservation is `fulfilled`; it cannot be fulfilled again.
+4. Select **New id**, then **Transfer available stock**. Move **3** Field totes from North to **Quay stockroom**. North falls to 6 and Quay rises from 8 to 11; no stock leaves the two-location system.
+
+Inspect **Conservation sheet** and **Ordered movement log** after each command. At the end, Field totes satisfy `20 initial + 2 received = 17 on hand + 5 fulfilled`. A reservation changes availability, fulfillment removes on-hand stock, and a transfer only changes location.
+
+Reservation IDs identify a reservation for its whole lifetime. Command IDs identify individual decisions: each new movement needs a new one, while a retry keeps its exact original ID and input. See the [command-and-replay tutorial](../tutorials/command-and-replay.md) for the distinction.
+
+Background polling does not overwrite form inputs. **Pause updates** also discards an automatic read already in flight; **Refresh** still reads state. Neither control stops the owner or changes stock.
 
 ## Catalog and conservation
 

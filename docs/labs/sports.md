@@ -1,3 +1,7 @@
+---
+description: Play original local sports animation while separately observing scores, watchlist preferences, and broker-backed playback telemetry.
+---
+
 # Courtside Assembly
 
 Courtside Assembly is a fictional sports portal for the original Crosswater Assembly exhibition slate. The Nix-built image serves silent geometric field animations. Redpanda stores score, preference and playback events, not video. No real event, borrowed team identity, film footage or external stream is included.
@@ -6,12 +10,21 @@ Courtside Assembly is a fictional sports portal for the original Crosswater Asse
 
 Use the [shared setup and lifecycle commands](../reference/commands.md):
 
-```bash
+```bash title="Start the synthetic sports portal"
 ./labs/run sports up
 ./labs/run sports urls --json
 ```
 
-The first image build generates four clips with pinned FFmpeg. Runtime needs no remote media, host encoder, model, account or API key. Open a match page and use the native play/pause/seek/volume/fullscreen controls. There is no autoplay. Captions describe the silent animation; direct routes and browser back/forward select matches.
+The first image build generates four clips with pinned FFmpeg. Runtime needs no remote media, host encoder, model, account or API key.
+
+1. Open the app and wait for **Scoreboard connected**. Choose **Ice hockey**, then the Bracken Quays / Harthwick Bearings match (`bracken-rink`).
+2. Use the native player's **Play** control. Confirm that the position advances through the silent geometric animation. No video autoplays; captions describe the animation rather than a real broadcast.
+3. Under **Record a score increment**, keep **Bracken Quays** as the scoring club and the one-goal increment. Select **Emit score event**. The score changes only after the command is consumed, independently of the video's position.
+4. Select **Add to watchlist**, then open **Watchlist** in the sports navigation. If the button already reads **Remove from watchlist**, leave it saved. The match appears in the watchlist after its preference is consumed. Return to the match to inspect **Behind the desk** and **The event wire**.
+
+The native player also supports pause, seek, volume and fullscreen. Direct routes and browser back/forward select matches. **Pause scoreboard updates** freezes the rendered score/event view, not consumption, video or playback telemetry; **Refresh scoreboard** reads one snapshot without resuming automatic updates.
+
+If **Control plane disconnected** appears, select **Refresh scoreboard** before issuing another action. A confirmed action can already be in the log while the rendered view is stale. Do not submit it again to refresh the page.
 
 | Match ID | Sport | Home / away | Venue |
 | --- | --- | --- | --- |

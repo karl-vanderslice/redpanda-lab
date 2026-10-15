@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Teach application decisions with a hands-on command/receipt/rebuild tutorial, question-led lab selection, concrete browser workflows and native Zensical cards, tabs, annotations and page descriptions.
+- Keep documentation theme/navigation controls keyboard-operable with valid roles. Name annotations, code controls, breadcrumbs and search, and announce copy feedback. Keep search focus inside its overlay and return it to the visible Search control. Keep code and filter regions keyboard accessible, dismiss annotation tooltips with Escape, and keep search text readable in both themes.
+- Reject foreign Host headers before first-party record reads as well as mutations, preserving internal metrics and federation traffic.
+- Accept maximum-length Unicode articles through escaped JSON within a 64 KiB activity request limit. Reject explorer non-object JSON with 400 and accept case-insensitive JSON media types.
+- Avoid unused shared append-result objects, agent snapshots without listeners and full chat projections during health probes. Remove redundant object checks and an unused runner export; do not launch fx after shutdown begins.
 - Accept a trading proposal after a foreign exact duplicate lands before its append; replay assigns order priority from the consumed offset. Reject `.` and `..` trading IDs.
 - Return consumed Bitcoin receipts while writes are stopped and keep `outcomeUnknown:true` for retries of the unresolved command.
 - Return 503, not 202, for identical retries of unknown sports and jurisdiction operations. Keep the exact uncertain jurisdiction input frozen until its consumed result appears.

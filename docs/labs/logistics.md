@@ -1,17 +1,30 @@
+---
+description: Assign a synthetic driver, report positions, and distinguish a recorded arrival from a trip lifecycle transition.
+---
+
 # Logistics: Wayline Dispatch
 
 Wayline Dispatch is a fictional three-driver dispatch board. Redpanda retains the fleet fixture, explicit location observations, trip assignments and rejected commands. The plotted 20 × 20 km grid is synthetic: no GPS receiver, road map, rider account, routing provider or physical delivery is connected.
 
-## Run
+## Dispatch one trip {#run}
 
 Use the [shared setup and lifecycle](./index.md). From the repository root:
 
-```bash
+```bash title="Start the synthetic dispatch board"
 labs/run logistics up
 labs/run logistics urls
 ```
 
-Request a trip, report the assigned driver's pickup position, confirm pickup, report the destination, then complete the trip. Cancellation before pickup releases capacity. Background updates can be paused without discarding form input.
+Open the app and wait for the fleet. The steps below use the untouched fixture; with earlier trips, first inspect driver availability and the assignment receipt.
+
+1. Under **Request trip**, keep the generated **Trip ID**. Leave pickup at **(2, 2)** and destination at **(6, 6)**, then select **Assign nearest driver**. On the untouched fixture, Alex (`driver-1`) is already at pickup and receives the assignment.
+2. Copy that Trip ID into **Progress trip**; this field is not filled automatically. Select **Confirm pickup**. If the assigned driver is elsewhere, first use **Report driver position** to record the exact pickup coordinates.
+3. Open **Report driver position**, select the assigned driver, enter **X = 6**, **Y = 6** and select **Record position**. The map moves the driver, but the trip remains picked up.
+4. In **Progress trip**, keep the same Trip ID and select **Complete trip**. The assignment ledger reports `completed`, and the driver becomes available again.
+
+Position and lifecycle are separate commands: reaching a plotted destination does not complete a trip. **Cancel before pickup** releases an assigned driver but cannot cancel a picked-up trip. These are synthetic observations and accounting transitions, not evidence of physical travel.
+
+**Pause updates** freezes this browser's automatic view without discarding form input. Use **Refresh view** for an explicit observation; pausing does not stop the backend.
 
 ## Dispatch and location contracts
 

@@ -1,3 +1,7 @@
+---
+description: Send and schedule real local-model prompts, cancel pending work, and inspect the durable boundary between a due time and an inference attempt.
+---
+
 # Clockwork Correspondence
 
 Clockwork Correspondence is a fictional notebook for immediate and one-shot scheduled prompts. Redpanda retains conversation, schedule, cancellation, attempt and reply transitions. One Node app owns the timer and calls internal llama.cpp for real SmolLM2-135M-Instruct Q8_0 replies. Redpanda is the log, not the timer. No tools, internet retrieval, cloud credential or canned reply is provided.
@@ -6,12 +10,19 @@ Clockwork Correspondence is a fictional notebook for immediate and one-shot sche
 
 Use the [shared setup and lifecycle commands](../reference/commands.md):
 
-```bash
+```bash title="Start the local conversation notebook"
 ./labs/run agent-chat up
 ./labs/run agent-chat urls --json
 ```
 
-Create a conversation, send now, then schedule a prompt for a minute ahead. The journal shows pending, running, completed, failed and cancelled jobs with timestamps/offsets. Cancellation prevents an attempt only if it precedes start in topic order. An immediate prompt is eligible, not preemptive.
+Open the app and wait for the log and model to become ready.
+
+1. Enter a synthetic **New conversation title**, such as `A small idea`, then select **New conversation**. The composer becomes available for that notebook.
+2. Enter `Name one friendly animal in a short sentence.`, keep **Send now** and select **Send prompt**. Follow its job in **Prompt journal** until the real local-model reply completes.
+3. Enter another prompt, choose **Schedule for later**, and set **Local date and time** a few minutes ahead. Check the displayed timezone, then select **Schedule prompt**.
+4. Inspect its pending journal entry and **Log details**, including the exact UTC due instant. To let it run, leave it pending through that instant. To test cancellation instead, select **Cancel pending prompt** before its recorded start.
+
+A recorded cancellation prevents an attempt only if it wins topic order before start. A late cancellation cannot stop inference. **Send now** means eligible for the one inference slot, not preemption of another job. Reply text varies; a completed small-model answer is not a quality or factuality guarantee.
 
 Browser state/conversation/uncertain-operation reads refresh every second. Pause aborts a pending read and stops automatic polling, not scheduled execution. Refresh reads one complete cycle while paused; Resume restarts polling. Explicit selection/mutation requests a fresh view without resuming. The composer shows its IANA timezone, displayed times include a local zone abbreviation, and job details expose exact UTC `dueAt`. Theme follows system or valid manual/stored choice; denied storage leaves controls usable. Conversations live in the broker, not browser storage.
 

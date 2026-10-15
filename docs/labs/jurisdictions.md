@@ -1,3 +1,7 @@
+---
+description: Route synthetic records to a fixed resident cluster, inspect summary-only federation, and distinguish regional availability from export freshness.
+---
+
 # Meridian Ledger Alliance
 
 Meridian Ledger Alliance is a fictional regional-record operator. Three independent raw-log clusters, labelled EU, US and APAC, feed a fourth summary cluster. Four RF1 brokers and five Node/KafkaJS app containers run on one host. These labels are not geographic isolation, compliance certification or disaster recovery. Use synthetic data only; grouping Canadian and US fixtures is not a legal residency determination.
@@ -6,15 +10,35 @@ Meridian Ledger Alliance is a fictional regional-record operator. Three independ
 
 Use the [common prerequisites and lifecycle reference](../reference/commands.md). Allow several GiB of memory for the four brokers and apps. From the repository root:
 
-```bash
+```bash title="Start the regional ledger desk"
 ./labs/run jurisdictions up
 ./labs/run jurisdictions urls
-APP=$(./labs/run jurisdictions urls --json | jq -r .app)
-curl -fsS "$APP/api/events" -H 'Content-Type: application/json' \
-  -d '{"id":"example-eu-001","tenantId":"berlin-shop","amount":125,"privateNote":"Synthetic reference only"}'
-curl -fsS "$APP/api/operations/eu/example-eu-001"
-curl -fsS "$APP/api/state" | jq .global
 ```
+
+=== "Browser"
+
+    Open the operator app and wait for the regional sources.
+
+    1. In **Route a synthetic record**, select tenant **berlin-shop**. Placement is EU, selected by the registry rather than by the form.
+    2. Keep **125** synthetic units and enter a fictional **Private regional note**. Select **Publish to home region** once.
+    3. Inspect the operation's consumed region, partition and offset. The EU resident record contains the note.
+    4. Watch **Permitted global summary** for that regional partition's cumulative count and total. It excludes the tenant ID and note and can lag the regional receipt.
+
+=== "HTTP"
+
+    Enter `nix develop --no-update-lock-file` first so `curl` and `jq` are available. The startup wrapper provides tools for its own command, not the shell around this pipeline.
+
+    Use an unused example ID. Retain it and the exact payload if completion is unknown.
+
+    ```bash title="Publish one EU record and inspect its separate summary"
+    APP=$(./labs/run jurisdictions urls --json | jq -er .app)
+    curl -fsS "$APP/api/events" -H 'Content-Type: application/json' \
+      -d '{"id":"example-eu-001","tenantId":"berlin-shop","amount":125,"privateNote":"Synthetic reference only"}'
+    curl -fsS "$APP/api/operations/eu/example-eu-001"
+    curl -fsS "$APP/api/state" | jq .global
+    ```
+
+    A pending response needs lookup of the same region and ID. A global read immediately after regional completion may still show the preceding exported summary.
 
 The resident consumer's completion receipt supplies region, partition and consumed offset. Its raw record includes the private note. The global summary excludes both tenant ID and note. The unauthenticated operator gateway can inspect all resident fixtures and return them to the browser; it is not tenant access control. The global consumer/broker have no regional broker-network attachment, but exporters connect to their region and the global network. This does not protect against a compromised exporter.
 

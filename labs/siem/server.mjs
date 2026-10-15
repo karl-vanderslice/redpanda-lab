@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { connectLog } from '../common/log.mjs';
-import { assertLocalMutation, decodePath, readJson, sendJson, serveFile } from '../common/http.mjs';
+import { assertLocalRequest, assertLocalMutation, decodePath, readJson, sendJson, serveFile } from '../common/http.mjs';
 import { createModel, normalize, validateCommand, fail } from './model.mjs';
 
 const topic = 'siem.events.v1';
@@ -68,6 +68,7 @@ function fixture(input) {
 }
 const server = createServer(async (req, res) => {
   try {
+    assertLocalRequest(req);
     const url = new URL(req.url, 'http://localhost');
     if (req.method === 'GET' && url.pathname === '/health') return sendJson(res, ready && !stopping ? 200 : 503, { ready: ready && !stopping });
     if (req.method === 'GET' && url.pathname === '/api/state') return sendJson(res, 200, snapshot());

@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { connectLog } from '../common/log.mjs';
-import { assertLocalMutation, readJson, sendJson, serveFile } from '../common/http.mjs';
+import { assertLocalRequest, assertLocalMutation, readJson, sendJson, serveFile } from '../common/http.mjs';
 import { createModel, validate, fixtureCommand, fail } from './model.mjs';
 
 const topic = 'activity.events.v1';
@@ -55,6 +55,7 @@ if (!fixture.accepted) throw new Error('Activity fixture could not be installed.
 const limitations = { authentication: false, privateMessages: false, privatePosts: false, identity: 'Caller-selected public profiles. Anyone with lab access can act as any profile.', reads: 'Article-open events, not proof of human attention. Retry IDs deduplicate; a new ID represents a new open.' };
 const server = createServer(async (req, res) => {
   try {
+    assertLocalRequest(req);
     const url = new URL(req.url, 'http://localhost');
     if (req.method === 'GET' && url.pathname === '/health') {
       sendJson(res, ready && !stopping ? 200 : 503, { ready: ready && !stopping }); return;
@@ -80,7 +81,7 @@ const server = createServer(async (req, res) => {
     if (req.method === 'POST' && url.pathname === '/api/commands') {
       assertLocalMutation(req);
       if (stopping) throw fail(503, 'The app is shutting down. No new work is admitted.');
-      const command = validate(await readJson(req));
+      const command = validate(await readJson(req, 65536));
       const operation = await serialize(() => publish(command));
       sendJson(res, operation.accepted ? 200 : 409, operation); return;
     }

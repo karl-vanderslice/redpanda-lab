@@ -28,6 +28,23 @@ The `lab` wrapper derives a Compose project name from the checkout's absolute pa
 
 Dispose of a lab before moving its checkout, or retain the original path for cleanup. `down` removes the owned runtime and volumes; it is not a reversible stop. [Commands and ports](../reference/commands.md) covers the wrapper interface.
 
+## Podman or Kubernetes?
+
+Rootless Podman is the supported runtime. The lab's purpose is to expose event delivery, application decisions and recovery through a disposable local workflow, not to teach an orchestrator. The existing wrappers own image identity, readiness, loopback ports, checkout-specific resources and deliberate data disposal.
+
+[kind can run Kubernetes on rootless Podman](https://kind.sigs.k8s.io/docs/user/rootless/), but it adds another lifecycle:
+
+| Concern | Current lab | A kind-based deployment would also need |
+| --- | --- | --- |
+| Images | Load or build the exact app image in Podman. | Import it into the node's containerd image store and preserve the intended pull policy. |
+| Addresses | Use the printed loopback endpoints or container-network names. | Distinguish pod/service addresses, Kafka advertised listeners and host access. |
+| Data | Named volumes survive an app restart and are deleted by the selected lab's `down`. | Define PVC retention, storage-class behavior and what namespace or cluster deletion means for each dataset. |
+| Recovery | Restart an owned process and inspect its retained log. | Reconcile pod/controller rollout state as well as broker and application readiness. |
+
+A StatefulSet and a retained PVC can preserve a broker's data across pod replacement. They do not provide a backup, independent host failure domains or an application writer fence. Automatically starting a second matcher, scheduler or effect owner would violate several labs' current contracts.
+
+Use Kubernetes when its controllers, storage and operational reconciliation are themselves the experiment. This repository does not provide a second Kubernetes backend, Helm release or operator deployment. Its [production blueprints](../blueprints/index.md) describe responsibilities without implying that changing orchestrators implements them.
+
 ## Beyond the explorer
 
 [Domain labs](../labs/index.md) have their own decision owners, replay and effect contracts. A single ordered partition is not distributed writer fencing. Their [production blueprints](../blueprints/index.md), including [Signal Harbor Works](../blueprints/explorer.md), propose separate operational responsibilities; they do not describe deployed infrastructure.

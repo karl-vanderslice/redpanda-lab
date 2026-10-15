@@ -37,7 +37,7 @@ export async function startInference() {
     try {
       if (req.method !== 'POST' || req.url !== '/v1/chat/completions') return sendJson(res, 404, { error: 'Only local chat completions are available.' });
       const body = await readJson(req, 65536);
-      if (!body || typeof body !== 'object' || body.model !== model || !Array.isArray(body.messages) || body.tools || body.tool_calls) {
+      if (body.model !== model || !Array.isArray(body.messages) || body.tools || body.tool_calls) {
         return sendJson(res, 400, { error: 'This lab accepts text-only inference without tools.' });
       }
       const upstream = await fetch(`${modelUrl.href}/chat/completions`, {

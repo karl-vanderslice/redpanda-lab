@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { connectLog } from '../common/log.mjs';
-import { assertLocalMutation, readJson, sendJson, serveFile } from '../common/http.mjs';
+import { assertLocalRequest, assertLocalMutation, readJson, sendJson, serveFile } from '../common/http.mjs';
 import { policy, fixtures, fail, identifier, command, same, emptyState, initialize, evaluate, consume, view } from './model.mjs';
 
 const topic = 'clearing.events.v1';
@@ -64,6 +64,7 @@ async function submit(cmd) {
 function snapshot() { return { ready, fault, topic, lastOffset, duplicates, ...view(state) }; }
 const server = createServer(async (req, res) => {
   try {
+    assertLocalRequest(req);
     const path = new URL(req.url, 'http://localhost').pathname;
     if (req.method === 'GET' && path === '/health') return sendJson(res, ready && !stopping && !fault ? 200 : 503, { ready: ready && !stopping && !fault });
     if (req.method === 'GET' && path === '/api/state') return sendJson(res, 200, snapshot());

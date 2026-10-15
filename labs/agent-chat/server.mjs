@@ -2,7 +2,7 @@ import http from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { connectLog } from '../common/log.mjs';
-import { readJson, sendJson, serveFile, assertLocalMutation } from '../common/http.mjs';
+import { readJson, sendJson, serveFile, assertLocalRequest, assertLocalMutation } from '../common/http.mjs';
 import { createState } from './state.mjs';
 
 const topic = process.env.CHAT_TOPIC || 'agent-chat-events';
@@ -36,8 +36,9 @@ function text(value, field, maximum) {
   }
   return value.trim();
 }
+function isReady() { return ready && !closing && !schedulerError; }
 function requireReady() {
-  if (!ready || closing || schedulerError) throw problem(503, 'Scheduler is not ready; inspect /api/state', { outcomeUnknown: false });
+  if (!isReady()) throw problem(503, 'Scheduler is not ready; inspect /api/state', { outcomeUnknown: false });
 }
 function observe(id, timeout = 10000) {
   if (state.operations.has(id)) return Promise.resolve(state.operations.get(id));
@@ -175,7 +176,7 @@ async function tick() {
 
 function summary() {
   return {
-    ready: ready && !closing && !schedulerError, topic, model, owner, revision: state.revision,
+    ready: isReady(), topic, model, owner, revision: state.revision,
     scheduler: { ownerCount: 1, busy, error: schedulerError, tickMs: 250 },
     serverTime: now(), conversations: [...state.conversations.values()].map(value => ({
       id: value.id, title: value.title, createdAt: value.createdAt, messageCount: value.messages.length,
@@ -187,11 +188,13 @@ const server = http.createServer(async (req, res) => {
   res.setHeader('x-content-type-options', 'nosniff');
   res.setHeader('content-security-policy', "default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'");
   try {
+    assertLocalRequest(req);
     const url = new URL(req.url, 'http://localhost');
     if (req.method === 'GET') {
-      if (url.pathname === '/health') return sendJson(res, summary().ready ? 200 : 503, {
-        ready: summary().ready, schedulerError,
-      });
+      if (url.pathname === '/health') {
+        const available = isReady();
+        return sendJson(res, available ? 200 : 503, { ready: available, schedulerError });
+      }
       if (url.pathname === '/api/state') return sendJson(res, 200, summary());
       if (url.pathname === '/api/conversations') return sendJson(res, 200, { conversations: summary().conversations });
       if (url.pathname === '/api/jobs') return sendJson(res, 200, { jobs: [...state.jobs.values()] });
@@ -231,7 +234,6 @@ const server = http.createServer(async (req, res) => {
     assertLocalMutation(req);
     requireReady();
     const body = await readJson(req);
-    if (!body || typeof body !== 'object' || Array.isArray(body)) throw problem(400, 'Expected a JSON object');
     const requestId = identifier(body.requestId);
     if (url.pathname === '/api/conversations') {
       const title = text(body.title, 'title', 80);

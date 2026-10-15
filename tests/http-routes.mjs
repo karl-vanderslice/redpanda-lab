@@ -105,17 +105,31 @@ const mutationPaths = {
   logistics: '/api/commands', 'event-log': '/api/commands', siem: '/api/telemetry', activity: '/api/commands',
   inventory: '/api/commands', clearing: '/api/transfers', jurisdictions: '/api/events',
 };
+function rawStatus(path, method, headers, body = '') {
+  return new Promise((resolve, reject) => {
+    const req = http.request(new URL(path, base), { method, timeout: 15000, headers }, response => {
+      response.resume();
+      response.on('end', () => resolve(response.statusCode));
+    });
+    req.on('timeout', () => req.destroy(new Error('Host boundary probe timed out')));
+    req.on('error', reject);
+    req.end(body);
+  });
+}
 if (mutationPaths[scenario]) {
   const host = `rebind.example:${base.port}`;
-  const status = await new Promise((resolve, reject) => {
-    const req = http.request(new URL(mutationPaths[scenario], base), {
-      method: 'POST', timeout: 15000,
-      headers: { host, origin: `http://${host}`, 'content-type': 'application/json' },
-    }, response => { response.resume(); response.on('end', () => resolve(response.statusCode)); });
-    req.on('timeout', () => req.destroy(new Error('Rebinding probe timed out')));
-    req.on('error', reject);
-    req.end('{}');
-  });
+  for (const path of ['/', ...apiPaths]) {
+    for (const headers of [{ host }, { host, origin: `http://${host}` }]) {
+      assert.equal(await rawStatus(path, 'GET', headers), 403, `Foreign Host read ${path}`);
+    }
+    console.log(`PASS intentional 403 foreign Host GET ${path}, with and without Origin`);
+  }
+  for (const hostname of ['localhost', '[::1]']) {
+    assert.equal(await rawStatus('/', 'GET', { host: `${hostname}:${base.port}` }), 200, `Supported loopback Host ${hostname}`);
+  }
+  const status = await rawStatus(mutationPaths[scenario], 'POST', {
+    host, origin: `http://${host}`, 'content-type': 'application/json',
+  }, '{}');
   assert.equal(status, 403, `Rebinding origin mutation ${mutationPaths[scenario]}`);
   console.log(`PASS intentional 403 rebinding origin POST ${mutationPaths[scenario]}`);
 }

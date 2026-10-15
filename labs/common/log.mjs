@@ -58,11 +58,7 @@ export async function connectLog({ topic, group, onEvent }) {
           const send = producer.send({ topic, acks: -1, messages: [{ key, value: JSON.stringify(value) }] });
           pendingSends.add(send);
           void send.then(() => pendingSends.delete(send), () => pendingSends.delete(send));
-          const [delivery] = await Promise.race([
-            send,
-            timeout,
-          ]);
-          return { partition: delivery.partition, offset: delivery.baseOffset };
+          await Promise.race([send, timeout]);
         } catch (error) {
           error.outcomeUnknown = true;
           throw error;

@@ -453,6 +453,20 @@ fn respond(req: Request, code: u16, body: impl AsRef<[u8]>, mime: &str) {
         .with_header(header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")));
 }
 fn handle(mut req: Request, state: Shared, jobs: mpsc::SyncSender<Job>) {
+    if !req
+        .headers()
+        .iter()
+        .find(|h| h.field.equiv("Host"))
+        .is_some_and(|h| loopback_host(h.value.as_str()))
+    {
+        respond(
+            req,
+            403,
+            "{\"error\":\"Use a loopback request host\"}",
+            "application/json",
+        );
+        return;
+    }
     let path = req.url().split('?').next().unwrap_or("/").to_owned();
     if req.method() == &Method::Get || req.method() == &Method::Head {
         let static_file = match path.as_str() {
@@ -546,7 +560,7 @@ fn handle(mut req: Request, state: Shared, jobs: mpsc::SyncSender<Job>) {
     let origin_ok = get_header("Origin")
         .map(|origin| {
             get_header("Host")
-                .map(|host| origin == format!("http://{host}") && loopback_host(host))
+                .map(|host| origin.strip_prefix("http://") == Some(host))
                 .unwrap_or(false)
         })
         .unwrap_or(true);

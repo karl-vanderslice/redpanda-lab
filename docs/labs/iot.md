@@ -1,17 +1,30 @@
+---
+description: Open and close synthetic temperature and battery incidents, then see why device sequence controls acceptance rather than arrival time.
+---
+
 # IoT: Cryowell Instruments
 
 Cryowell Instruments is a fictional cold-chain monitoring desk. Three synthetic devices submit HTTP readings; one KafkaJS consumer derives device history, receipts and temperature/battery incidents from Redpanda. No physical sensor, MQTT broker, notification service or actuator is connected.
 
-## Run
+## Run the sensor bench {#run}
 
 Use the [shared setup and lifecycle](./index.md). From the repository root:
 
-```bash
+```bash title="Start the synthetic sensor bench"
 labs/run iot up
 labs/run iot urls
 ```
 
-Open the reported app URL. Send a high-temperature reading, then a normal reading to open and close an incident. Low battery opens a separate incident. Each new reading needs a new ID and an increasing device sequence; retries retain the exact ID and payload.
+Open the reported app URL and wait for **Gateway ready**.
+
+1. In **Record a reading**, leave **Device** at **Freezer · freezer-1**. Select **High temperature**, then **Send reading**. The accepted reading opens a temperature incident in **Alert register**.
+2. Select **Normal**, then send the next reading. It closes that temperature incident; elapsed time alone would not close it.
+3. Select **Low battery**, then send another reading. Temperature stays normal, but a separate battery incident opens.
+4. Send a **Normal** reading again. Inspect the accepted history, closed incident records and consumed offsets.
+
+After each consumed receipt, the form generates a new reading ID and advances the device's sequence hint. A new reading needs both a new ID and a sequence greater than that device's last accepted sequence. A retry instead keeps the exact ID and values. Choosing a different device uses that device's own sequence history.
+
+The presets are synthetic inputs, not sensor calibration. **Pause updates** freezes this browser's automatic observations, not ingestion; **Refresh view** reads state explicitly. To understand stale-sequence rejection or timeout recovery, use the contracts below rather than replacing an uncertain ID.
 
 ## Readings and incidents
 

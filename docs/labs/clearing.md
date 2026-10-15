@@ -1,3 +1,7 @@
+---
+description: Distinguish approval, reservations, exception review, and balanced local clearing without connecting to a bank.
+---
+
 # Northbridge Ledgerworks
 
 Screen fictional transfers, review held obligations and record balanced local clearing entries. No bank, payment network or external watchlist is connected. Approval is not clearance; local clearance is not bank settlement.
@@ -6,7 +10,7 @@ Screen fictional transfers, review held obligations and record balanced local cl
 
 Meet the [common prerequisites](../reference/commands.md), then run from the checkout root:
 
-```bash
+```bash title="Start the local clearing desk"
 nix develop --no-update-lock-file
 just up clearing
 just urls clearing
@@ -14,7 +18,7 @@ just urls clearing
 
 Open the app URL. **Pause updates** freezes this browser's view, including against an automatic read already in flight, not the ledger. **Refresh ledger** reads current state manually.
 
-Write controls stay disabled until a ready ledger snapshot arrives. A failed read keeps the displayed ledger but disables new writes. Recovery clears only the read-error notice; it does not discard an uncertain command, its exact payload or its write lock.
+Write controls stay disabled until a ready ledger snapshot arrives. If a read fails, the displayed ledger remains available but new writes stop. A successful refresh clears the connection warning. It does not resolve a previously uncertain command or unlock its preserved input.
 
 The first consumed record initializes five accounts and policy `northbridge-risk-1`:
 
@@ -34,7 +38,7 @@ The figures below assume a fresh lab with no earlier transfer instructions and n
 
 ### Clear an ordinary transfer
 
-1. In **Reserve a transfer**, keep the generated immutable ID. Select `operating` as debit, `treasury` as credit and **10000** cents.
+1. In **Reserve a transfer**, keep the generated immutable ID. Select `operating` as debit and `treasury` as credit. Change the default amount from **100000** to **10000** cents ($100.00); the default amount would trigger the hold demonstrated in the next section.
 2. Select **Screen and reserve** once. The transfer is `approved`; its receipt records the original command and offset. Operating still has 1000000 booked cents, but 10000 are reserved and only 990000 are available. Approval has not moved booked funds.
 3. Under **Local clearing calculation**, select that approved transfer, confirm the local entry and select **Clear approved obligation**.
 4. Inspect the two entries under the same clearing ID: operating **−10000**, treasury **+10000**. The reservation is consumed. Booked balances are now 990000 and 1010000 cents respectively; the total remains 2210000 and net entries remain zero.

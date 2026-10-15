@@ -45,7 +45,7 @@ finish() {
   exit "$status"
 }
 api() { curl -fsS --max-time 15 "$@"; }
-post() { curl -sS --max-time 45 -o "$report_dir/body.json" -w '%{http_code}' -H 'content-type: application/json' -d "$2" "$base_url$1"; }
+post() { curl -sS --max-time 45 -o "$report_dir/body.json" -w '%{http_code}' -H "content-type: ${3:-application/json}" -d "$2" "$base_url$1"; }
 stats() { api "$base_url/api/stats"; }
 wait_for() { # description, seconds, jq expression on stats
   local deadline=$((SECONDS + $2))
@@ -87,6 +87,11 @@ else
   fail 'lab.events has 6 partitions replicated on brokers 0,1,2'
 fi
 
+for endpoint in /api/produce /api/consumer /api/generator; do
+  [[ $(post "$endpoint" null) == 400 ]] || fail "null command body rejected before mutation: $endpoint"
+done
+pass 'null command bodies rejected with 400 at every parsed mutation endpoint'
+
 if [[ $(post /api/produce '{"key":"k","kind":"order.created","payload":[1]}') == 400 ]]; then
   pass 'non-object payload rejected with 400'
 else
@@ -98,7 +103,7 @@ else
   fail 'generator rate above 100 rejected'
 fi
 before=$(stats | jq .produced)
-[[ $(post /api/produce '{"key":"order-1","kind":"order.created","payload":{"total":12.5}}') == 201 ]] || fail 'manual produce acknowledged'
+[[ $(post /api/produce '{"key":"order-1","kind":"order.created","payload":{"total":12.5}}' 'Application/JSON') == 201 ]] || fail 'manual produce acknowledged with case-insensitive JSON media type'
 id=$(jq -r .id "$report_dir/body.json")
 pass "manual produce acknowledged ($(jq -c . "$report_dir/body.json"))"
 wait_for 'manual event consumed by shared consumer' 20 ".recent | any(.id == \"$id\")"

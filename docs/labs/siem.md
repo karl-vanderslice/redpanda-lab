@@ -1,3 +1,7 @@
+---
+description: Correlate synthetic authentication and network observations, inspect the evidence, and triage an incident through recorded decisions.
+---
+
 # Vesper Lantern Networks
 
 Vesper Lantern Networks is a fictional security desk for synthetic authentication and network observations. One Node HTTP owner publishes to `siem.events.v1`; its consumer alone changes the incident queue, evidence and receipts. There is no database, packet capture, remote collector, customer traffic or notification service.
@@ -6,12 +10,22 @@ Vesper Lantern Networks is a fictional security desk for synthetic authenticatio
 
 Use the [shared setup and lifecycle commands](../reference/commands.md):
 
-```bash
+```bash title="Start the synthetic security desk"
 ./labs/run siem up
 ./labs/run siem urls --json
 ```
 
-Open the app and select **Ingest fixture sequence**. Inspect the authentication and multi-port incidents, follow their evidence receipts, then acknowledge or resolve an incident. The timeline displays the latest 100 telemetry receipts; `/api/state` exposes the complete projection. Automatic reads run every 2.5 seconds. Pause stops automatic display updates, including an automatic read already in flight; Refresh still reads and displays state. Neither stops ingestion or correlation.
+Open the app and wait for the owner to become ready. No collector or capture permission is needed.
+
+1. In **Ingest observations**, select **Ingest fixture sequence** once. The browser sends three authentication failures, a matching success and four observations of distinct destination ports.
+2. Select **Authentication burst** in **Incident queue**. In a fresh lab it is high severity: the three failures opened a medium incident, and the linked success raised its severity. Inspect **Correlation evidence** and follow an event link to its original consumed receipt.
+3. Compare **Multi-port observation**. Its four distinct ports open a separate medium incident; observing a port does not prove that a connection succeeded.
+4. Keep or enter a synthetic analyst ID, then select **Acknowledge**. The incident changes to acknowledged and gains a recorded transition.
+5. Select **Resolve**. The default **Open and acknowledged** filter now hides that resolved incident. Switch to **All incidents** to inspect its retained evidence and transition history.
+
+The analyst field is recorded text, not a sign-in. A rule match is a prompt to inspect evidence, not a verdict that an attack or compromise occurred. Existing history can change the displayed incident count and revisions.
+
+The timeline shows the latest 100 telemetry receipts; `/api/state` exposes the complete projection. Automatic reads run every 2.5 seconds. **Pause updates** stops automatic display updates, including an automatic read already in flight; **Refresh** still reads and displays state. Neither stops ingestion or correlation.
 
 ## Telemetry contract
 

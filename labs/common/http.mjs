@@ -11,6 +11,11 @@ export function decodePath(value) {
 }
 
 const loopbackHosts = new Set(['127.0.0.1', 'localhost', '[::1]']);
+const loopbackAuthority = /^(?:127\.0\.0\.1|localhost|\[::1\])(?::[0-9]{1,5})?$/i;
+
+export function assertLocalRequest(req) {
+  if (!loopbackAuthority.test(req.headers.host || '')) throw httpError(403, 'Use a loopback request host');
+}
 
 export function assertLocalMutation(req) {
   if (req.headers.origin) {

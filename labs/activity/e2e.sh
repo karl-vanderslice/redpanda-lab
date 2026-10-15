@@ -110,7 +110,7 @@ assert.equal((await request('/api/commands', '{not json')).status, 400);
 assert.equal((await request('/api/commands', readA, { 'content-type': 'text/plain' })).status, 415);
 assert.equal((await request('/api/commands', readA, { origin: 'http://foreign.invalid' })).status, 403);
 assert.equal((await request('/api/commands', readA, { origin: 'null' })).status, 403);
-assert.equal((await request('/api/commands', { ...readA, id: `${prefix}-huge`, extra: 'x'.repeat(17000) })).status, 413);
+assert.equal((await request('/api/commands', { ...readA, id: `${prefix}-huge`, extra: 'x'.repeat(66000) })).status, 413);
 const conflict = await send({ ...readA, viewerId: bob }, 409); assert.equal(conflict.outcomeUnknown, false);
 assert.equal((await state()).lastOffset, boundary);
 assert.deepEqual((await request(`/api/commands/${readA.id}`)).body, readReceipt);
@@ -121,6 +121,18 @@ assert.equal(observed.limitations.authentication, false); assert.equal(observed.
 assert.equal((await send(cmd('public-impersonation-limit', { ...like, id: `${prefix}-public-impersonation-limit`, liked: true }))).accepted, true);
 assert.equal((await request(`/api/articles/${first}`)).status, 200);
 console.log('PASS: malformed input never appends; visibility is public; absence of authentication is exercised, not concealed');
+
+// Valid text can occupy six JSON bytes per code unit when escaped in transit.
+const unicodeArticle = cmd('unicode', { type: 'publish', viewerId: alice, postId: `${prefix}-unicode-article`, title: '題'.repeat(160), summary: '説'.repeat(400), body: '語'.repeat(8000), visibility: 'public' });
+const escapedArticle = JSON.stringify(unicodeArticle).replace(/[^\x00-\x7f]/g, value => `\\u${value.charCodeAt(0).toString(16).padStart(4, '0')}`);
+const unicodeReceipt = await request('/api/commands', escapedArticle);
+assert.equal(unicodeReceipt.status, 200, JSON.stringify(unicodeReceipt.body));
+assert.equal(unicodeReceipt.body.accepted, true);
+const storedArticle = (await request(`/api/articles/${unicodeArticle.postId}`)).body.post;
+assert.equal(storedArticle.title, unicodeArticle.title);
+assert.equal(storedArticle.summary, unicodeArticle.summary);
+assert.equal(storedArticle.body, unicodeArticle.body);
+console.log('PASS: maximum-length Unicode article survives escaped JSON transport and consumed publication');
 
 observed = await state();
 const beforePosts = structuredClone(observed.posts), beforeProfiles = structuredClone(observed.profiles);

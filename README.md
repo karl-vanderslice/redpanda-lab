@@ -1,12 +1,17 @@
 # Redpanda Lab
 
-Run a local application, follow its records in Redpanda, and see what survives a restart. [Read the guide](https://karl-vanderslice.github.io/redpanda-lab/).
+Run a local application, inspect the records behind its decisions, and see what survives a restart. The labs use real Redpanda brokers, fictional organizations and synthetic data. [Read the guide](https://karl-vanderslice.github.io/redpanda-lab/).
 
 ## Start the explorer
 
 Requires Linux, Nix with flakes, and a host configured for rootless Podman: user namespaces, subordinate UID/GID mappings and cgroup delegation. Nix supplies the user-space tools. Allow several GiB of free RAM for the three-broker explorer; start with one lab. The first build downloads dependencies and images.
 
-From the checkout root:
+Get the source, then enter its locked development shell:
+
+```bash
+git clone https://github.com/karl-vanderslice/redpanda-lab.git
+cd redpanda-lab
+```
 
 ```bash
 nix develop --no-update-lock-file
@@ -15,6 +20,8 @@ just urls
 ```
 
 Open the printed **Stream app** URL. Publish an event, find it in Redpanda Console, then pause the shared consumer to build lag. Follow [your first event](docs/tutorials/first-event.md) for the walkthrough.
+
+Next, [follow an application command through replay](docs/tutorials/command-and-replay.md): a command produces an immutable receipt, and the app rebuilds its view from the broker. This is different from merely restarting a web server.
 
 Keeping an older explorer's telemetry? [Back it up before upgrading](docs/how-to/failure-and-recovery.md#upgrade-retained-telemetry). `up` preserves volumes; a new Grafana version can migrate them.
 
