@@ -36,6 +36,10 @@ Select **Produce event** once. Keep the acknowledgment's event ID, partition and
 
 Open **Redpanda Console** from the workbench or printed URLs. Browse `lab.events` and find the same ID. The workbench holds only the latest 100 consumed records in app memory; Console reads the broker topic.
 
+!!! tip "Find an older record"
+
+    Console defaults to a window of the newest records. To find an earlier retained event, select **Beginning** under **Start offset**, then **Repeat current search**. **Filter table content ...** narrows the loaded results, not the whole topic.
+
 Publish another event with the same key. With unchanged partition count and partitioner, both go to the same partition. Different keys can share a partition. Offsets order records within a partition, not across the cluster.
 
 !!! warning "A timeout is not a rejected event"

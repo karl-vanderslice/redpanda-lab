@@ -1,0 +1,14 @@
+diff --git a/podman_compose.py b/podman_compose.py
+--- a/podman_compose.py
++++ b/podman_compose.py
+@@ -4205,7 +4205,9 @@ async def transfer_service_status(
+             if timeout is not None:
+                 podman_args.extend(["-t", str(timeout)])
+         tasks.append(asyncio.create_task(compose.podman.run([], action, podman_args + [target])))
+-    await asyncio.gather(*tasks)
++    for exit_code in await asyncio.gather(*tasks):
++        if exit_code:
++            sys.exit(exit_code)
+ 
+ 
+ @cmd_run(podman_compose, "start", "start specific services")

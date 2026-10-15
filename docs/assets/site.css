@@ -128,7 +128,8 @@
 
 .blueprint-viewport:focus-visible,
 .md-typeset .md-code__content:focus-visible,
-.md-typeset .md-typeset__scrollwrap:focus-visible {
+.md-typeset .md-typeset__scrollwrap:focus-visible,
+.md-typeset .tabbed-labels:focus-visible {
   outline: 3px solid var(--doc-accent);
   outline-offset: -3px;
 }

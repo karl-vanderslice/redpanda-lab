@@ -99,13 +99,30 @@
     for (const [index, nav] of document.querySelectorAll('.md-code__nav').entries()) {
       nav.setAttribute('aria-label', `Code block ${index + 1} controls`);
     }
-    // Code and table regions need keyboard scrolling, including after text enlargement.
-    for (const code of document.querySelectorAll('.md-code__content')) code.tabIndex = 0;
+    // Zensical 0.0.62 rewrites code tab stops during later overflow updates.
+    const codes = document.querySelectorAll('.md-typeset pre:not(.mermaid) > code');
+    if (codes.length) {
+      const codeFocusObserver = new MutationObserver(records => {
+        for (const { target } of records) {
+          if (target.tabIndex !== 0) target.tabIndex = 0;
+        }
+      });
+      for (const code of codes) {
+        if (code.closest('.pyodide')) continue;
+        code.tabIndex = 0;
+        codeFocusObserver.observe(code, { attributes: true, attributeFilter: ['tabindex'] });
+      }
+    }
     for (const [index, table] of document.querySelectorAll('.md-typeset__scrollwrap').entries()) {
       const caption = table.querySelector('caption')?.textContent.trim();
       table.tabIndex = 0;
       table.setAttribute('role', 'region');
       table.setAttribute('aria-label', caption ? `${caption} (table ${index + 1})` : `Table ${index + 1}`);
+    }
+    for (const [index, strip] of document.querySelectorAll('.tabbed-labels').entries()) {
+      strip.tabIndex = 0;
+      strip.setAttribute('role', 'region');
+      strip.setAttribute('aria-label', `Content tabs ${index + 1}`);
     }
     // Empty code-line anchors remain hash targets, not invisible keyboard stops.
     for (const anchor of document.querySelectorAll('a[id^="__codelineno-"]')) {

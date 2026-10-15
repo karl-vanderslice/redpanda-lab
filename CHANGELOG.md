@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Report failed native Compose start, stop and restart actions instead of accepting an old healthy app as proof of a completed restart. Record local tool and native-client patches in E2E source hashes.
+- Keep native code blocks keyboard-scrollable after hydration and resize. Give overflowing content-tab labels a named keyboard-scroll region without replacing radio selection, and explain Console's loaded-result window when finding an older event.
 - Serialize borrowed trading read models and ordered map values directly, and reuse immutable commodity metadata. Release the matching-state lock before writing HTTP responses, so a slow reader cannot retain it.
 - Accept case-insensitive trading JSON media types and parameters in the public order-entry workflow.
 - Separate development-shell entry from startup commands and identify the first consumed event by its visible key, partition and offset before checking its ID.
@@ -49,7 +51,7 @@
 - Activate the explorer's immutable built image ID; pin Node 24.21.0, Prometheus 3.13.4 LTS and Grafana 12.4.13.
 - Preserve admitted POS IDs and paused sensor sequence hints. Disable new writes on unavailable observations without discarding the consumed view.
 - Keep dispatch map labels readable in a named keyboard-scrollable region rather than shrinking them on narrow screens.
-- Settle pending log sends before disconnect. Use the Nix-owned local rootless Podman adapter without a Compose patch.
+- Settle pending log sends before disconnect. Use the Nix-owned local rootless Podman adapter for supported engine selection.
 - Use a supported rootless-compatible hosted check runner without rootful fallback or kernel-security overrides.
 - Check live pages, assets, MIME types, read APIs and missing-path boundaries in the public E2Es. Link Schema Registry to its subjects view.
 - Support static HEAD requests and classify malformed paths as client errors without hiding operating failures.

@@ -95,4 +95,25 @@ history_after=$(get "/api/conversations/$conversation_id" | jq -c '.messages')
 state=$(get "/api/conversations/$conversation_id")
 jq -e --arg id "$scheduled_id" '.jobs[] | select(.id == $id) | .status == "completed" and .attempts == 1' <<<"$state" >/dev/null || fail 'completed scheduled status lost on restart'
 pass 'second restart preserves exact conversation history and does not rerun completed jobs'
+
+model_container="$(jq -er '.project' <<<"$urls")_model_1"
+resume_model() {
+  local status=$1 paused
+  paused=$("$REDPANDA_LAB_PODMAN" inspect --format '{{.State.Paused}}' "$model_container") || return 1
+  if [[ $paused == true ]]; then
+    "$REDPANDA_LAB_PODMAN" unpause "$model_container" >/dev/null || return 1
+  fi
+  return "$status"
+}
+trap 'resume_model "$?"' EXIT
+"$REDPANDA_LAB_PODMAN" pause "$model_container" >/dev/null
+restart_status=0
+"$root/labs/run" agent-chat restart app || restart_status=$?
+resume_model 0
+trap - EXIT
+(( restart_status != 0 )) || fail 'restart reported success despite its paused model dependency'
+wait_ready
+history_after=$(get "/api/conversations/$conversation_id" | jq -c '.messages')
+[[ $history_before == "$history_after" ]] || fail 'failed restart changed completed conversation history'
+pass 'failed native restart returns nonzero and preserves completed history'
 printf 'All agent-chat public API scenarios passed.\n'

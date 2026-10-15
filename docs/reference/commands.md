@@ -36,6 +36,8 @@ just restart clearing app
 
 Outside the shell, the equivalent ordinary-lab entry point is `./labs/run clearing up`. The explorer uses `./lab up`, not `./labs/run explorer up`. Lab-specific options belong to the [guides](../labs/index.md).
 
+A failed `restart` returns nonzero; the old app may still report ready. Inspect `status` and `logs` before retrying. Container lifecycle actions are not transactions, so failure does not roll back another action that already completed.
+
 ## Checks and destructive scenarios
 
 | Command | Scope |

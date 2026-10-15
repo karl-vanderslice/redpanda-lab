@@ -7,7 +7,7 @@ Pins identify inputs. They do not establish a security audit, license entitlemen
 | Layer | Control | Limit |
 | --- | --- | --- |
 | Tools | `flake.lock` selects the Nixpkgs revision and source hash. | The host kernel, permissions and rootless container configuration remain external. |
-| Local engine adapter | Nix `writeShellApplication` supplies the absolute executable passed to Compose. | [Compose 1.6.0](https://github.com/containers/podman-compose/blob/v1.6.0/podman_compose.py) puts `--podman-args` after the subcommand; Podman rejects `--remote` there. Supported `--podman-path` selection needs no Compose patch. |
+| Local engine adapter | Nix `writeShellApplication` supplies the absolute executable passed to Compose. | [Compose 1.6.0](https://github.com/containers/podman-compose/blob/v1.6.0/podman_compose.py) puts `--podman-args` after the subcommand; Podman rejects `--remote` there. Argument placement uses supported `--podman-path` selection, not a patch. |
 | Runtime | `app/Containerfile` pins Node 24.21.0 Bookworm slim by multi-architecture digest. Startup activates the built image ID, not its mutable local tag. | Architecture-specific layers differ. |
 | Dependencies | Exact versions and integrity hashes in `app/package-lock.json`; npm scripts disabled before the deliberate native rebuild. | Source trust and native-build review still matter. |
 | Native Kafka client | Bundled librdkafka 2.16.0 with a fail-closed ownership patch. | The patch has an explicit maintenance boundary below. |
@@ -23,6 +23,14 @@ Prometheus 3.13.4 follows its [LTS release policy](https://prometheus.io/docs/in
 `app/patches/librdkafka-coordinator-lifetime.patch` carries worker-ownership and destroyed-operation fixes from [upstream PR 5397](https://github.com/confluentinc/librdkafka/pull/5397), following a coordinator error-path use-after-free observed during broker-failure work with librdkafka 2.16.0. It omits the proposed generic null-opaque guard. Patch application permits no fuzz and fails closed.
 
 Do not remove it as cleanup. First select an upstream version that fixes both lifetimes, then pass the real broker-failure scenario without the patch. A source check alone cannot establish that the native lifetime problem is resolved.
+
+## Compose lifecycle status
+
+The development shell applies `nix/podman-compose-lifecycle-status.patch` to pinned Compose 1.6.0. Upstream discards native exit codes for `start`, `stop` and `restart`. A blocked restart can therefore print a Podman error yet return success while the old app still passes its health check.
+
+The patch waits for all selected native actions and then returns a nonzero status if any failed. It preserves successful and dry-run behavior. This is failure reporting, not rollback: another selected container may already have changed state.
+
+Patch application permits no fuzz and fails closed. Remove it only after the locked upstream version propagates these failures. Verify the paused-model restart case in the agent-chat E2E and rerun the affected lab E2Es from a disposable checkout; a version bump or source inspection alone is not runtime proof.
 
 ## Application and infrastructure labs
 

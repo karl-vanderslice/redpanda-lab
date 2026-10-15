@@ -31,7 +31,7 @@ finish() {
     echo; echo "- Source: $root ($source_revision)"
     echo "- Tools: $(podman --remote=false --version), $(podman-compose --podman-path="$REDPANDA_LAB_PODMAN" version 2>/dev/null | grep -i podman-compose | head -n1), node $(node --version)"
     echo "- Source snapshot hashes:"
-    sha256sum "$root/flake.nix" "$root/flake.lock" "$root/LICENSE" "$root/compose.yml" "$root/.containerignore" "$root/app/package.json" "$root/app/package-lock.json" "$root/app/server.js" "$root/app/Containerfile" "$root/app/public/index.html" "$root/app/public/styles.css" "$root/app/public/app.js" "$root/app/public/favicon.svg" "$root/lab" "$root/scripts/local-podman" "$root/tests/e2e.sh" "$root/tests/http-routes.mjs"
+    sha256sum "$root/flake.nix" "$root/flake.lock" "$root/nix/podman-compose-lifecycle-status.patch" "$root/LICENSE" "$root/compose.yml" "$root/.containerignore" "$root/app/package.json" "$root/app/package-lock.json" "$root/app/server.js" "$root/app/Containerfile" "$root/app/patches/librdkafka-coordinator-lifetime.patch" "$root/app/public/index.html" "$root/app/public/styles.css" "$root/app/public/app.js" "$root/app/public/favicon.svg" "$root/lab" "$root/scripts/local-podman" "$root/tests/e2e.sh" "$root/tests/http-routes.mjs"
     echo "- Replay: tests/e2e.sh (runs ./lab up, HTTP workflow checks, ./lab down)"
     echo "- Exit status: $status"
     echo; echo "## Results"; printf -- '- %s\n' "${results[@]}"

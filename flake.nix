@@ -25,6 +25,13 @@
         in
         {
           diagram-render = pkgs.callPackage ./nix/diagrams.nix { };
+          podman-compose = pkgs.podman-compose.overrideAttrs (old: {
+            patches = (old.patches or [ ]) ++ [ ./nix/podman-compose-lifecycle-status.patch ];
+            patchFlags = [
+              "-p1"
+              "--fuzz=0"
+            ];
+          });
           local-podman = pkgs.writeShellApplication {
             name = "redpanda-local-podman";
             text = ''
@@ -101,7 +108,7 @@
             REDPANDA_LAB_PODMAN = "${tools.local-podman}/bin/redpanda-local-podman";
             packages = with pkgs; [
               podman
-              podman-compose
+              tools.podman-compose
               nodejs_22
               curl
               jq
