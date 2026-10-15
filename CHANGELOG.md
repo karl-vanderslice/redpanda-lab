@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Serialize borrowed trading read models and ordered map values directly, and reuse immutable commodity metadata. Release the matching-state lock before writing HTTP responses, so a slow reader cannot retain it.
+- Accept case-insensitive trading JSON media types and parameters in the public order-entry workflow.
+- Separate development-shell entry from startup commands and identify the first consumed event by its visible key, partition and offset before checking its ID.
+- Keep closed documentation navigation out of the keyboard order. Bound the floating table of contents and drawer at enlarged text, support keyboard disclosure and Escape, and let Search close without dismissing its background drawer. Make Markdown tables keyboard-scrollable and separate overlapping floating controls.
 - Teach application decisions with a hands-on command/receipt/rebuild tutorial, question-led lab selection, concrete browser workflows and native Zensical cards, tabs, annotations and page descriptions.
 - Keep documentation theme/navigation controls keyboard-operable with valid roles. Name annotations, code controls, breadcrumbs and search, and announce copy feedback. Keep search focus inside its overlay and return it to the visible Search control. Keep code and filter regions keyboard accessible, dismiss annotation tooltips with Escape, and keep search text readable in both themes.
 - Reject foreign Host headers before first-party record reads as well as mutations, preserving internal metrics and federation traffic.

@@ -1,5 +1,5 @@
 use parking_lot::Mutex;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use serde_json::{json, Value};
 use std::{
     collections::BTreeMap,
@@ -7,7 +7,7 @@ use std::{
     io::Read,
     sync::{
         atomic::{AtomicUsize, Ordering},
-        mpsc, Arc,
+        mpsc, Arc, LazyLock,
     },
     thread,
     time::{Duration, SystemTime, UNIX_EPOCH},
@@ -97,6 +97,33 @@ struct State {
     pending: BTreeMap<String, Command>,
     unresolved: BTreeMap<String, Value>,
 }
+
+// Borrow read models instead of constructing a second owned JSON value tree.
+#[derive(Serialize)]
+struct HealthView<'a> {
+    error: Option<&'a str>,
+    next_offset: i64,
+    ready: bool,
+}
+#[derive(Serialize)]
+struct ExchangeView<'a> {
+    commodities: &'static Value,
+    error: Option<&'a str>,
+    next_offset: i64,
+    #[serde(serialize_with = "serialize_values")]
+    operations: &'a BTreeMap<String, Operation>,
+    #[serde(serialize_with = "serialize_values")]
+    orders: &'a BTreeMap<String, Order>,
+    ready: bool,
+    topic: &'static str,
+    trades: &'a [Trade],
+}
+fn serialize_values<T: Serialize, S: Serializer>(
+    values: &BTreeMap<String, T>,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    serializer.collect_seq(values.values())
+}
 struct Job {
     command: Command,
     reply: mpsc::SyncSender<Reply>,
@@ -121,13 +148,13 @@ fn loopback_host(host: &str) -> bool {
     };
     matches!(name, "127.0.0.1" | "localhost" | "[::1]")
 }
-fn commodities() -> Value {
+static COMMODITIES: LazyLock<Value> = LazyLock::new(|| {
     json!([
         {"symbol":"WHEAT","name":"Wheat","unit":"one metric tonne","tick_usd":"0.01","illustrative_ticks":24500},
         {"symbol":"COPPER","name":"Copper","unit":"one metric tonne","tick_usd":"0.01","illustrative_ticks":850000},
         {"symbol":"COFFEE","name":"Coffee","unit":"one 60 kg bag","tick_usd":"0.01","illustrative_ticks":21000}
     ])
-}
+});
 fn effects(state: &State, c: &Command) -> Vec<Event> {
     let reject = |reason: &str| {
         vec![Event::Rejected {
@@ -453,12 +480,14 @@ fn respond(req: Request, code: u16, body: impl AsRef<[u8]>, mime: &str) {
         .with_header(header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")));
 }
 fn handle(mut req: Request, state: Shared, jobs: mpsc::SyncSender<Job>) {
-    if !req
+    // Matching Origin alone cannot reject a DNS-rebinding request host.
+    let Some(host) = req
         .headers()
         .iter()
         .find(|h| h.field.equiv("Host"))
-        .is_some_and(|h| loopback_host(h.value.as_str()))
-    {
+        .map(|h| h.value.as_str())
+        .filter(|host| loopback_host(host))
+    else {
         respond(
             req,
             403,
@@ -466,10 +495,10 @@ fn handle(mut req: Request, state: Shared, jobs: mpsc::SyncSender<Job>) {
             "application/json",
         );
         return;
-    }
-    let path = req.url().split('?').next().unwrap_or("/").to_owned();
+    };
+    let path = req.url().split('?').next().unwrap_or("/");
     if req.method() == &Method::Get || req.method() == &Method::Head {
-        let static_file = match path.as_str() {
+        let static_file = match path {
             "/" => Some((
                 include_str!("../public/index.html"),
                 "text/html; charset=utf-8",
@@ -494,48 +523,75 @@ fn handle(mut req: Request, state: Shared, jobs: mpsc::SyncSender<Job>) {
         }
     }
     if req.method() == &Method::Get {
+        // Protect coherent snapshot encoding, never a potentially blocked response write.
         let s = state.lock();
-        let (code, value) = if path == "/health" {
+        let (code, body) = if path == "/health" {
             (
                 if s.ready { 200 } else { 503 },
-                json!({"ready":s.ready,"error":s.error,"next_offset":s.next_offset}),
+                serde_json::to_string(&HealthView {
+                    error: s.error.as_deref(),
+                    next_offset: s.next_offset,
+                    ready: s.ready,
+                })
+                .expect("health read model JSON"),
             )
         } else if path == "/api/state" {
             (
                 200,
-                json!({"ready":s.ready,"error":s.error,"next_offset":s.next_offset,"topic":TOPIC,"commodities":commodities(),"orders":s.orders.values().collect::<Vec<_>>(),"operations":s.operations.values().collect::<Vec<_>>(),"trades":s.trades}),
+                serde_json::to_string(&ExchangeView {
+                    commodities: &COMMODITIES,
+                    error: s.error.as_deref(),
+                    next_offset: s.next_offset,
+                    operations: &s.operations,
+                    orders: &s.orders,
+                    ready: s.ready,
+                    topic: TOPIC,
+                    trades: &s.trades,
+                })
+                .expect("exchange read model JSON"),
             )
         } else if path == "/api/trades" {
-            (200, json!(s.trades))
+            (
+                200,
+                serde_json::to_string(&s.trades).expect("trade read model JSON"),
+            )
         } else if let Some(id) = path.strip_prefix("/api/orders/") {
             match s.orders.get(id) {
-                Some(order) => (200, json!(order)),
-                None => (404, json!({"error":"Order not found"})),
+                Some(order) => (
+                    200,
+                    serde_json::to_string(order).expect("order read model JSON"),
+                ),
+                None => (404, json!({"error":"Order not found"}).to_string()),
             }
         } else if let Some(id) = path.strip_prefix("/api/operations/") {
             match s.operations.get(id) {
-                Some(op) => (200, json!(op)),
+                Some(op) => (
+                    200,
+                    serde_json::to_string(op).expect("operation read model JSON"),
+                ),
                 None => {
                     if let Some(outcome) = s.unresolved.get(id) {
-                        (503, outcome.clone())
+                        (503, outcome.to_string())
                     } else if s.pending.contains_key(id) {
-                        (202, json!({"id":id,"status":"pending"}))
+                        (202, json!({"id":id,"status":"pending"}).to_string())
                     } else {
                         (
                             404,
-                            json!({"id":id,"status":"not_observed","guidance":"Not proof of non-publication when readiness is false"}),
+                            json!({"id":id,"status":"not_observed","guidance":"Not proof of non-publication when readiness is false"}).to_string(),
                         )
                     }
                 }
             }
         } else if path == "/metrics" {
             let body = format!("# TYPE exchange_ready gauge\nexchange_ready {}\n# TYPE exchange_log_next_offset gauge\nexchange_log_next_offset {}\n# TYPE exchange_operations_total counter\nexchange_operations_total {}\n# TYPE exchange_rejected_total counter\nexchange_rejected_total {}\n# TYPE exchange_trades_total counter\nexchange_trades_total {}\n# TYPE exchange_open_orders gauge\nexchange_open_orders {}\n", u8::from(s.ready), s.next_offset, s.operations.len(), s.operations.values().filter(|o| o.status == "rejected").count(), s.trades.len(), s.orders.values().filter(|o| o.remaining > 0 && o.status != "cancelled").count());
+            drop(s);
             respond(req, 200, body, "text/plain; version=0.0.4");
             return;
         } else {
-            (404, json!({"error":"Not found"}))
+            (404, json!({"error":"Not found"}).to_string())
         };
-        respond(req, code, value.to_string(), "application/json");
+        drop(s);
+        respond(req, code, body, "application/json");
         return;
     }
     if req.method() != &Method::Post || path != "/api/commands" {
@@ -554,15 +610,10 @@ fn handle(mut req: Request, state: Shared, jobs: mpsc::SyncSender<Job>) {
             .map(|h| h.value.as_str())
     };
     let content_ok = get_header("Content-Type")
-        .map(|v| v.split(';').next() == Some("application/json"))
-        .unwrap_or(false);
-    // Host equality alone accepts a DNS-rebinding name that resolves to loopback.
+        .and_then(|value| value.split(';').next())
+        .is_some_and(|value| value.trim().eq_ignore_ascii_case("application/json"));
     let origin_ok = get_header("Origin")
-        .map(|origin| {
-            get_header("Host")
-                .map(|host| origin.strip_prefix("http://") == Some(host))
-                .unwrap_or(false)
-        })
+        .map(|origin| origin.strip_prefix("http://") == Some(host))
         .unwrap_or(true);
     if !content_ok || !origin_ok {
         respond(

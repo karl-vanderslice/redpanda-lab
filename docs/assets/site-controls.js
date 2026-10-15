@@ -99,8 +99,14 @@
     for (const [index, nav] of document.querySelectorAll('.md-code__nav').entries()) {
       nav.setAttribute('aria-label', `Code block ${index + 1} controls`);
     }
-    // Whole code regions need keyboard scrolling, including after text enlargement.
+    // Code and table regions need keyboard scrolling, including after text enlargement.
     for (const code of document.querySelectorAll('.md-code__content')) code.tabIndex = 0;
+    for (const [index, table] of document.querySelectorAll('.md-typeset__scrollwrap').entries()) {
+      const caption = table.querySelector('caption')?.textContent.trim();
+      table.tabIndex = 0;
+      table.setAttribute('role', 'region');
+      table.setAttribute('aria-label', caption ? `${caption} (table ${index + 1})` : `Table ${index + 1}`);
+    }
     // Empty code-line anchors remain hash targets, not invisible keyboard stops.
     for (const anchor of document.querySelectorAll('a[id^="__codelineno-"]')) {
       if (!anchor.textContent.trim()) {
@@ -132,7 +138,7 @@
     });
     // The empty backdrop is a pointer target, not a named navigation control.
     document.querySelector('.md-overlay')?.removeAttribute('aria-label');
-    for (const label of document.querySelectorAll('.md-header label[for], .md-nav label[for][tabindex]')) {
+    for (const label of document.querySelectorAll('.md-header label[for], .md-nav label[for][tabindex], .md-sidebar--secondary .md-sidebar-button[for]')) {
       const control = document.getElementById(label.htmlFor);
       if (!(control instanceof HTMLInputElement) || (control.type !== 'checkbox' && control.type !== 'radio')) continue;
       // Preserve native label/input bindings, but put button semantics on a valid inner element.
@@ -148,7 +154,7 @@
       label.removeAttribute('role');
       label.removeAttribute('aria-hidden');
       const section = label.textContent.trim() || label.parentElement.querySelector('a')?.textContent.trim();
-      const name = label.getAttribute('aria-label') || label.title || control.getAttribute('aria-label') || section;
+      const name = label.getAttribute('aria-label') || label.title || control.getAttribute('aria-label') || (control.id === '__toc' ? 'On this page' : section);
       label.removeAttribute('aria-label');
       if (name) action.setAttribute('aria-label', name);
       action.addEventListener('keydown', event => {
@@ -169,21 +175,35 @@
         });
       });
       if (control.type === 'checkbox') {
+        const toc = control.id === '__toc' ? label.closest('.md-sidebar--secondary') : null;
         const panel = control.id === '__drawer'
           ? document.querySelector('.md-sidebar--primary')
-          : label.closest('li')?.querySelector(':scope > nav');
+          : toc ? toc.querySelector('.md-sidebar__inner') : label.closest('li')?.querySelector(':scope > nav');
+        const sidebar = control.id === '__drawer' ? panel : toc;
         if (panel) {
           if (!panel.id) panel.id = `${control.id}-panel`;
           action.setAttribute('aria-controls', panel.id);
         }
-        const update = () => action.setAttribute('aria-expanded', String(control.checked));
+        const update = () => {
+          const expanded = sidebar ? getComputedStyle(sidebar).position !== 'fixed' || control.checked : control.checked;
+          action.setAttribute('aria-expanded', String(expanded));
+          // The pinned theme hides disclosures by opacity, offscreen position or height alone.
+          if (panel) {
+            if (!expanded && panel.contains(document.activeElement)) action.focus();
+            panel.inert = !expanded;
+          }
+        };
         control.addEventListener('change', update);
-        if (control.id === '__drawer') document.addEventListener('keydown', event => {
-          if (event.key !== 'Escape' || !control.checked) return;
+        if (control.id === '__drawer' || toc) (toc || document).addEventListener('keydown', event => {
+          if (event.key !== 'Escape' || event.defaultPrevented || !control.checked) return;
+          // Search handles Escape later at window level; do not close its background drawer.
+          if (event.composedPath().some(target => boundSearchHosts.has(target))) return;
           event.preventDefault();
+          event.stopPropagation();
           control.click();
-          if (action.getClientRects().length) action.focus();
+          if (document.activeElement !== action && action.getClientRects().length) action.focus();
         });
+        if (sidebar) window.addEventListener('resize', update);
         update();
       }
     }

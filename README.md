@@ -15,6 +15,11 @@ cd redpanda-lab
 
 ```bash
 nix develop --no-update-lock-file
+```
+
+At the new shell prompt, run:
+
+```bash
 just up
 just urls
 ```

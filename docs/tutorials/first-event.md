@@ -1,13 +1,22 @@
+---
+description: Publish a keyed event, verify its ID and broker position, then build and drain a consumer backlog.
+---
+
 # Publish your first event
 
 Use Signal Harbor Works, the fictional explorer company, to publish a record, find its partition and offset, then drain a consumer backlog.
 
 ## Start the workbench
 
-From the checkout root, with the [host prerequisites](../reference/commands.md) met:
+From the checkout root, with the [host prerequisites](../reference/commands.md) met, enter the locked development shell:
+
+```bash title="Enter the development shell"
+nix develop --no-update-lock-file
+```
+
+Keep that shell open for the `just` commands below. At its new prompt, start the explorer:
 
 ```bash title="Start the explorer"
-nix develop --no-update-lock-file
 just up
 ```
 
@@ -23,7 +32,7 @@ In **Produce an event**, enter:
 | Event kind | `sensor.reading` |
 | JSON payload | `{"celsius":20}` |
 
-Select **Produce event** once. The acknowledgment includes an event ID, partition and offset. Expand that ID under **Recent records** after the consumer reads it.
+Select **Produce event** once. Keep the acknowledgment's event ID, partition and offset. Under **Recent records**, find `warehouse-1` with that partition and offset. Expand the row and check that **Event** shows the same ID.
 
 Open **Redpanda Console** from the workbench or printed URLs. Browse `lab.events` and find the same ID. The workbench holds only the latest 100 consumed records in app memory; Console reads the broker topic.
 

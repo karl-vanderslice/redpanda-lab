@@ -90,8 +90,8 @@ result=$(cli order --id "$prefix-buy" --commodity WHEAT --side buy --price-ticks
 assert "$result" '(.error | contains("different command"))' 'Stable ID payload conflict is explicit'
 # Browser order entry uses this same public endpoint; exercise its JSON contract.
 body=$(jq -nc --arg id "$prefix-web" '{id:$id,action:"order",commodity:"WHEAT",side:"buy",price_ticks:20000,quantity:2}')
-result=$(curl -fsS --max-time 25 "$url/api/commands" -H 'Content-Type: application/json' -H "Origin: $url" --data "$body")
-assert "$result" '.status == "accepted"' 'Browser same-origin order entry reaches the real engine'
+result=$(curl -fsS --max-time 25 "$url/api/commands" -H 'Content-Type: Application/JSON; charset=utf-8' -H "Origin: $url" --data "$body")
+assert "$result" '.status == "accepted"' 'Same-origin JSON accepts mixed-case media types and parameters'
 operation "$prefix-web" >/dev/null
 cli cancel --id "$prefix-cancel-web" --order-id "$prefix-web" >/dev/null
 # A foreign exact duplicate can land before the next proposal is appended.

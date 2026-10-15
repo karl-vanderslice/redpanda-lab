@@ -43,7 +43,8 @@
 .md-typeset a { color: var(--doc-accent); }
 .md-typeset :is(a, button):focus-visible,
 .md-header :is(a, button, [role="button"]):focus-visible,
-.md-nav [role="button"]:focus-visible {
+.md-nav [role="button"]:focus-visible,
+.md-sidebar-button [role="button"]:focus-visible {
   outline: 3px solid var(--doc-accent);
   outline-offset: 3px;
 }
@@ -54,6 +55,10 @@
   gap: inherit;
   min-inline-size: 0;
 }
+.md-sidebar-button { position: relative; }
+.md-sidebar-button .label-action { position: absolute; inset: 0; border-radius: inherit; }
+.md-sidebar--primary { max-inline-size: calc(100vw - .8rem); }
+.md-sidebar--primary .md-ellipsis { white-space: normal; }
 .md-annotation[data-lab-tooltip-dismissed] [role="tooltip"] { display: none; }
 .md-typeset table:not([class]) { font-size: .82rem; font-variant-numeric: tabular-nums; }
 .md-typeset table:not([class]) :is(th, td) { padding: .6rem .75rem; }
@@ -122,7 +127,8 @@
 }
 
 .blueprint-viewport:focus-visible,
-.md-typeset .md-code__content:focus-visible {
+.md-typeset .md-code__content:focus-visible,
+.md-typeset .md-typeset__scrollwrap:focus-visible {
   outline: 3px solid var(--doc-accent);
   outline-offset: -3px;
 }
@@ -138,6 +144,12 @@
   inline-size: max(100%, var(--blueprint-detail-width));
 }
 
+/* Constrain the pinned floating TOC when rem-based widths grow with enlarged text. */
+@media (max-width: 59.984375em) {
+  .md-sidebar--secondary .md-sidebar__inner { max-inline-size: calc(100vw - 2.4rem); }
+  .md-sidebar--secondary .md-ellipsis { white-space: normal; }
+}
+
 @media (max-width: 40rem) {
   .md-typeset { font-size: .86rem; }
   .md-typeset h1 { font-size: 1.3em; }
@@ -145,6 +157,9 @@
   .md-typeset h3 { font-size: 1.05em; }
   .md-typeset :is(h1, h2, h3) { position: relative; }
   .md-typeset :is(h1, h2, h3) .headerlink { position: absolute; margin-left: .2rem; }
+  /* Stack floating controls when enlarged labels no longer fit beside each other. */
+  :root .md-top { bottom: 4rem; }
+  :root:has(#__toc:checked, #__drawer:checked) .md-top { visibility: hidden; }
   .blueprint-controls :is(button, a) { flex: 1 1 auto; }
 }
 
