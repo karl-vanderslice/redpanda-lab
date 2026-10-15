@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@omp'
 created_date: '2026-10-15 01:13'
-updated_date: '2026-10-15 12:22'
+updated_date: '2026-10-15 12:25'
 labels: []
 dependencies: []
 type: enhancement
@@ -89,4 +89,6 @@ Lighthouse 13.4.1: the published home, tutorial and trading guide pages scored 1
 Checkpoint cb671ae passed GitHub run 38732514803. A Lighthouse mobile sweep of the 13 remaining lab apps found a meta-description failure in every one (accepted for loopback-only apps), sports heading-order (card h3 directly under h1), and Lighthouse CLS above 0.1 in sports 0.644, iot 0.33, pos 0.163, inventory 0.157 and siem 0.144. Direct observer probes, including 4x CPU throttling, cold cache, slow network and 15s windows, measured 0 for all five, and Lighthouse attributes no element. The likely cause is that data-filled lists render after the first paint, but that is unverified, so no CLS change was made; this is a recorded limit. Fixed the sports heading levels (card titles are now h2.card-title with the same size and font) and moved the pre-existing .desk-bar notice, flagged by axe region, into a labeled aside. After the fix, Lighthouse heading-order passes, sports accessibility scores 100, and axe reports 0 violations in both themes at 320px/200% text. Sports E2E passed in 35.23s. Both earlier Prek failures happened because I edited CHANGELOG while the hook was running; the clean rerun passed, and just check passed.
 
 Sports CLS fixed. A DevTools trace reproduced CLS 0.778 even without throttling; my earlier mobile observer probes had missed it. The CLSCulprits insight shifted main, the desk notice, the wire section and the header. Cause: nav#sports was empty until the first state render, and the connection status width followed its changing text. Fix: pre-render the six fixed navigation links and give the status a fixed min(24ch,100%) width. After: trace CLS 0.0045, Lighthouse mobile CLS 0.644 -> 0, accessibility 100; nav routing marks aria-current; 320px at 200% fits; axe reports 0 violations. Sports E2E passed in 26.93s. Prek and just check passed with no concurrent edits. Lighthouse CLS in iot 0.33, pos 0.163, inventory 0.157 and siem 0.144 is a recorded limit and was not changed in this pass.
+
+IoT CLS: the trace culprits were the workbench, the alert rail, freshness and offset, pushed down when the device grid filled after state. The fix pre-renders the three fixture device cards and always renders the sequence line, so a card keeps its height when the first reading arrives. Trace CLS 0.118 -> 0.011; Lighthouse mobile 0.33 -> 0.174, still above 0.1. A 412px mobile-emulated trace at 4x CPU found no shift, so the remaining Lighthouse value is unattributed and recorded as a limit. Cards render the real data at 320px/200% text; axe reports 0 violations. IoT E2E passed in 27.61s. Prek and just check passed. POS 0.163, inventory 0.157 and SIEM 0.144 Lighthouse CLS were not changed.
 <!-- SECTION:NOTES:END -->

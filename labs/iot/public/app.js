@@ -69,7 +69,8 @@ function render(snapshot) {
     const card = element('article');
     card.append(element('h3', device.id), element('p', `Safe: ${device.minC} to ${device.maxC} °C · battery ≥ ${device.lowBatteryBelow}%`, 'muted'));
     card.append(element('p', device.last ? `${device.last.temperatureC} °C · ${device.last.batteryPercent}% battery` : 'No reading yet', 'measurement'));
-    if (device.last) card.append(element('p', `Sequence ${device.last.sequence} · reading ${device.last.id}`, 'muted')); 
+    // Keep a fixed line count; the static fixture cards reserve this height before state arrives.
+    card.append(element('p', device.last ? `Sequence ${device.last.sequence} · reading ${device.last.id}` : 'No sequence observed', 'muted'));
     const active = Object.entries(device.activeAlerts).filter(([, id]) => id).map(([type]) => type === 'battery' ? 'Low battery' : 'Temperature');
     card.append(element('p', active.length ? active.join(' · ') : device.last ? 'Within thresholds' : 'Awaiting telemetry', active.length ? 'warning' : 'status'));
     return card;
