@@ -51,7 +51,7 @@
           "agent-messaging"
           "agent-chat"
           "bitcoin"
-          "jurisdictions"
+          "sovereignty"
           "iot"
           "pos"
           "logistics"

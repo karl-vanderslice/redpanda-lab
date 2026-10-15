@@ -3,23 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Meridian Ledger Alliance · Jurisdiction desk</title>
+  <title>Meridian Ledger Alliance · Data sovereignty desk</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="/style.css">
   <script type="module" src="/lab-theme.js"></script>
   <script type="module" src="/app.js"></script>
 </head>
 <body>
-  <a href="#main" class="skip">Skip to jurisdiction desk</a>
+  <a href="#main" class="skip">Skip to data sovereignty desk</a>
   <header class="masthead">
     <div class="identity"><span class="identity-rule" aria-hidden="true"></span><p class="wordmark">Meridian<br><span>Ledger Alliance</span></p></div>
-    <p class="lab-label">Fictional operations desk<br>Redpanda jurisdiction lab</p>
+    <p class="lab-label">Fictional operations desk<br>Redpanda data sovereignty lab</p>
     <div class="utilities"><button id="theme" type="button">Change theme</button></div>
   </header>
   <nav class="desk-nav" aria-label="Desk sections"><a href="#regions">Regional source</a><a href="#write">Route a record</a><a href="#global">Permitted export</a><a href="#failure">Failure experiment</a></nav>
   <main id="main">
     <div class="desk-heading">
-      <div><p class="eyebrow">Jurisdiction operations / local simulation</p><h1>Regional ledger desk</h1><p>Three home clusters with separate logs. One summary-only global projection.</p></div>
+      <div><p class="eyebrow">Resident data / approved exports / local simulation</p><h1>Data sovereignty desk</h1><p>Three home clusters with separate logs. One summary-only global projection.</p></div>
       <div class="poll-controls"><button id="updates" type="button" aria-pressed="false">Pause updates</button><button id="refresh" type="button">Refresh now</button><p id="poll-state">Automatic refresh every 2.5 seconds.</p><p id="last-refresh">No gateway observation yet.</p></div>
     </div>
     <aside class="limit" aria-label="Simulation boundaries"><strong>Synthetic data only.</strong> Single-host simulation, not geographic isolation or a compliance guarantee. All failure domains below are local containers on this host.</aside>
@@ -28,7 +28,7 @@
     <section id="regions" aria-labelledby="regions-heading">
       <div class="section-heading"><p class="eyebrow">01 / Regional source</p><h2 id="regions-heading">Resident records &amp; partition progress</h2></div>
       <p>Private notes remain in regional records. This operator page can inspect all regions through the gateway; it is not a tenant access-control boundary.</p>
-      <p class="section-note">Partitions are not jurisdictions. Each column shows its home-cluster source; exporter status is separate from consumer readiness.</p>
+      <p class="section-note">A partition alone cannot enforce data sovereignty. Each column shows its home-cluster source; exporter status is separate from consumer readiness.</p>
       <div id="regional" class="regional-grid"><p id="regional-empty">Awaiting regional gateway evidence.</p></div>
     </section>
     <div class="boundary-workbench">
@@ -58,10 +58,10 @@
     </div>
     <section id="failure" class="failure-panel" aria-labelledby="failure-heading">
       <div><p class="eyebrow">04 / Fail closed</p><h2 id="failure-heading">Local outage evidence</h2><p>These commands stop and recover local lab containers. They do not test geographic failover.</p></div>
-      <div><h3>Home-region outage</h3><p>Stop the EU broker, then publish EU and US records. EU refuses a new write without routing private data elsewhere. US and APAC remain independent within this single-host simulation. The global view retains the last exported snapshot.</p><pre><code>./labs/run jurisdictions outage eu
-./labs/run jurisdictions recover eu</code></pre></div>
-      <div><h3>Export outage</h3><p>For an export outage, use <code>outage global</code>, publish regional records, then <code>recover global</code>. Regional consumers continue; the rebuilt exporter catches up from the local log. No disaster recovery or automatic residency migration is provided.</p><pre><code>./labs/run jurisdictions outage global
-./labs/run jurisdictions recover global</code></pre></div>
+      <div><h3>Home-region outage</h3><p>Stop the EU broker, then publish EU and US records. EU refuses a new write without routing private data elsewhere. US and APAC remain independent within this single-host simulation. The global view retains the last exported snapshot.</p><pre><code>./labs/run sovereignty outage eu
+./labs/run sovereignty recover eu</code></pre></div>
+      <div><h3>Export outage</h3><p>For an export outage, use <code>outage global</code>, publish regional records, then <code>recover global</code>. Regional consumers continue; the rebuilt exporter catches up from the local log. No disaster recovery or automatic residency migration is provided.</p><pre><code>./labs/run sovereignty outage global
+./labs/run sovereignty recover global</code></pre></div>
     </section>
   </main>
   <footer><p>Meridian Ledger Alliance is fictional. Disposable development clusters. Replication factor 1 per cluster.</p><a href="#write">Back to controls</a></footer>

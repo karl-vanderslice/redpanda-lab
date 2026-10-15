@@ -86,9 +86,9 @@ Choose a system below to open its interactive canvas. Each drawing has zoom, pan
 
 -   **Meridian Ledger Alliance**
 
-    [![Open the resident data and summaries blueprint](../assets/blueprints/jurisdictions.png){ loading=lazy width="480" height="270" }](./jurisdictions.md)
+    [![Open the data sovereignty blueprint](../assets/blueprints/sovereignty.png){ loading=lazy width="480" height="270" }](./sovereignty.md)
 
-    Resident data, approved summaries and regional recovery.
+    Data sovereignty, approved summary exports and region-local recovery.
 
 -   **Foundry Harbor Infrastructure**
 
@@ -106,7 +106,7 @@ Choose a system below to open its interactive canvas. Each drawing has zoom, pan
 
 ## Deployment assumptions
 
-The proposed RF3 placement gives each partition one replica in each of three independent availability zones within a single region. Jurisdictions applies that placement separately to its resident clusters and summary cluster. Regional disaster recovery needs its own design and rehearsal. The running labs use development-mode containers on one host; before claiming production durability, remove development mode and unsafe fsync bypass, review supported XFS/ext4 storage, and test failure and recovery.
+The proposed RF3 placement gives each partition one replica in each of three independent availability zones within a single region. The data sovereignty blueprint applies that placement separately to its resident clusters and summary cluster. Regional disaster recovery needs its own design and rehearsal. The running labs use development-mode containers on one host; before claiming production durability, remove development mode and unsafe fsync bypass, review supported XFS/ext4 storage, and test failure and recovery.
 
 Platform operations would own TLS/SASL/ACLs, application and operator identities, quotas, secrets, disk capacity, lag/readiness, schema changes and restore objectives. Distributed ownership needs an enforceable lease/epoch with stale-writer rejection. Plan separately for malicious deletion, correlated loss and uncertain external effects, since replication alone cannot resolve them. Check licensing before choosing enterprise features; the proposals assume no enterprise entitlement.
 

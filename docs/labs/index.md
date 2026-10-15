@@ -64,9 +64,9 @@ Choose a question that interests you, then follow its guide to try the workflow.
 
     Who runs a future prompt, and what does cancellation mean? Schedule one-shot jobs in Clockwork Correspondence.
 
--   :lucide-globe: **[Multi-jurisdiction sharding](./jurisdictions.md)**
+-   :lucide-globe: **[Data sovereignty](./sovereignty.md)**
 
-    What can a global summary reveal or recover? Inspect Meridian Ledger Alliance's resident logs and summary-only federation.
+    Who controls resident data, and what may cross a regional boundary? Inspect Meridian Ledger Alliance's home-region logs, approved summaries and local recovery.
 
 -   :lucide-file-check: **[Reviewed infrastructure](./terraform.md)**
 
@@ -94,7 +94,7 @@ just restart iot app
 
 Restart keeps broker data. **`just down iot` deletes it.** Labs own separate runtime resources; do not use global Podman pruning to clean up one lab.
 
-The explorer and Terraform use three brokers; jurisdictions uses four independent clusters. Other labs use one broker and an ordered topic. All run on one host. Terraform also requires plan review before apply or destroy, and its Podman socket grants host-user authority. Read its guide first.
+The explorer and Terraform use three brokers; data sovereignty uses four independent clusters. Other labs use one broker and an ordered topic. All run on one host. Terraform also requires plan review before apply or destroy, and its Podman socket grants host-user authority. Read its guide first.
 
 ## Read the results
 

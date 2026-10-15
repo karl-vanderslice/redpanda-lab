@@ -11,7 +11,7 @@ The wrappers select the local engine explicitly and reject rootful engines befor
 
 ## Lifecycle and inspection
 
-`LAB` is `explorer`, `iot`, `pos`, `logistics`, `event-log`, `siem`, `activity`, `inventory`, `clearing`, `trading`, `bitcoin`, `sports`, `agent-messaging`, `agent-chat`, `jurisdictions` or `terraform`. Optional names default to `explorer` below.
+`LAB` is `explorer`, `iot`, `pos`, `logistics`, `event-log`, `siem`, `activity`, `inventory`, `clearing`, `trading`, `bitcoin`, `sports`, `agent-messaging`, `agent-chat`, `sovereignty` or `terraform`. Optional names default to `explorer` below.
 
 | Command | Effect |
 | --- | --- |
@@ -19,7 +19,7 @@ The wrappers select the local engine explicitly and reject rootful engines befor
 | `just urls [LAB]` | Print actual loopback endpoints. Explorer/application URLs require initialized port state. |
 | `just status [LAB]` | Show the selected runtime's state. For Compose-backed labs, list owned container names, status and published ports, followed by the lab's endpoints; selection remains scoped to that checkout's Compose labels. |
 | `just logs [LAB] [SERVICE]` | Read recent explorer/application logs. For Terraform, use scoped `podman logs` on containers named by its `status`. |
-| `just rpk LAB ARGS...` | Run the broker CLI against that lab, not an ambient Kafka cluster. For jurisdictions, prefix arguments with `eu`, `us`, `apac` or `global`. |
+| `just rpk LAB ARGS...` | Run the broker CLI against that lab, not an ambient Kafka cluster. For data sovereignty, prefix arguments with `eu`, `us`, `apac` or `global`. |
 | `just exec LAB SERVICE COMMAND...` | Execute in an application service. Not supported for explorer or Terraform. |
 | `just restart LAB SERVICE` | Restart one application service without deleting broker volumes. Not supported for explorer or Terraform. |
 | `just down [LAB]` | **Delete** the selected lab's containers, network and broker data. Explorer also deletes telemetry volumes. Terraform requires destroy-plan review. Reusable upstream/Nix caches remain. |
@@ -113,7 +113,7 @@ Explorer accepts bases 49152–65520; ordinary apps accept 49152–65530. `LAB_P
 
 Terraform persists a path-derived block with thirteen endpoints. `LAB_TF_PORT_BASE=59000` selects its base before the first plan, in 49152–65520. A collision fails instead of changing an approved target. Its [guide](../labs/terraform.md) owns state and socket options.
 
-Jurisdictions publishes one gateway port, in 49152–65535; Kafka and Admin APIs remain on container networks. `LAB_PORT_BASE` selects the port before startup. `./labs/run jurisdictions outage REGION` and `recover REGION` stop/start one owned broker (`eu`, `us`, `apac`, `global`). See its [export and recovery rules](../labs/jurisdictions.md).
+Data sovereignty publishes one gateway port, in 49152–65535; Kafka and Admin APIs remain on container networks. `LAB_PORT_BASE` selects the port before startup. `./labs/run sovereignty outage REGION` and `recover REGION` stop/start one owned broker (`eu`, `us`, `apac`, `global`). See its [export and recovery rules](../labs/sovereignty.md).
 
 ### Local HTTP boundary
 

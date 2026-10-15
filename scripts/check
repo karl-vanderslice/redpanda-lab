@@ -6,7 +6,7 @@ if [[ ${REDPANDA_LAB_SHELL:-0} != 1 ]]; then
 fi
 cd -- "$root"
 name=${1:-all}
-case "$name" in all|explorer|trading|sports|agent-messaging|agent-chat|bitcoin|iot|pos|logistics|event-log|siem|activity|inventory|clearing|terraform|jurisdictions) ;; *) echo 'Unknown lab.' >&2; exit 2 ;; esac
+case "$name" in all|explorer|trading|sports|agent-messaging|agent-chat|bitcoin|iot|pos|logistics|event-log|siem|activity|inventory|clearing|terraform|sovereignty) ;; *) echo 'Unknown lab.' >&2; exit 2 ;; esac
 just --list >/dev/null
 actionlint .github/workflows/*.yml
 shellcheck --severity=style --external-sources --source-path=SCRIPTDIR lab labs/run scripts/* tests/e2e.sh
@@ -25,7 +25,7 @@ if [[ $name == all || $name == explorer ]]; then
   node --check app/public/app.js
 fi
 system=$(nix eval --impure --raw --expr builtins.currentSystem)
-for lab_name in trading sports agent-messaging agent-chat bitcoin iot pos logistics event-log siem activity inventory clearing terraform jurisdictions; do
+for lab_name in trading sports agent-messaging agent-chat bitcoin iot pos logistics event-log siem activity inventory clearing terraform sovereignty; do
   if [[ $name != all && $name != "$lab_name" ]]; then continue; fi
   if [[ $lab_name == terraform ]]; then
     bash labs/terraform/lab check

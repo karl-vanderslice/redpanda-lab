@@ -103,7 +103,7 @@ const mutationPaths = {
   explorer: '/api/generator/stop', trading: '/api/commands', sports: '/api/events', 'agent-messaging': '/api/tasks',
   'agent-chat': '/api/conversations', bitcoin: '/api/commands', iot: '/api/readings', pos: '/api/checkouts',
   logistics: '/api/commands', 'event-log': '/api/commands', siem: '/api/telemetry', activity: '/api/commands',
-  inventory: '/api/commands', clearing: '/api/transfers', jurisdictions: '/api/events',
+  inventory: '/api/commands', clearing: '/api/transfers', sovereignty: '/api/events',
 };
 function rawStatus(path, method, headers, body = '') {
   return new Promise((resolve, reject) => {

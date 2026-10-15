@@ -18,7 +18,7 @@ Sources: [startup mode](https://docs.redpanda.com/streaming/current/reference/rp
 | --- | --- | --- |
 | Explorer | Six partitions, RF3 | Six-hour event window. Recent feed and counters are not a durable business ledger. |
 | Ordinary application labs | One partition, RF1 | `cleanup.policy=delete`, `retention.ms=-1`, `retention.bytes=-1`. `up` creates or reapplies these settings. Full-prefix replay is required. |
-| Jurisdictions | Three partitions in each of four RF1 clusters | Specialized wrapper sets unlimited retention when creating topics. Existing-topic configuration is not reconciled automatically. |
+| Data sovereignty | Three partitions in each of four RF1 clusters | Specialized wrapper sets unlimited retention when creating topics. Existing-topic configuration is not reconciled automatically. |
 | Terraform | Three local brokers | Topic policy belongs to the explicit `rpk` command, not the infrastructure provider. |
 
 Unlimited history consumes unbounded disk. Disposal deletes it. Changing retention cannot restore a previously deleted prefix. The shared application log refuses startup if its low offset is not zero or if its partition count changes.
@@ -35,7 +35,7 @@ Sources: [topic retention](https://docs.redpanda.com/streaming/current/reference
 | --- | --- | --- |
 | Explorer, native Confluent wrapper | Idempotent producer, one in-flight request, `acks=-1`, `linger.ms=0`, 30-second delivery timeout | Native constructor options: `linger.ms`, `batch.size`, `batch.num.messages`, `compression.type`, queue limits. Consumer options include `fetch.min.bytes`, `fetch.wait.max.ms` and queue limits. |
 | Shared Node applications, KafkaJS | One-record uncompressed sends, idempotence, one in-flight request, all acknowledgments, fresh replay groups | Send-level `messages` and `compression`; consumer `minBytes`, `maxWaitTimeInMs`, `maxBytes` and `maxBytesPerPartition`. Native `linger.ms` and Java `buffer.memory` are not KafkaJS options. |
-| Jurisdictions, KafkaJS | Explicit resident partition routing and one-second cumulative export | Its own connection/request/retry settings. Export interval is code, not an environment variable. |
+| Data sovereignty, KafkaJS | Explicit resident partition routing and one-second cumulative export | Its own connection/request/retry settings. Export interval is code, not an environment variable. |
 | Trading, Rust HTTP Proxy | Partition-zero publication; 10-second HTTP timeout; replay query timeout 1,000 ms and `max_bytes=1048576` | HTTP/query limits. Native Kafka producer settings do not configure this client. |
 | Terraform lifecycle example, `rpk` | Explicit CLI publication and consumption | `rpk` flags. Terraform resource limits do not tune Kafka delivery. |
 

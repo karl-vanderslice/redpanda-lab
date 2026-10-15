@@ -25,7 +25,7 @@ just docs-serve
 | --- | --- |
 | Explorer and telemetry | `app/`, `compose.yml`, `lab` |
 | Domain lifecycle and shared log | `labs/run`, `labs/common/`, each lab's model/server/public files |
-| Regional federation | `labs/jurisdictions/lab` and its application |
+| Regional federation | `labs/sovereignty/lab` and its application |
 | Reviewed infrastructure changes | `labs/terraform/lab` and its HCL/provider lock |
 | Tools and images | `flake.nix`, `nix/`, per-lab Nix definitions and dependency locks |
 | Checks | `scripts/check`, called by Just, `.pre-commit-config.yaml` and CI |

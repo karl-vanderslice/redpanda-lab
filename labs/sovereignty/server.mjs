@@ -13,6 +13,7 @@ const tenants = Object.fromEntries([
 const role = process.env.ROLE || 'gateway';
 const region = process.env.REGION;
 if (!['gateway', 'regional', 'global'].includes(role) || (role === 'regional' && !regions.includes(region))) throw new Error('Invalid service role/region');
+// Stored topic names survive the Data sovereignty command and presentation rename.
 const topic = role === 'global' ? 'jurisdictions.summaries.v1' : 'jurisdictions.records.v1';
 const operations = new Map();
 const shards = Array.from({ length: 3 }, (_, partition) => ({ partition, sourceOffset: '-1', count: 0, totalAmount: 0 }));
@@ -37,10 +38,10 @@ function command(input) {
 }
 
 async function connectProjection() {
-  const client = kafka(process.env.KAFKA_BROKERS, `jurisdictions-${region || role}`);
+  const client = kafka(process.env.KAFKA_BROKERS, `sovereignty-${region || role}`);
   const admin = client.admin();
   const producer = client.producer({ idempotent: true, maxInFlightRequests: 1, allowAutoTopicCreation: false });
-  const consumer = client.consumer({ groupId: `jurisdictions-${region || role}-${randomUUID()}`, allowAutoTopicCreation: false });
+  const consumer = client.consumer({ groupId: `sovereignty-${region || role}-${randomUUID()}`, allowAutoTopicCreation: false });
   await admin.connect();
   const offsets = await admin.fetchTopicOffsets(topic);
   await admin.disconnect();

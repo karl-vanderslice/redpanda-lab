@@ -1,6 +1,6 @@
 { common, ... }:
 common.mkNodeImage {
-  name = "redpanda-jurisdictions";
+  name = "redpanda-sovereignty";
   sharedUI = true;
   src = common.nodeSource { root = ./.; };
 }

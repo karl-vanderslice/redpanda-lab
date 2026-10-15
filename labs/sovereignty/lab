@@ -2,15 +2,16 @@
 set -euo pipefail
 root=$(realpath "$(dirname "${BASH_SOURCE[0]}")/../..")
 if [[ ${REDPANDA_LAB_SHELL:-0} != 1 ]]; then
-  exec nix develop "path:$root" --no-update-lock-file -c bash "$root/labs/jurisdictions/lab" "$@"
+  exec nix develop "path:$root" --no-update-lock-file -c bash "$root/labs/sovereignty/lab" "$@"
 fi
 command=${1:-help}; shift || true
 # shellcheck source-path=SCRIPTDIR
 # shellcheck source=../../scripts/local-podman
 source "$root/scripts/local-podman"
 case "$command" in up|down|status|logs|exec|rpk|restart|outage|recover) require_local_podman ;; esac
+# Keep the stored namespace so the renamed command reuses retained records and ports.
 identity=$(printf '%s' "$root/jurisdictions" | sha256sum)
-export LAB_PROJECT="rp-jurisdictions-${identity:0:10}" LAB_APP_IMAGE=localhost/redpanda-jurisdictions:nix
+export LAB_PROJECT="rp-jurisdictions-${identity:0:10}" LAB_APP_IMAGE=localhost/redpanda-sovereignty:nix
 state="${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/labs/${identity:0:10}"
 mkdir -p "$state"
 case "$command" in
@@ -26,15 +27,15 @@ compose() {
   local limit=() status=0
   # Without --foreground, timeout signals Compose's Podman children too.
   if [[ ${1:-} == up ]]; then limit=(timeout 240s); fi
-  "${limit[@]}" podman-compose --podman-path="$REDPANDA_LAB_PODMAN" -p "$LAB_PROJECT" -f "$root/labs/jurisdictions/compose.yml" "$@" 9>&- || status=$?
+  "${limit[@]}" podman-compose --podman-path="$REDPANDA_LAB_PODMAN" -p "$LAB_PROJECT" -f "$root/labs/sovereignty/compose.yml" "$@" 9>&- || status=$?
   if (( status == 124 )); then echo 'Compose startup exceeded 240 seconds. Containers may remain; inspect status and logs, or use down.' >&2; fi
   return "$status"
 }
 region() { case "${1:-}" in eu|us|apac|global) ;; *) echo 'Select eu, us, apac, or global.' >&2; exit 2 ;; esac; }
 urls() {
-  [[ -f $state/port-base ]] || { echo 'Run just up jurisdictions first.' >&2; return 1; }
+  [[ -f $state/port-base ]] || { echo 'Run just up sovereignty first.' >&2; return 1; }
   if [[ ${1:-} == --json ]]; then jq -n --arg app "http://127.0.0.1:$APP_PORT" --arg project "$LAB_PROJECT" '{app:$app,project:$project}'
-  else printf 'Jurisdiction operator: http://127.0.0.1:%s\nProject: %s\n' "$APP_PORT" "$LAB_PROJECT"; fi
+  else printf 'Data sovereignty desk: http://127.0.0.1:%s\nProject: %s\n' "$APP_PORT" "$LAB_PROJECT"; fi
 }
 wait_ready() {
   local deadline=$((SECONDS+180))
@@ -59,7 +60,7 @@ JS
       ((available)) || { echo 'Selected port unavailable.' >&2; exit 1; }
       printf '%s\n' "$port" > "$state/port-base"
     fi
-    image=$(nix build --no-update-lock-file --no-link --print-out-paths "path:$root#jurisdictions-image")
+    image=$(nix build --no-update-lock-file --no-link --print-out-paths "path:$root#sovereignty-image")
     LAB_APP_IMAGE=$(load_archive_image "$image")
     compose up -d broker-eu broker-us broker-apac broker-global
     for target in eu us apac global; do
@@ -95,5 +96,5 @@ JS
     region "${1:-}"; [[ $# == 1 ]] || { echo 'Specify one region.' >&2; exit 2; }
     if [[ $command == outage ]]; then compose stop "broker-$1"; else compose start "broker-$1"; wait_ready; fi
     ;;
-  *) echo 'Usage: labs/run jurisdictions {up|down|status|urls [--json]|logs|exec|restart SERVICE|rpk REGION ARGS...|outage REGION|recover REGION}' >&2; exit 2 ;;
+  *) echo 'Usage: labs/run sovereignty {up|down|status|urls [--json]|logs|exec|restart SERVICE|rpk REGION ARGS...|outage REGION|recover REGION}' >&2; exit 2 ;;
 esac

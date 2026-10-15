@@ -6,7 +6,7 @@ if [[ ${REDPANDA_LAB_SHELL:-0} != 1 ]]; then
 fi
 name=${1:-explorer}
 if [[ $name == explorer ]]; then exec bash "$root/tests/e2e.sh"; fi
-case "$name" in trading|sports|agent-messaging|agent-chat|bitcoin|iot|pos|logistics|event-log|siem|activity|inventory|clearing|terraform|jurisdictions) ;; *) echo 'Unknown lab.' >&2; exit 2 ;; esac
+case "$name" in trading|sports|agent-messaging|agent-chat|bitcoin|iot|pos|logistics|event-log|siem|activity|inventory|clearing|terraform|sovereignty) ;; *) echo 'Unknown lab.' >&2; exit 2 ;; esac
 run_id="$(date +%Y%m%dT%H%M%S)-$$"
 report_dir="${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/e2e/$name/$run_id"
 mkdir -p "$report_dir"

@@ -1,4 +1,4 @@
-# Meridian Ledger Alliance
+# Data sovereignty: Meridian Ledger Alliance
 
 Three regional source columns separate consumer readiness, exporter evidence, shard progress and private-record disclosures. A navy masthead, fine rules and serif headings establish the operator desk. The route form and permitted global summary remain separate from local records.
 

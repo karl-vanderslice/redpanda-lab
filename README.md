@@ -58,7 +58,7 @@ Pick a workflow that interests you. For a named lab, use `just up iot`, `just ur
 | [`sports`](docs/labs/sports.md) | Courtside Assembly | Scores, watchlists, synthetic video and playback events. |
 | [`agent-messaging`](docs/labs/agent-messaging.md) | Relay Loom Cooperative | Planner/reviewer agents using real `fx` and local inference. |
 | [`agent-chat`](docs/labs/agent-chat.md) | Clockwork Correspondence | Local model chat, future jobs and cancellation. |
-| [`jurisdictions`](docs/labs/jurisdictions.md) | Meridian Ledger Alliance | Regional raw logs and summary-only federation. |
+| [`sovereignty`](docs/labs/sovereignty.md) | Meridian Ledger Alliance | Data sovereignty: resident raw logs and approved summary exports. |
 | [`terraform`](docs/labs/terraform.md) | Foundry Harbor Infrastructure | Reviewed plans, drift and teardown. Read its guide before granting Podman socket access. |
 
 You can explore the local workflows without API keys. For payments, begin with cash; the optional Stripe/Square paths need server-side **sandbox** credentials and network access, and their credential-dependent behavior remains unverified. All funds and market orders in the labs are simulated. Use synthetic data only.

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 root=$(realpath "$(dirname "${BASH_SOURCE[0]}")/../..")
-APP=$("$root/labs/run" jurisdictions urls --json | jq -er .app)
+APP=$("$root/labs/run" sovereignty urls --json | jq -er .app)
 export APP LAB_ROOT="$root"
 node --input-type=module <<'JS'
 import assert from 'node:assert/strict';
@@ -11,7 +11,7 @@ import { promisify } from 'node:util';
 const app = process.env.APP;
 const execute = promisify(execFile);
 const lifecycle = async (...args) => {
-  const result = await execute(`${process.env.LAB_ROOT}/labs/run`, ['jurisdictions', ...args], { encoding: 'utf8', timeout: 240000 });
+  const result = await execute(`${process.env.LAB_ROOT}/labs/run`, ['sovereignty', ...args], { encoding: 'utf8', timeout: 240000 });
   return result.stdout;
 };
 const request = async (path, options = {}) => {
@@ -105,7 +105,7 @@ await caughtUp();
 await lifecycle('recover', 'eu');
 await publish('berlin-shop', 253); await caughtUp();
 assert.equal((await request(`/api/operations/eu/${refused.id}`)).status, 404);
-console.log('PASS: regional outage refuses home-region writes without failover; other jurisdictions continue; recovery resumes EU');
+console.log('PASS: regional outage refuses home-region writes without failover; other resident regions continue; recovery resumes EU');
 await lifecycle('outage', 'global');
 await publish('paris-shop', 301); await publish('tokyo-shop', 302);
 await eventually((state) => state.regions.some((item) => item.federation === 'unavailable'), 'Global outage not visible to exporter');

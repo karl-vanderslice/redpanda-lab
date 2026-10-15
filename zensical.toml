@@ -26,7 +26,7 @@ nav = [
     { "Sports streaming" = "labs/sports.md" },
     { "Agent messaging with fx" = "labs/agent-messaging.md" },
     { "Scheduled agent chat" = "labs/agent-chat.md" },
-    { "Multi-jurisdiction sharding" = "labs/jurisdictions.md" },
+    { "Data sovereignty" = "labs/sovereignty.md" },
     { "Terraform cluster" = "labs/terraform.md" },
   ] },
   { "Production blueprints" = [
@@ -45,7 +45,7 @@ nav = [
     { "Sports streaming" = "blueprints/sports.md" },
     { "Agent messaging" = "blueprints/agent-messaging.md" },
     { "Scheduled agent chat" = "blueprints/agent-chat.md" },
-    { "Multi-jurisdiction" = "blueprints/jurisdictions.md" },
+    { "Data sovereignty" = "blueprints/sovereignty.md" },
     { "Terraform cluster" = "blueprints/terraform.md" },
   ] },
   { "Experiments" = [{ "Broker failure and recovery" = "how-to/failure-and-recovery.md" }, { "Troubleshooting" = "how-to/troubleshooting.md" }] },

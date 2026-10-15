@@ -1,10 +1,10 @@
 ---
-description: Route synthetic records to a fixed resident cluster, inspect summary-only federation, and distinguish regional availability from export freshness.
+description: Explore data sovereignty through resident raw logs, approved summary exports and region-local recovery.
 ---
 
-# Meridian Ledger Alliance
+# Data sovereignty: Meridian Ledger Alliance
 
-Meridian Ledger Alliance lets you route fictional tenant records to a fixed home and watch approved summaries reach a global view. Three independent raw-log clusters, labelled EU, US and APAC, feed a fourth summary cluster. Four RF1 brokers and five Node/KafkaJS app containers run on your workstation.
+Explore data sovereignty with Meridian Ledger Alliance: route fictional tenant records to a fixed home, keep raw-data authority there, and watch approved summaries reach a global view. Three independent raw-log clusters, labelled EU, US and APAC, feed a fourth summary cluster. Four RF1 brokers and five Node/KafkaJS app containers run on your workstation.
 
 Use synthetic data only. The region labels help you explore placement and export policy on one host; real geographic isolation, compliance and disaster recovery need separate evidence. In particular, grouping Canadian and US fixtures here makes no legal residency determination.
 
@@ -12,9 +12,9 @@ Use synthetic data only. The region labels help you explore placement and export
 
 Use the [common prerequisites and lifecycle reference](../reference/commands.md). Allow several GiB of memory for the four brokers and apps. From the repository root:
 
-```bash title="Start the regional ledger desk"
-./labs/run jurisdictions up
-./labs/run jurisdictions urls
+```bash title="Start the data sovereignty desk"
+./labs/run sovereignty up
+./labs/run sovereignty urls
 ```
 
 ### In the browser
@@ -33,7 +33,7 @@ Enter `nix develop --no-update-lock-file` first so `curl` and `jq` are available
 Use an unused example ID. Retain it and the exact payload if completion is unknown.
 
 ```bash title="Publish one EU record and inspect its separate summary"
-APP=$(./labs/run jurisdictions urls --json | jq -er .app)
+APP=$(./labs/run sovereignty urls --json | jq -er .app)
 curl -fsS "$APP/api/events" -H 'Content-Type: application/json' \
   -d '{"id":"example-eu-001","tenantId":"berlin-shop","amount":125,"privateNote":"Synthetic reference only"}'
 curl -fsS "$APP/api/operations/eu/example-eu-001"
@@ -57,11 +57,11 @@ The server-owned registry selects the home cluster, not the command or request's
 | `singapore-shop` (SG), `tokyo-shop` (JP) | `apac` | `jurisdictions.records.v1`, 3 partitions |
 | Aggregate exports only | `global` | `jurisdictions.summaries.v1`, 3 partitions |
 
-Each cluster is one broker with RF1. Identical topic names do not share data. Ordering is per partition, not across tenants, regions or the whole system. A partition is not a jurisdiction or backup. Changing the hash, registry or partition count requires migration, not a runtime tuning override.
+Each cluster is one broker with RF1. Identical topic names do not share data. Ordering is per partition, not across tenants, regions or the whole system. A partition alone cannot enforce data sovereignty or provide a backup. Changing the hash, registry or partition count requires migration, not a runtime tuning override.
 
 `amount` is an integer from 1 through 1,000,000 synthetic units. There is no currency field, FX rate or currency conversion: `totalAmount` sums those same units, not real monetary amounts. `id` accepts 1–100 letters, digits, underscores or hyphens. `privateNote` is a string of at most 240 JavaScript characters. Unknown tenants fail validation. Optional `requestedRegion` must match the fixed registry or return 409 before publication; the regional service checks home region again.
 
-Raw records contain exactly the constructed fields `id`, `tenantId`, `country`, `region`, `amount` and `privateNote`. Replay validates field construction, regional placement, tenant partition and Kafka key. Identical operation IDs apply once within their home jurisdiction; conflicting resident records stop the projection. IDs are not globally deduplicated across regions. The design assumes one regional writer per home cluster.
+Raw records contain exactly the constructed fields `id`, `tenantId`, `country`, `region`, `amount` and `privateNote`. Replay validates field construction, regional placement, tenant partition and Kafka key. Identical operation IDs apply once within their home region; conflicting resident records stop the projection. IDs are not globally deduplicated across regions. The design assumes one regional writer per home cluster.
 
 ## Export boundary
 
@@ -97,22 +97,26 @@ Keep the original ID and exact input after an uncertain response. Lookup absence
 ## Outage and replay
 
 ```bash
-./labs/run jurisdictions outage eu
-./labs/run jurisdictions recover eu
-./labs/run jurisdictions outage global
-./labs/run jurisdictions recover global
-./labs/run jurisdictions logs region-eu
-./labs/run jurisdictions restart region-eu
-./labs/run jurisdictions restart global
-./labs/run jurisdictions rpk eu topic describe jurisdictions.records.v1 -p
-./labs/run jurisdictions rpk global topic describe jurisdictions.summaries.v1 -p
+./labs/run sovereignty outage eu
+./labs/run sovereignty recover eu
+./labs/run sovereignty outage global
+./labs/run sovereignty recover global
+./labs/run sovereignty logs region-eu
+./labs/run sovereignty restart region-eu
+./labs/run sovereignty restart global
+./labs/run sovereignty rpk eu topic describe jurisdictions.records.v1 -p
+./labs/run sovereignty rpk global topic describe jurisdictions.summaries.v1 -p
 ```
 
 Home preflight failure returns 503 `outcome: not-attempted` without forwarding a new command. No alternate-region write is attempted. US/APAC can continue during EU outage. Global outage instead makes exporters unavailable; their retained summaries are stale, and recovery sends latest cumulative snapshots.
 
 A fresh group replays all three partitions from zero through captured startup high watermarks. Missing history, wrong partition/schema or a conflicting authoritative ID fails closed. The [specialized topic policy](../reference/tuning.md#topic-policy) sets unlimited retention at creation but does not reconcile existing topics. Raw/summary history and operation maps grow until disposal; summaries cannot replace a deleted raw prefix.
 
-Only the gateway is published on loopback. Kafka and Admin APIs remain on the lab's owned networks. Initial `LAB_PORT_BASE` accepts 49152–65535 and persists until successful disposal. Inspect `app`, `region-eu`, `region-us`, `region-apac`, `global` and the four `broker-REGION` services; `rpk` takes region first. `./labs/run jurisdictions down` deletes all four owned broker volumes, containers and networks while retaining shared images.
+Only the gateway is published on loopback. Kafka and Admin APIs remain on the lab's owned networks. Initial `LAB_PORT_BASE` accepts 49152–65535 and persists until successful disposal. Inspect `app`, `region-eu`, `region-us`, `region-apac`, `global` and the four `broker-REGION` services; `rpk` takes region first. `./labs/run sovereignty down` deletes all four owned broker volumes, containers and networks while retaining shared images.
+
+### Retained instances after the rename
+
+Use `sovereignty` in commands and documentation paths. Existing topics keep their `jurisdictions.records.v1` and `jurisdictions.summaries.v1` identifiers; the `rp-jurisdictions-*` resource namespace, checkout-derived state and saved port are also unchanged. From the same physical checkout, `just up sovereignty` reuses those volumes and rebuilds the renamed application from its retained log. No reset or record conversion is required. Browser theme and pending-operation behavior are unchanged.
 
 ## Workload tuning
 
@@ -134,7 +138,7 @@ Role/broker settings are deployment wiring, not routing or privacy overrides. Ti
 
 ## Proposed production blueprint
 
-[Production blueprint](../blueprints/jurisdictions.md).
+[Production blueprint](../blueprints/sovereignty.md).
 
 The proposal takes the lab's resident logs and exporters into real regional boundaries. Region-scoped identity, network, key, storage and backup owners enforce local access and recovery; a reviewed registry owns placement changes. Export-policy and privacy reviewers approve fields and cohorts. The global summary service retains a filtered, replayable projection and tracks federation lag, leaving raw-data authority with each resident region.
 
@@ -142,6 +146,6 @@ Production needs regional quorums, TLS/auth/ACLs, writer fencing, export audit, 
 
 ## Checks and references
 
-`just test jurisdictions` deletes existing history, provisions fresh fixtures, checks placement/order, duplicate/conflicting input, wrong-region refusal, summary schema, regional/global outages, export catch-up and replay, then disposes the lab and writes an external report. `just check jurisdictions` runs static checks.
+`just test sovereignty` deletes existing history, provisions fresh fixtures, checks placement/order, duplicate/conflicting input, wrong-region refusal, summary schema, regional/global outages, export catch-up and replay, then disposes the lab and writes an external report. `just check sovereignty` runs static checks.
 
 Client behavior follows the [KafkaJS 2.2.4 producer manual](https://raw.githubusercontent.com/tulios/kafkajs/v2.2.4/docs/Producing.md). Node, KafkaJS and Redpanda retain their upstream licensing. This scenario does not establish compliance, anonymous exports or cross-region failover safety.

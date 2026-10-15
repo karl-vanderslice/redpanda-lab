@@ -3,9 +3,9 @@ hide:
   - toc
 ---
 
-# Meridian Ledger Alliance
+# Data sovereignty: Meridian Ledger Alliance
 
-![Proposed Meridian Ledger Alliance system topology](../assets/blueprints/jurisdictions.svg)
+![Proposed Meridian Ledger Alliance data sovereignty topology](../assets/blueprints/sovereignty.svg)
 
 Tenant admission routes private writes only to the operator-assigned home. Resident Redpanda consumers export approved cumulative summaries to a separate global cluster. Global views replace only increasing source-offset snapshots; raw records and backup vaults remain resident.
 
@@ -19,4 +19,4 @@ Compare resident and global flows locally using EU, US, APAC and global as four 
 
 Regional owners control home mapping, tenant partitions and local restore; federation owns offsets and export audit. Privacy/legal reviews export fields, minimization and cohorts because aggregate counts can still identify people. Keep recovery within those boundaries: do not reroute private writes to another home on failure, mirror raw logs globally, or treat summaries as raw-data backups.
 
-[Lab guide](../labs/jurisdictions.md) · [D2 source](sources/jurisdictions.d2) · [PNG export](../assets/blueprints/jurisdictions.png)
+[Lab guide](../labs/sovereignty.md) · [D2 source](sources/sovereignty.d2) · [PNG export](../assets/blueprints/sovereignty.png)

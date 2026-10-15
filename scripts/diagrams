@@ -21,7 +21,7 @@ if [[ $output == / || $output == "$root" || $output == "$root/"* || $root == "$o
 fi
 names=(
   explorer iot pos logistics event-log siem activity inventory
-  trading bitcoin sports agent-messaging agent-chat jurisdictions terraform clearing
+  trading bitcoin sports agent-messaging agent-chat sovereignty terraform clearing
 )
 for name in "${names[@]}"; do
   diagram-render "$root/docs/blueprints/sources/$name.d2" "$output/$name"

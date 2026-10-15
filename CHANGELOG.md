@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Name the resident-data and approved-export lab **Data sovereignty**, with `sovereignty` commands, source paths, navigation and blueprint exports. Preserve existing topic, resource, port-state and browser preference identifiers so retained instances remain usable without a reset.
 - Add a visual Zensical landing page, native icon cards, a blueprint gallery and an original local logo/favicon. Present shell examples as copyable terminals and keep alternate walkthroughs visible without content tabs.
 - Extend blueprint diagrams with responsive fit, mouse pan, cursor-centered wheel zoom, keyboard and pan-button controls, and an expanded native dialog. Preserve static exports and no-JavaScript viewing; keep theme shortcuts, focus restoration, annotations and printing usable.
 - Lead the README, tutorials, lab guides and production blueprints with what readers can try and observe. Explain workflows in connected prose, with safety and recovery limits beside the decisions they affect.
