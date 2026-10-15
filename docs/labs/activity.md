@@ -21,7 +21,7 @@ Open the app. You can use the two logged fixture profiles and articles without c
 2. On **A bench is a small agreement**, select **Read local article**. The article opens and one consumed read is recorded for that public profile.
 3. Select **Close article**, or press ++escape++ from inside it. Focus returns to the Read button that opened it, or to the profile selector if that post has left the feed.
 4. Select **Like** on the article's card. It becomes **Unlike** after the consumed decision.
-5. Follow **Mara Vale** under **Authors to follow**, then choose **Followed authors only**. On the untouched fixture, the feed contains Mara's article rather than both fixture articles.
+5. Under **Authors to follow**, select **Follow** on the **Mara Vale · fixture** card, then choose **Followed authors only**. On the untouched fixture, the feed contains Mara's article rather than both fixture articles.
 
 Compare the read ledger with the feed. Opening the same article again records another open, but it does not create another distinct reader ID. A public profile is not a verified person, and an open is not evidence of attention. Anyone with lab access can act as any profile and inspect all data. Use synthetic text only.
 

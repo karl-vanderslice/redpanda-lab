@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Name the exact generator controls and work-ledger page areas in the tutorials, and describe `restart` as a log rebuild rather than an image rebuild.
+- Name the exact generator controls, work-ledger page areas and activity follow button in the guides, and describe `restart` as a log rebuild rather than an image rebuild.
 - Keep trading replay, conflict, pending and unavailable responses outside the exchange-state lock, including pipelined replies waiting for an earlier request. Accept case-insensitive loopback hostnames without relaxing the foreign-Host or same-origin boundary.
 - Report failed native Compose start, stop and restart actions instead of accepting an old healthy app as proof of a completed restart. Record local tool and native-client patches in E2E source hashes.
 - Keep native code blocks keyboard-scrollable after hydration and resize. Give overflowing content-tab labels a named keyboard-scroll region without replacing radio selection, and explain Console's loaded-result window when finding an older event.
