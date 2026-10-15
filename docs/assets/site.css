@@ -66,12 +66,87 @@
 .md-typeset code { font-size: .83em; }
 .md-typeset pre > code { line-height: 1.6; }
 
-.blueprint-viewer {
+/* Shell examples retain native highlighting/copy behavior and runnable contents. */
+.md-typeset .language-bash.highlight {
+  --md-code-fg-color: #e3eaf4;
+  --md-code-bg-color: #142031;
+  --md-code-hl-comment-color: #a9b8cc;
+  --md-code-hl-keyword-color: #b6ccff;
+  --md-code-hl-string-color: #f3ca9e;
+  --md-code-hl-number-color: #f3ca9e;
+  --md-code-hl-function-color: #b6ccff;
+  --md-code-hl-name-color: #e3eaf4;
+  --md-code-hl-variable-color: #e3eaf4;
+  --md-code-hl-constant-color: #b6ccff;
+  --md-code-hl-special-color: #f3ca9e;
+  --md-code-hl-generic-color: #a9b8cc;
+  --md-code-hl-operator-color: #c5d6ef;
+  --md-code-hl-punctuation-color: #c5d6ef;
+  border: 1px solid #40516a;
+  border-radius: .6rem;
+  margin-block: 1em;
+  background: #142031;
+  color: #e3eaf4;
+}
+.md-typeset .language-bash.highlight > .filename,
+.md-typeset .language-bash.highlight:not(:has(> .filename))::before {
+  display: block;
+  margin: 0;
+  padding: .65rem 1rem;
+  background: #1d2d43;
+  border-bottom: 1px solid #40516a;
+  color: #dbe7f9;
+  font: 500 .72rem/1.5 ui-monospace, monospace;
+}
+.md-typeset .language-bash.highlight:not(:has(> .filename))::before { content: "TERMINAL / BASH"; }
+.md-typeset .language-bash.highlight > .filename::before { content: ">_  "; color: #f3ca9e; }
+.md-typeset .language-bash.highlight pre { margin: 0; }
+.md-typeset .language-bash.highlight > :first-child { border-start-start-radius: .6rem; border-start-end-radius: .6rem; }
+.md-typeset .language-bash.highlight pre > code { border-radius: 0 0 .6rem .6rem; }
+.md-typeset .language-bash.highlight .md-code__button { color: #c5d6ef; }
+
+.showcase-hero {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+  gap: 2rem;
+  align-items: start;
+  padding-block: 1.5rem 2rem;
+  border-bottom: 1px solid var(--doc-border);
+}
+.showcase-hero > * { min-inline-size: 0; }
+.md-typeset .showcase-hero h1 { margin-block: .4rem 1rem; font-size: clamp(1.6rem, 3.5vw, 3rem); line-height: 1.1; }
+.showcase-eyebrow { color: var(--doc-accent); font: 600 .65rem/1.6 ui-monospace, monospace; letter-spacing: .12em; }
+.md-typeset .showcase-lead { font-size: 1.15rem; line-height: 1.5; color: var(--doc-ink); }
+.md-typeset .showcase-start h2 { margin-block-start: 0; font-size: 1.15rem; }
+.showcase-actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-block-start: 1.5rem; }
+.md-typeset .md-button { border-radius: .35rem; padding: .5em 1em; }
+.md-typeset .md-button--primary { background: var(--doc-accent); border-color: var(--doc-accent); color: var(--md-default-bg-color); }
+.md-typeset .md-button--primary:is(:hover, :focus) { color: var(--md-default-bg-color); }
+.md-typeset .grid.cards > ul > li { border: 1px solid var(--doc-border); border-radius: .55rem; padding: 1.1rem; }
+.md-typeset .grid.cards .twemoji { color: var(--doc-accent); }
+.md-typeset .grid.cards { grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); }
+.md-typeset .grid.cards > ul > li > :last-child { margin-block-end: 0; }
+.md-typeset .blueprint-gallery img { display: block; inline-size: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: #fff; border-radius: .25rem; }
+.md-header .md-logo img { block-size: 1.6rem; inline-size: 1.6rem; }
+.md-nav__title .md-logo img { block-size: 2.4rem; inline-size: 2.4rem; }
+
+@media (hover: hover) and (pointer: fine) {
+  .md-typeset .grid.cards > ul > li:hover { border-color: var(--doc-accent); background: var(--doc-surface); }
+}
+
+.md-typeset .blueprint-viewer,
+.blueprint-dialog .blueprint-viewer {
+  display: block;
   inline-size: 100%;
   min-inline-size: 0;
   max-inline-size: 100%;
-  margin-block: 1.5rem 2rem;
+  margin: 1.5rem 0 2rem;
   border: 1px solid var(--doc-border);
+  border-radius: .6rem;
+  overflow: hidden;
+  text-align: start;
+  background: var(--doc-surface);
+  color: var(--doc-ink);
 }
 
 .blueprint-controls {
@@ -101,48 +176,65 @@
   cursor: pointer;
 }
 
-.blueprint-controls button[aria-pressed="true"] {
-  border-color: var(--doc-accent);
-  background: var(--doc-selected);
-  color: var(--doc-accent);
-}
+.blueprint-controls button:active { background: var(--doc-selected); }
 
 .blueprint-controls button:disabled { cursor: default; opacity: .6; }
 .blueprint-controls :is(button, a):hover { border-color: var(--doc-accent); }
-.blueprint-status {
-  display: block;
-  padding: .25rem .7rem .65rem;
-  background: var(--doc-surface);
+.md-typeset .blueprint-viewer figcaption,
+.blueprint-dialog .blueprint-viewer figcaption {
+  text-align: start;
+  font-style: normal;
+  display: grid;
+  gap: .2rem;
+  margin: 0;
+  padding: .7rem;
   color: var(--doc-muted);
-  font-size: .75rem;
+  font-size: .7rem;
   line-height: 1.5;
 }
-
+.blueprint-status { font-variant-numeric: tabular-nums; color: var(--doc-ink); }
 .blueprint-viewport {
-  max-block-size: 75vh;
+  block-size: min(60vh, 32rem);
+  min-block-size: 12rem;
   min-inline-size: 0;
   overflow: auto;
-  border-top: 1px solid var(--doc-border);
+  border-block: 1px solid var(--doc-border);
   background: #fff;
+  cursor: grab;
+  overscroll-behavior-inline: contain;
 }
+.blueprint-viewport.is-dragging { cursor: grabbing; }
+.blueprint-canvas { display: grid; place-items: center; }
+.blueprint-dialog {
+  inline-size: min(95vw, 100rem);
+  max-inline-size: 95vw;
+  max-block-size: 95vh;
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--doc-border);
+  border-radius: .6rem;
+  background: var(--doc-surface);
+  color: var(--doc-ink);
+  font: inherit;
+}
+.blueprint-dialog::backdrop { background: rgb(10 17 28 / 75%); }
+.blueprint-dialog .blueprint-viewer { margin: 0; border: 0; border-radius: 0; }
+.blueprint-dialog .blueprint-viewport { block-size: 65vh; }
+.blueprint-controls :is(button, a):focus-visible { outline: 3px solid var(--doc-accent); outline-offset: -3px; }
 
 .blueprint-viewport:focus-visible,
 .md-typeset .md-code__content:focus-visible,
-.md-typeset .md-typeset__scrollwrap:focus-visible,
-.md-typeset .tabbed-labels:focus-visible {
+.md-typeset .md-typeset__scrollwrap:focus-visible {
   outline: 3px solid var(--doc-accent);
   outline-offset: -3px;
 }
 
 .blueprint-viewport img {
   display: block;
-  inline-size: 100%;
   max-inline-size: none;
+  height: auto;
   margin: 0;
-}
-
-.blueprint-viewer[data-view="detail"] .blueprint-viewport img {
-  inline-size: max(100%, var(--blueprint-detail-width));
+  user-select: none;
 }
 
 /* Constrain the pinned floating TOC when rem-based widths grow with enlarged text. */
@@ -165,7 +257,8 @@
 }
 
 @media print {
-  .blueprint-controls, .blueprint-status { display: none; }
-  .blueprint-viewport { max-block-size: none; overflow: visible; }
-  .blueprint-viewer[data-view="detail"] .blueprint-viewport img { inline-size: 100%; }
+  .blueprint-controls, .md-typeset .blueprint-viewer figcaption, .blueprint-dialog .blueprint-viewer figcaption, .blueprint-dialog { display: none; }
+  .blueprint-viewport { block-size: auto; min-block-size: 0; max-block-size: none; overflow: visible; }
+  .blueprint-canvas { width: auto !important; height: auto !important; }
+  .blueprint-viewport img { width: 100% !important; }
 }

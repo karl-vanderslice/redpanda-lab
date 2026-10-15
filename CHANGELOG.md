@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a visual Zensical landing page, native icon cards, a blueprint gallery and an original local logo/favicon. Present shell examples as copyable terminals and keep alternate walkthroughs visible without content tabs.
+- Extend blueprint diagrams with responsive fit, mouse pan, cursor-centered wheel zoom, keyboard and pan-button controls, and an expanded native dialog. Preserve static exports and no-JavaScript viewing; keep theme shortcuts, focus restoration, annotations and printing usable.
 - Lead the README, tutorials, lab guides and production blueprints with what readers can try and observe. Explain workflows in connected prose, with safety and recovery limits beside the decisions they affect.
 - Pre-render the three IoT fixture device cards with a fixed line count, so first state and first readings no longer shift the bench.
 - Use second-level headings for sports match cards and put the sports lab notice in a labeled landmark. Pre-render the sports navigation and fix the connection-status width, so first state no longer shifts the page.
@@ -10,11 +12,11 @@
 - Name the exact generator controls, work-ledger page areas and activity follow button in the guides, and describe `restart` as a log rebuild rather than an image rebuild.
 - Release the trading exchange-state lock before every HTTP response, including GET reads and pipelined replay, conflict, pending and unavailable command replies, so a slow or pipelined reader cannot retain it. Serialize borrowed read models and ordered map values directly, and reuse immutable commodity metadata. Accept case-insensitive loopback hostnames without relaxing the foreign-Host or same-origin boundary.
 - Report failed native Compose start, stop and restart actions instead of accepting an old healthy app as proof of a completed restart. Record local tool and native-client patches in E2E source hashes.
-- Keep native code blocks keyboard-scrollable after hydration and resize. Give overflowing content-tab labels a named keyboard-scroll region without replacing radio selection, and explain Console's loaded-result window when finding an older event.
+- Keep native code blocks keyboard-scrollable after hydration and resize, and explain Console's loaded-result window when finding an older event.
 - Accept case-insensitive trading JSON media types and parameters in the public order-entry workflow.
 - Separate development-shell entry from startup commands and identify the first consumed event by its visible key, partition and offset before checking its ID.
 - Keep closed documentation navigation out of the keyboard order. Bound the floating table of contents and drawer at enlarged text, support keyboard disclosure and Escape, and let Search close without dismissing its background drawer. Make Markdown tables keyboard-scrollable and separate overlapping floating controls.
-- Teach application decisions with a hands-on command/receipt/rebuild tutorial, question-led lab selection, concrete browser workflows and native Zensical cards, tabs, annotations and page descriptions.
+- Teach application decisions with a hands-on command/receipt/rebuild tutorial, question-led lab selection, concrete browser workflows, native Zensical cards, titled examples, annotations and page descriptions.
 - Keep documentation theme/navigation controls keyboard-operable with valid roles. Name annotations, code controls, breadcrumbs and search, and announce copy feedback. Keep search focus inside its overlay and return it to the visible Search control. Keep code and filter regions keyboard accessible, dismiss annotation tooltips with Escape, and keep search text readable in both themes.
 - Reject foreign Host headers before first-party record reads as well as mutations, preserving internal metrics and federation traffic.
 - Accept maximum-length Unicode articles through escaped JSON within a 64 KiB activity request limit. Reject explorer non-object JSON with 400 and accept case-insensitive JSON media types.

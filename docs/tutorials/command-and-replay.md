@@ -12,22 +12,23 @@ You'll create an archival work item, assign an archivist, record a rejected chan
 
 Use Linux with the [host prerequisites](../reference/commands.md) met. Run from the checkout root. If you already have an explorer running, this lab uses separate containers and data; starting it does not stop the explorer.
 
-=== "With Just"
+Enter the development shell, then start the work ledger at its prompt:
 
-    ```bash title="Start the work ledger in the locked shell"
-    nix develop --no-update-lock-file
-    just up event-log
-    just urls event-log
-    ```
+```bash title="Enter the locked development shell"
+nix develop --no-update-lock-file
+```
 
-=== "Direct wrapper"
+```bash title="Start the work ledger"
+just up event-log
+just urls event-log
+```
 
-    The wrapper runs each command with the locked tools. Your terminal stays in its current shell.
+Prefer to stay in your current shell? The direct wrapper runs each command with the locked tools:
 
-    ```bash title="Start the work ledger without entering a shell first"
-    ./labs/run event-log up
-    ./labs/run event-log urls
-    ```
+```bash title="Alternative / start without entering a shell first"
+./labs/run event-log up
+./labs/run event-log urls
+```
 
 Open the printed **event-log app** URL. Wait for **Ready · full startup prefix consumed**. The page has four areas: the **Work items** index, the **Open a work item** command form, the **Replay and receipts** inspector and the **Execution ledger**.
 

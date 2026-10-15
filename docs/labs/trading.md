@@ -19,28 +19,30 @@ Use the [common prerequisites and lifecycle reference](../reference/commands.md)
 
 Choose one version of the same experiment below. It assumes an empty WHEAT book and unused example IDs. With existing orders, inspect the book first; another resting order can legitimately change the fills. A separate experiment needs fresh IDs, not a reset that deletes useful history.
 
-=== "Browser"
+### In the browser
 
-    Open the app URL and wait for the exchange to become ready.
+Open the app URL and wait for the exchange to become ready.
 
-    1. In **Limit order**, choose **Wheat · metric tonne**, **Sell**, price **24500** ticks, quantity **10** and ID `demo-ask`. Select **Submit limit order**. The sell rests under **Asks / sell**.
-    2. Select **New ID**. Choose **Buy**, price **24600**, quantity **4** and ID `demo-buy`. Submit it. **Trade history** shows four units executed at the resting seller's **24500** ticks, not the buyer's higher limit.
-    3. In **Orders & remaining quantity**, find `demo-ask`: six of its ten units remain. Select its **Cancel** action. The remainder leaves executable liquidity, while the original order and fill stay in history.
+1. In **Limit order**, choose **Wheat · metric tonne**, **Sell**, price **24500** ticks, quantity **10** and ID `demo-ask`. Select **Submit limit order**. The sell rests under **Asks / sell**.
+2. Select **New ID**. Choose **Buy**, price **24600**, quantity **4** and ID `demo-buy`. Submit it. **Trade history** shows four units executed at the resting seller's **24500** ticks, not the buyer's higher limit.
+3. In **Orders & remaining quantity**, find `demo-ask`: six of its ten units remain. Select its **Cancel** action. The remainder leaves executable liquidity, while the original order and fill stay in history.
 
-=== "CLI"
+### Or use the CLI
 
-    The CLI runs inside the app container, using the same engine as the browser.
+The CLI runs inside the app container, using the same engine as the browser. Choose this path instead of repeating the browser experiment with the same IDs.
 
-    ```bash title="Cross an order, inspect the partial fill, and cancel the rest"
-    ./labs/run trading exec app commodity-exchange order --id demo-ask --commodity WHEAT --side sell --price-ticks 24500 --quantity 10
-    ./labs/run trading exec app commodity-exchange order --id demo-buy --commodity WHEAT --side buy --price-ticks 24600 --quantity 4
-    ./labs/run trading exec app commodity-exchange status demo-buy
-    ./labs/run trading exec app commodity-exchange order-status demo-ask
-    ./labs/run trading exec app commodity-exchange trades
-    ./labs/run trading exec app commodity-exchange cancel --id demo-cancel --order-id demo-ask
-    ```
+```bash title="Cross an order, inspect the partial fill, and cancel the rest"
+./labs/run trading exec app commodity-exchange order --id demo-ask --commodity WHEAT --side sell --price-ticks 24500 --quantity 10
+./labs/run trading exec app commodity-exchange order --id demo-buy --commodity WHEAT --side buy --price-ticks 24600 --quantity 4
+./labs/run trading exec app commodity-exchange status demo-buy
+./labs/run trading exec app commodity-exchange order-status demo-ask
+./labs/run trading exec app commodity-exchange trades
+./labs/run trading exec app commodity-exchange cancel --id demo-cancel --order-id demo-ask
+```
 
-    The buy fills four units at 24500 ticks. The sell has six remaining until cancellation; the retained order history still records its original quantity and remainder.
+The buy fills four units at 24500 ticks. The sell has six remaining until cancellation; the retained order history still records its original quantity and remainder.
+
+### Read the result
 
 An accepted command can leave an order open, partial or filled. Acceptance is not a promise of execution. **New ID** starts a distinct operation, not a retry; the same ID belongs only to its identical original command.
 

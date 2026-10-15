@@ -119,11 +119,6 @@
       table.setAttribute('role', 'region');
       table.setAttribute('aria-label', caption ? `${caption} (table ${index + 1})` : `Table ${index + 1}`);
     }
-    for (const [index, strip] of document.querySelectorAll('.tabbed-labels').entries()) {
-      strip.tabIndex = 0;
-      strip.setAttribute('role', 'region');
-      strip.setAttribute('aria-label', `Content tabs ${index + 1}`);
-    }
     // Empty code-line anchors remain hash targets, not invisible keyboard stops.
     for (const anchor of document.querySelectorAll('a[id^="__codelineno-"]')) {
       if (!anchor.textContent.trim()) {

@@ -2,24 +2,107 @@
 
 These blueprints explore how the local workflows could grow into production systems for the fictional organizations. Use them to follow data through a larger system and discuss who would own each part. The identity services, writer fences, adapters, archives, databases and availability-zone placements shown here are proposed work. Dashed boxes mark responsibility or trust boundaries that would need enforcement in a deployment. Muted blue identifies Redpanda components; health would come from runtime measurements.
 
-| System | Blueprint |
-| --- | --- |
-| Explorer | [Signal Harbor Works](./explorer.md) |
-| Device telemetry | [Cryowell Instruments](./iot.md) |
-| Point of sale | [Counterlane Market](./pos.md) |
-| Fleet dispatch | [Wayline Dispatch](./logistics.md) |
-| Append-only event log | [Folio Harbor Archives](./event-log.md) |
-| Network SIEM | [Vesper Lantern Networks](./siem.md) |
-| Public activity and clickstream | [Commonfield Dispatch](./activity.md) |
-| Retail inventory | [Cedarline Supply](./inventory.md) |
-| Commodity matching | [Amber Commodity Exchange](./trading.md) |
-| Bitcoin paper research | [Beacon Ridge Research](./bitcoin.md) |
-| Sports media | [Courtside Assembly](./sports.md) |
-| Agent messaging | [Relay Loom Cooperative](./agent-messaging.md) |
-| Scheduled agent chat | [Clockwork Correspondence](./agent-chat.md) |
-| Resident data and summaries | [Meridian Ledger Alliance](./jurisdictions.md) |
-| Infrastructure provisioning | [Foundry Harbor Infrastructure](./terraform.md) |
-| Fraud screening and clearing | [Northbridge Ledgerworks](./clearing.md) |
+Choose a system below to open its interactive canvas. Each drawing has zoom, pan and an expanded view, with the D2 source and original SVG/PNG exports alongside it.
+
+<div class="grid cards blueprint-gallery" markdown>
+
+-   **Signal Harbor Works**
+
+    [![Open the explorer blueprint](../assets/blueprints/explorer.png){ loading=lazy width="480" height="270" }](./explorer.md)
+
+    Event admission, partitioned delivery and live telemetry.
+
+-   **Cryowell Instruments**
+
+    [![Open the device telemetry blueprint](../assets/blueprints/iot.png){ loading=lazy width="480" height="270" }](./iot.md)
+
+    Device telemetry, sequence validation and alert delivery.
+
+-   **Counterlane Market**
+
+    [![Open the point-of-sale blueprint](../assets/blueprints/pos.png){ loading=lazy width="480" height="270" }](./pos.md)
+
+    Point of sale, payment attempts and provider reconciliation.
+
+-   **Wayline Dispatch**
+
+    [![Open the fleet dispatch blueprint](../assets/blueprints/logistics.png){ loading=lazy width="480" height="270" }](./logistics.md)
+
+    Fleet dispatch, position observations and trip ownership.
+
+-   **Folio Harbor Archives**
+
+    [![Open the append-only event log blueprint](../assets/blueprints/event-log.png){ loading=lazy width="480" height="270" }](./event-log.md)
+
+    Append-only decisions, materialized views and independent recovery.
+
+-   **Vesper Lantern Networks**
+
+    [![Open the network SIEM blueprint](../assets/blueprints/siem.png){ loading=lazy width="480" height="270" }](./siem.md)
+
+    Network SIEM, correlation evidence and analyst workflows.
+
+-   **Commonfield Dispatch**
+
+    [![Open the public activity and clickstream blueprint](../assets/blueprints/activity.png){ loading=lazy width="480" height="270" }](./activity.md)
+
+    Public publishing, reading feeds and consent-aware clickstream.
+
+-   **Cedarline Supply**
+
+    [![Open the retail inventory blueprint](../assets/blueprints/inventory.png){ loading=lazy width="480" height="270" }](./inventory.md)
+
+    Retail inventory, reservations and shipment reconciliation.
+
+-   **Amber Commodity Exchange**
+
+    [![Open the commodity matching blueprint](../assets/blueprints/trading.png){ loading=lazy width="480" height="270" }](./trading.md)
+
+    Commodity matching, market-data views and settlement ownership.
+
+-   **Beacon Ridge Research**
+
+    [![Open the Bitcoin paper research blueprint](../assets/blueprints/bitcoin.png){ loading=lazy width="480" height="270" }](./bitcoin.md)
+
+    Bitcoin paper research, market-data provenance and strategy state.
+
+-   **Courtside Assembly**
+
+    [![Open the sports media blueprint](../assets/blueprints/sports.png){ loading=lazy width="480" height="270" }](./sports.md)
+
+    Sports media delivery, score authority and viewer telemetry.
+
+-   **Relay Loom Cooperative**
+
+    [![Open the agent messaging blueprint](../assets/blueprints/agent-messaging.png){ loading=lazy width="480" height="270" }](./agent-messaging.md)
+
+    Agent messaging, role handoffs and interrupted inference.
+
+-   **Clockwork Correspondence**
+
+    [![Open the scheduled agent chat blueprint](../assets/blueprints/agent-chat.png){ loading=lazy width="480" height="270" }](./agent-chat.md)
+
+    Scheduled agent chat, execution ownership and retained replies.
+
+-   **Meridian Ledger Alliance**
+
+    [![Open the resident data and summaries blueprint](../assets/blueprints/jurisdictions.png){ loading=lazy width="480" height="270" }](./jurisdictions.md)
+
+    Resident data, approved summaries and regional recovery.
+
+-   **Foundry Harbor Infrastructure**
+
+    [![Open the infrastructure provisioning blueprint](../assets/blueprints/terraform.png){ loading=lazy width="480" height="270" }](./terraform.md)
+
+    Reviewed infrastructure provisioning and separate broker-data recovery.
+
+-   **Northbridge Ledgerworks**
+
+    [![Open the fraud screening and clearing blueprint](../assets/blueprints/clearing.png){ loading=lazy width="480" height="270" }](./clearing.md)
+
+    Fraud screening, held obligations and clearing authority.
+
+</div>
 
 ## Deployment assumptions
 

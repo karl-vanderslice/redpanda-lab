@@ -6,24 +6,73 @@ description: Find a hands-on event-streaming lab for the application behavior yo
 
 Choose a question that interests you, then follow its guide to try the workflow. The [explorer](../tutorials/first-event.md) is a good starting point for partitions and consumer lag. For application state, [follow a command through replay](../tutorials/command-and-replay.md) before moving on to a domain lab. You'll meet a fictional organization in each one.
 
-| Question to explore | Lab | What you operate |
-| --- | --- | --- |
-| Where did my event go, and why is the consumer behind? | [Explorer](../tutorials/first-event.md) | Signal Harbor Works' event workbench, Console and telemetry. |
-| Can an older sensor reading overwrite a newer one? | [IoT](./iot.md) | Cryowell Instruments' device history and alert transitions. |
-| Is a receipt the same thing as a settled payment? | [Point of sale](./pos.md) | Counterlane Market's cash ledger and optional sandbox payments. |
-| Who owns an assignment when two requests compete? | [Logistics](./logistics.md) | Wayline Dispatch's drivers and trip lifecycle. |
-| Can I reconstruct accepted and rejected decisions exactly? | [Event log](./event-log.md) | Folio Harbor Archives' work items and execution ledger. |
-| What makes a late observation change an incident? | [Network SIEM](./siem.md) | Vesper Lantern Networks' synthetic telemetry and incident evidence. |
-| What does a recorded article open actually measure? | [Activity](./activity.md) | Commonfield Dispatch's public profiles, feed and reading analytics. |
-| How do reservations differ from stock on hand? | [Inventory](./inventory.md) | Cedarline Supply's receipts, reservations, fulfillment and transfers. |
-| When is a held transfer allowed to move booked funds? | [Clearing](./clearing.md) | Northbridge Ledgerworks' review and exact-cent local clearing. |
-| How do price, priority and partial fills interact? | [Trading](./trading.md) | Amber Commodity Exchange's Rust CLI and web order book. |
-| How do fees and next-close execution affect a paper strategy? | [Bitcoin](./bitcoin.md) | Beacon Ridge Research's fixed historical candles and paper account. |
-| Which failures belong to video, and which belong to scores? | [Sports](./sports.md) | Courtside Assembly's synthetic clips and event-driven control plane. |
-| What survives when an agent or inference attempt stops? | [Agent messaging](./agent-messaging.md) | Relay Loom Cooperative's planner/reviewer tasks using real `fx`. |
-| Who runs a future prompt, and what does cancellation mean? | [Scheduled chat](./agent-chat.md) | Clockwork Correspondence's conversations and one-shot jobs. |
-| What can a global summary reveal or recover? | [Jurisdictions](./jurisdictions.md) | Meridian Ledger Alliance's resident logs and summary-only federation. |
-| Does an approved plan still describe the intended resources? | [Terraform](./terraform.md) | Foundry Harbor Infrastructure's saved plans, drift and teardown. |
+<div class="grid cards" markdown>
+
+-   :lucide-radio: **[Event explorer](../tutorials/first-event.md)**
+
+    Where did my event go, and why is the consumer behind? Operate Signal Harbor Works' event workbench, Console and telemetry.
+
+-   :lucide-thermometer: **[IoT monitoring](./iot.md)**
+
+    Can an older sensor reading overwrite a newer one? Inspect Cryowell Instruments' device history and alert transitions.
+
+-   :lucide-credit-card: **[Point of sale](./pos.md)**
+
+    Is a receipt the same thing as a settled payment? Try Counterlane Market's cash ledger and optional sandbox payments.
+
+-   :lucide-truck: **[Logistics dispatch](./logistics.md)**
+
+    Who owns an assignment when two requests compete? Dispatch Wayline's drivers and follow the trip lifecycle.
+
+-   :lucide-history: **[Append-only event log](./event-log.md)**
+
+    Can I reconstruct accepted and rejected decisions exactly? Work at Folio Harbor Archives' item desk and execution ledger.
+
+-   :lucide-shield: **[Network SIEM](./siem.md)**
+
+    What makes a late observation change an incident? Triage Vesper Lantern Networks' synthetic telemetry and incident evidence.
+
+-   :lucide-newspaper: **[Activity and clickstream](./activity.md)**
+
+    What does a recorded article open actually measure? Read Commonfield Dispatch's public feed and inspect its reading analytics.
+
+-   :lucide-box: **[Retail inventory](./inventory.md)**
+
+    How do reservations differ from stock on hand? Receive, reserve, fulfill and transfer stock at Cedarline Supply.
+
+-   :lucide-landmark: **[Fraud and clearing](./clearing.md)**
+
+    When is a held transfer allowed to move booked funds? Review Northbridge Ledgerworks' exact-cent local clearing.
+
+-   :lucide-chart-candlestick: **[Commodity trading](./trading.md)**
+
+    How do price, priority and partial fills interact? Use Amber Commodity Exchange's Rust CLI and web order book.
+
+-   :lucide-chart-line: **[Bitcoin paper research](./bitcoin.md)**
+
+    How do fees and next-close execution affect a paper strategy? Replay Beacon Ridge Research's fixed historical candles and paper account.
+
+-   :lucide-clapperboard: **[Sports streaming](./sports.md)**
+
+    Which failures belong to video, and which belong to scores? Explore Courtside Assembly's synthetic clips and event-driven control plane.
+
+-   :lucide-workflow: **[Agent messaging with fx](./agent-messaging.md)**
+
+    What survives when an agent or inference attempt stops? Follow Relay Loom Cooperative's planner/reviewer tasks using real `fx`.
+
+-   :lucide-clock: **[Scheduled agent chat](./agent-chat.md)**
+
+    Who runs a future prompt, and what does cancellation mean? Schedule one-shot jobs in Clockwork Correspondence.
+
+-   :lucide-globe: **[Multi-jurisdiction sharding](./jurisdictions.md)**
+
+    What can a global summary reveal or recover? Inspect Meridian Ledger Alliance's resident logs and summary-only federation.
+
+-   :lucide-file-check: **[Reviewed infrastructure](./terraform.md)**
+
+    Does an approved plan still describe the intended resources? Review Foundry Harbor Infrastructure's saved plans, drift and teardown.
+
+</div>
 
 ## Run one workflow
 

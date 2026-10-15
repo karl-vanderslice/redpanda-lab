@@ -59,6 +59,8 @@ variant = "modern"
 custom_dir = "docs-theme"
 language = "en"
 font = false
+logo = "assets/stream-mark.svg"
+favicon = "assets/stream-mark.svg"
 # Full loads deliberately initialize the storage, native-control and diagram adapters.
 features = [
   "navigation.indexes",

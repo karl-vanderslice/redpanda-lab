@@ -17,30 +17,32 @@ Use the [common prerequisites and lifecycle reference](../reference/commands.md)
 ./labs/run jurisdictions urls
 ```
 
-=== "Browser"
+### In the browser
 
-    Open the operator app and wait for the regional sources.
+Open the operator app and wait for the regional sources.
 
-    1. In **Route a synthetic record**, select tenant **berlin-shop**. Placement is EU, selected by the registry rather than by the form.
-    2. Keep **125** synthetic units and enter a fictional **Private regional note**. Select **Publish to home region** once.
-    3. Inspect the operation's consumed region, partition and offset. The EU resident record contains the note.
-    4. Watch **Permitted global summary** for that regional partition's cumulative count and total. It excludes the tenant ID and note and can lag the regional receipt.
+1. In **Route a synthetic record**, select tenant **berlin-shop**. Placement is EU, selected by the registry rather than by the form.
+2. Keep **125** synthetic units and enter a fictional **Private regional note**. Select **Publish to home region** once.
+3. Inspect the operation's consumed region, partition and offset. The EU resident record contains the note.
+4. Watch **Permitted global summary** for that regional partition's cumulative count and total. It excludes the tenant ID and note and can lag the regional receipt.
 
-=== "HTTP"
+### Or use HTTP
 
-    Enter `nix develop --no-update-lock-file` first so `curl` and `jq` are available. The startup wrapper provides tools for its own command, not the shell around this pipeline.
+Enter `nix develop --no-update-lock-file` first so `curl` and `jq` are available. The startup wrapper provides tools for its own command, not the shell around this pipeline.
 
-    Use an unused example ID. Retain it and the exact payload if completion is unknown.
+Use an unused example ID. Retain it and the exact payload if completion is unknown.
 
-    ```bash title="Publish one EU record and inspect its separate summary"
-    APP=$(./labs/run jurisdictions urls --json | jq -er .app)
-    curl -fsS "$APP/api/events" -H 'Content-Type: application/json' \
-      -d '{"id":"example-eu-001","tenantId":"berlin-shop","amount":125,"privateNote":"Synthetic reference only"}'
-    curl -fsS "$APP/api/operations/eu/example-eu-001"
-    curl -fsS "$APP/api/state" | jq .global
-    ```
+```bash title="Publish one EU record and inspect its separate summary"
+APP=$(./labs/run jurisdictions urls --json | jq -er .app)
+curl -fsS "$APP/api/events" -H 'Content-Type: application/json' \
+  -d '{"id":"example-eu-001","tenantId":"berlin-shop","amount":125,"privateNote":"Synthetic reference only"}'
+curl -fsS "$APP/api/operations/eu/example-eu-001"
+curl -fsS "$APP/api/state" | jq .global
+```
 
-    A pending response needs lookup of the same region and ID. A global read immediately after regional completion may still show the preceding exported summary.
+A pending response needs lookup of the same region and ID. A global read immediately after regional completion may still show the preceding exported summary.
+
+### Read the two views
 
 The resident consumer's completion receipt supplies region, partition and consumed offset. Its raw record includes the private note. The global summary excludes both tenant ID and note. The unauthenticated operator gateway can inspect all resident fixtures and return them to the browser; it is not tenant access control. The global consumer/broker have no regional broker-network attachment, but exporters connect to their region and the global network. This does not protect against a compromised exporter.
 
