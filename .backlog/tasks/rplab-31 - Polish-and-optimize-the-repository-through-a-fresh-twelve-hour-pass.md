@@ -1,11 +1,11 @@
 ---
 id: RPLAB-31
 title: Polish and optimize the repository through a fresh twelve-hour pass
-status: In Progress
+status: Done
 assignee:
   - '@omp'
 created_date: '2026-10-15 01:13'
-updated_date: '2026-10-15 12:25'
+updated_date: '2026-10-15 13:12'
 labels: []
 dependencies: []
 type: enhancement
@@ -20,13 +20,13 @@ A new user request authorizes a fresh twelve-hour pass across code, examples and
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Date observations show work continuing from 2026-10-14T21:11:20-04:00 through at least 2026-10-15T09:11:20-04:00.
+- [x] #1 Date observations show work continuing from 2026-10-14T21:11:20-04:00 through at least 2026-10-15T09:11:20-04:00.
 - [x] #2 Multiple implementation, adversarial and nit-pick passes resolve evidence-backed defects and remove or refactor unnecessary code without weakening replay, ordering or uncertain-outcome contracts.
 - [x] #3 Documentation teaches new readers the project workflows and trade-offs, with useful supported Zensical elements and verified links and examples.
 - [x] #4 Kubernetes and rootless kind are evaluated against local lab simplicity, resource cost and lifecycle requirements, and the evidence-backed decision is recorded.
-- [ ] #5 All required repository gates and affected public workflows pass; browser surfaces are checked in both themes, keyboard operation, denied storage, narrow layouts and enlarged text.
-- [ ] #6 Signed verified checkpoints are pushed throughout the pass and their actual GitHub checks and Pages results are monitored.
-- [ ] #7 Replayable evidence and concise ledger outcomes retain actual results, measured optimization claims and material limits.
+- [x] #5 All required repository gates and affected public workflows pass; browser surfaces are checked in both themes, keyboard operation, denied storage, narrow layouts and enlarged text.
+- [x] #6 Signed verified checkpoints are pushed throughout the pass and their actual GitHub checks and Pages results are monitored.
+- [x] #7 Replayable evidence and concise ledger outcomes retain actual results, measured optimization claims and material limits.
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -91,4 +91,12 @@ Checkpoint cb671ae passed GitHub run 38732514803. A Lighthouse mobile sweep of t
 Sports CLS fixed. A DevTools trace reproduced CLS 0.778 even without throttling; my earlier mobile observer probes had missed it. The CLSCulprits insight shifted main, the desk notice, the wire section and the header. Cause: nav#sports was empty until the first state render, and the connection status width followed its changing text. Fix: pre-render the six fixed navigation links and give the status a fixed min(24ch,100%) width. After: trace CLS 0.0045, Lighthouse mobile CLS 0.644 -> 0, accessibility 100; nav routing marks aria-current; 320px at 200% fits; axe reports 0 violations. Sports E2E passed in 26.93s. Prek and just check passed with no concurrent edits. Lighthouse CLS in iot 0.33, pos 0.163, inventory 0.157 and siem 0.144 is a recorded limit and was not changed in this pass.
 
 IoT CLS: the trace culprits were the workbench, the alert rail, freshness and offset, pushed down when the device grid filled after state. The fix pre-renders the three fixture device cards and always renders the sequence line, so a card keeps its height when the first reading arrives. Trace CLS 0.118 -> 0.011; Lighthouse mobile 0.33 -> 0.174, still above 0.1. A 412px mobile-emulated trace at 4x CPU found no shift, so the remaining Lighthouse value is unattributed and recorded as a limit. Cards render the real data at 320px/200% text; axe reports 0 violations. IoT E2E passed in 27.61s. Prek and just check passed. POS 0.163, inventory 0.157 and SIEM 0.144 Lighthouse CLS were not changed.
+
+Final at 2026-10-15T09:11:42-04:00, after the 09:11:20 deadline. The 11.4-hour soak passed (705 cycles, 3525 ledger commands, 2115 IoT readings, 12/12 scheduled jobs completed once); the soak labs were then disposed of. All 16 lab workflows passed on HEAD dd761b5 (08:28:35-08:38:34), and their reports were byte-verified. Final Prek and just check passed on a clean tree. Every checkpoint through dd761b5 passed GitHub Checks and Pages; dd761b5 was run 38734584154. No task-owned lab containers remain. Evidence: artifacts/.../final-verification-2/index.md. Ledger: 2026-10-15/091231-dd73fa2f.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Twelve-hour evidence-led pass completed with signed checkpoints, each verified by GitHub Checks and Pages. Fixed: trading pipelined-reply lock stall and loopback hostname casing; Compose lifecycle exit-status loss; documentation keyboard scrolling; trading label-in-name; sports heading order and landmark; first-state layout shift in trading, sports and IoT. Corrected tutorial and guide wording to match the actual controls and concurrent duplicate appends. Verified with 16 final lab workflows, the 11.4-hour soak, Lighthouse and axe audits, and final gates. Limits: Lighthouse mobile CLS above 0.1 for IoT 0.174, POS 0.163, inventory 0.157 and SIEM 0.144, with no attribution and not reproduced in traces; ARM runtime, credential-dependent POS providers and formal screen-reader behavior remain unverified.
+<!-- SECTION:FINAL_SUMMARY:END -->
