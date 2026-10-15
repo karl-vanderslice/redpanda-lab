@@ -29,7 +29,7 @@ Use Linux with the [host prerequisites](../reference/commands.md) met. Run from 
     ./labs/run event-log urls
     ```
 
-Open the printed **event-log app** URL. Wait for **Ready · full startup prefix consumed**. The page has a work-item index, a command form, a replay inspector and an execution ledger.
+Open the printed **event-log app** URL. Wait for **Ready · full startup prefix consumed**. The page has four areas: the **Work items** index, the **Open a work item** command form, the **Replay and receipts** inspector and the **Execution ledger**.
 
 !!! note "Keep existing work"
 
@@ -117,7 +117,7 @@ A timeout proves none of these outcomes by itself. Preserve the exact command, l
 
 ## Keep the log or dispose of it
 
-Leave the lab running to retain the workbench. An app-only restart preserves broker data:
+Leave the lab running to retain the work ledger. An app-only restart preserves broker data:
 
 ```bash title="Restart the application without deleting its log"
 just restart event-log app

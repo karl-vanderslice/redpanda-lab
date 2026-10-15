@@ -49,7 +49,7 @@ Publish another event with the same key. With unchanged partition count and part
 ## Build and drain a backlog
 
 1. Under **Shared consumer**, select **Pause consumer**.
-2. Start the generator at **50 events per second for 30 seconds**.
+2. Under **Traffic generator**, enter **Rate** `50`, leave **Duration** at `30` seconds, and select **Start generator**.
 3. Watch **Produced** increase while **Committed lag** grows. Open Grafana to compare the app readings with the dashboard.
 4. Select **Resume consumer**. Wait for committed lag to reach zero after processing and offset commits catch up.
 

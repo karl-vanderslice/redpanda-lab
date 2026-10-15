@@ -35,7 +35,7 @@ just up iot
 just urls iot
 ```
 
-Open the printed app URL and follow its guide. To inspect or rebuild that application:
+Open the printed app URL and follow its guide. To inspect the application, or restart it so it rebuilds its state from the retained log:
 
 ```bash
 just logs iot app

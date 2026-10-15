@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@omp'
 created_date: '2026-10-15 01:13'
-updated_date: '2026-10-15 10:42'
+updated_date: '2026-10-15 10:58'
 labels: []
 dependencies: []
 type: enhancement
@@ -73,4 +73,6 @@ Third checkpoint verification complete before signing: the unchanged narrow/enla
 Signed checkpoint ba2116c5c67db90162613231e5ad76d28676276c is pushed; remote master matched and exact-SHA GitHub Checks and Pages38716777917 succeeded (check/build7m58s, publication11s). Further adversarial HTTP work reproduced valid uppercase LOCALHOST rejected with403. A pipelined exact replay left the owned trading fixture unable to answer health even after socket closure. Recovered only that fixture through public restart; all prior operations/orders/trades/contracts were identical, with only its startup barrier advancing offset4to5. The first diagnostic client also exposed stale pooled-socket hangups, so preserved its failed harness and disabled pooling in the diagnostic client rather than changing server behavior for that transport artifact. The permanent public-workflow regression then failed on the uninstrumented signed runtime in41.24s: no pipeline response progress within15s. Root cause in source: immediate POST responses retained the shared guard while the per-connection writer could wait for an earlier request that needed that same guard. Prepared explicit guard drops for all immediate response branches, ASCII-case-insensitive localhost/Origin authority checks, the real replay/conflict pipeline E2E and human slow-client capacity guidance. All-lab, browser and required-gate verification follows before another signed push; the twelve-hour deadline remains09:11:20-04:00.
 
 Request-boundary fix verified before signing: the first passing-after all-lab run passed 15 of 16 labs (663.38s), including the positive LOCALHOST Host check in every lab. Trading failed only on a regression-fixture assumption (tiny_http uses chunked framing for the large 404, so there is no Content-Length). After the parser handled both framings, the uninstrumented trading E2E passed in 35.77s: pipelined exact replay and conflict under real backpressure, health and lookups during the blocked response, complete ordered responses, unchanged state, mixed-case Host/Origin order, restart replay. Trading guide: 0 axe violations in both themes at 320px/40px root; denied storage keeps theme and TOC keyboard flow usable. Two read-only citation audits checked core and lab external references and found no broken links or claim mismatches. Prek and just check passed in 35.92s.
+
+Fresh new-reader review found four verified wording defects: unnamed generator controls, generic work-ledger area names, "workbench" for the work ledger, and "rebuild" implying an image build for restart. Fixed all four. Followed the revised explorer steps literally in the owned fixture: rate 50 for 30s produced 1495 events, lag peaked at 390 while paused and returned to 0 after resume. The three changed pages had 0 axe violations in both themes at 320px/40px root. Two citation audits found no broken links. Prek and just check passed in 41.86s.
 <!-- SECTION:NOTES:END -->
