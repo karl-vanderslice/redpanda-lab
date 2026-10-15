@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@omp'
 created_date: '2026-10-15 01:13'
-updated_date: '2026-10-15 11:28'
+updated_date: '2026-10-15 11:34'
 labels: []
 dependencies: []
 type: enhancement
@@ -79,4 +79,6 @@ Fresh new-reader review found four verified wording defects: unnamed generator c
 Checkpoint 4849e79: GitHub run 38724004278 succeeded. Two read-only scouts compared every named control in all 15 lab guides with the actual UI and CLI sources. One verified mismatch: the activity follow step did not name the Follow button on the "Mara Vale · fixture" card. Fixed it. Followed all five activity steps literally in an isolated lab: 1 open, 1 distinct reader, Like became Unlike, Follow became Unfollow, and Followed authors only showed Mara cf-bench. Disposed of only rp-activity-f42cb8f583. The activity page had 0 axe violations in both themes at 320px/40px root. Prek and just check passed in 38.53s.
 
 An independent adversarial review of 8d2bea7..HEAD found no verified defects: Compose patch scope, dry-run and negative exit codes; trading lock release and Host/Origin bypass inputs; pipelined parser; agent-chat unpause traps; site-controls observer; LOCALHOST checks; doc claims. It noted one unconfirmed weakness: the pipelined oracle assumes 8 MiB stalls the server write. This host has a 32 MiB tcp_rmem maximum and the test still failed before the fix, so the stall happens here, but a host that buffers more could let the old bug pass. Documented the precondition in the test. A literal-command audit of the reference and how-to pages found no defects. A source review of concurrent duplicate commands found no double effect: nine labs serialize writes; sports, jurisdictions and trading reserve the ID; agent-messaging and agent-chat may write one redundant identical record, which the reducer ignores.
+
+Ran concurrent identical-command probes on isolated labs, then disposed of them. agent-chat: two identical creations returned 201/201 and produced one conversation; two identical prompts returned 202/202 and produced one job with attempts 1; a different prompt with the same ID returned 409. agent-messaging: two identical submissions returned 202/202 and the topic held task.submitted at offsets 0 and 1, but each of the three stages started once and the duplicate count went from 0 to 1; a later sequential retry returned 200 and the identical task. Corrected the agent-messaging guide, which had claimed no second append. The guide page had 0 axe violations in both themes at 320px/40px root. Prek passed, and just check passed with exit 0 and 16 PASS lines.
 <!-- SECTION:NOTES:END -->

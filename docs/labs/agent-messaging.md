@@ -41,7 +41,7 @@ SSE updates durable snapshots. Pause freezes automatic display updates while rec
 
 Envelope fields are `schema:1`, `taskId`, `eventId`, `type` and informational UTC `at`. Step events add `stage`, `stepId`, `agentId`, `instanceId`. Results include actual text and `inference` harness/version/model/provider/steps/usage/duration evidence. Offsets, not timestamps, order transitions. Reducers check stage/actor/predecessor and deduplicate seen event/task IDs; malformed/out-of-order records are rejected/counted rather than repaired. A failed stage blocks successors.
 
-HTTP same-ID/same-trimmed-text returns the current original task without another append; changed text returns 409. Concurrent claims are first-consumed-wins. Retained IDs make transitions idempotent, not model HTTP exactly once.
+A same-ID, same-trimmed-text retry after the original is consumed returns the current original task without another append; changed text returns 409. Two identical submissions in flight together can each append, and consumption ignores the later copy by its stable event ID, so neither starts another inference. Concurrent claims are first-consumed-wins. Retained IDs make transitions idempotent, not model HTTP exactly once.
 
 ## HTTP and operations
 

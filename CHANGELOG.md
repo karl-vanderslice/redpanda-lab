@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- State that concurrent identical agent-messaging submissions can each append, while consumption ignores the later copy and starts no second inference.
 - Name the exact generator controls, work-ledger page areas and activity follow button in the guides, and describe `restart` as a log rebuild rather than an image rebuild.
 - Keep trading replay, conflict, pending and unavailable responses outside the exchange-state lock, including pipelined replies waiting for an earlier request. Accept case-insensitive loopback hostnames without relaxing the foreign-Host or same-origin boundary.
 - Report failed native Compose start, stop and restart actions instead of accepting an old healthy app as proof of a completed restart. Record local tool and native-client patches in E2E source hashes.
