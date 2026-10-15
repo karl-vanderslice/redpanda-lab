@@ -58,7 +58,7 @@ button:disabled { opacity: .65; cursor: wait; }
 .brand span { display: block; }
 .masthead-note p { margin: .4rem 0 0; font-size: .9rem; color: var(--muted); }
 .header-actions { display: flex; flex-direction: column; align-items: flex-start; gap: .5rem; font-size: .85rem; }
-#connection { max-width: 24ch; }
+#connection { width: min(24ch, 100%); }
 .eyebrow { font-family: ui-monospace, "DejaVu Sans Mono", monospace; font-size: .8rem; font-weight: 600; line-height: 1.5; color: var(--rust); letter-spacing: .045em; margin: 0 0 .65rem; }
 nav { display: flex; flex-wrap: wrap; gap: .25rem 1rem; border-block: 1px solid var(--line); padding-block: .5rem; }
 nav a { padding: .65rem .15rem; min-height: 2.75rem; font-weight: 600; text-decoration: none; border-bottom: 3px solid transparent; }
