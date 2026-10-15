@@ -84,14 +84,15 @@ result=$(order "$prefix-buy" buy 26000 8)
 assert "$result" '.status == "accepted" and (.trade_ids | length) == 3' 'Identical stable ID returns original result'
 after=$(curl -fsS "$url/api/state")
 assert "$after" ".next_offset == $(printf '%s' "$before" | jq '.next_offset')" 'Deduplicated retry does not append a new execution'
+node labs/trading/pipelined-requests.e2e.mjs "$url" "$prefix-buy"
 code=0
 result=$(cli order --id "$prefix-buy" --commodity WHEAT --side buy --price-ticks 26000 --quantity 9) || code=$?
 [[ "$code" == 1 ]] || fail 'Conflicting operation ID must be HTTP 409 / CLI exit 1'
 assert "$result" '(.error | contains("different command"))' 'Stable ID payload conflict is explicit'
 # Browser order entry uses this same public endpoint; exercise its JSON contract.
 body=$(jq -nc --arg id "$prefix-web" '{id:$id,action:"order",commodity:"WHEAT",side:"buy",price_ticks:20000,quantity:2}')
-result=$(curl -fsS --max-time 25 "$url/api/commands" -H 'Content-Type: Application/JSON; charset=utf-8' -H "Origin: $url" --data "$body")
-assert "$result" '.status == "accepted"' 'Same-origin JSON accepts mixed-case media types and parameters'
+result=$(curl -fsS --max-time 25 "$url/api/commands" -H 'Content-Type: Application/JSON; charset=utf-8' -H "Host: LOCALHOST:${url##*:}" -H "Origin: http://localhost:${url##*:}" --data "$body")
+assert "$result" '.status == "accepted"' 'Same-origin JSON accepts mixed-case hostnames and media types with parameters'
 operation "$prefix-web" >/dev/null
 cli cancel --id "$prefix-cancel-web" --order-id "$prefix-web" >/dev/null
 # A foreign exact duplicate can land before the next proposal is appended.

@@ -97,7 +97,11 @@ Invalid domain action, symbol, side, price or quantity produces a durable `rejec
 
 A 20-second reply deadline returns 202 `pending` while work can still finish. Poll the original ID. Publish or consume failure returns 503 `outcome_unknown`, disables trading and retains inspectable reconstructed results. Restore broker availability, restart the app, inspect the original operation, then retry only the identical payload if appropriate. A 404 `not_observed` while unready does not prove non-publication. Startup failures leave health at 503 with a diagnostic; there is no automatic domain retry. Queue admission failure reports `not_submitted`; unavailable readiness and the separate HTTP-concurrency limit have their own 503 responses.
 
-The CLI emits JSON: exit 0 for a successful lookup or accepted command, 1 for usage/transport/HTTP client errors, 2 for a durable rejection including lookup, and 3 for pending/server-unavailable/unknown outcome. `commodity-exchange help` lists its options. Assets are embedded under a same-origin CSP with no remote scripts or credentials. A browser Origin must equal `http://` plus the Host header and name a loopback host (`127.0.0.1`, `localhost` or `[::1]`). Origin checks are not authentication or a trusted-local-writer boundary.
+The CLI emits JSON: exit 0 for a successful lookup or accepted command, 1 for usage/transport/HTTP client errors, 2 for a durable rejection including lookup, and 3 for pending/server-unavailable/unknown outcome. `commodity-exchange help` lists its options. Assets are embedded under a same-origin CSP with no remote scripts or credentials. Requests require a loopback Host (`127.0.0.1`, `localhost` or `[::1]`). Browser mutations also require an HTTP Origin matching that authority, with case-insensitive hostname comparison. These checks are not authentication or a trusted-local-writer boundary.
+
+!!! note "A slow response still uses capacity"
+
+    One client that stops reading does not reserve the exchange's matching state. With request slots available, health and other lookups can continue. Each unfinished response still occupies one of 96 HTTP slots; enough slow clients can exhaust admission. Full-history replies also grow with the market.
 
 ## Workload tuning
 
@@ -125,6 +129,6 @@ Production also needs encrypted authenticated transport, replicated logs in inde
 
 ## Checks and attribution
 
-`bash labs/trading/e2e.sh` uses an already-running lab, cancels existing open WHEAT orders and requires no concurrent traders. It covers both price/time directions, multi-maker and partial fills, cancellation, rejection, stable IDs, metrics and exact replay. `just test trading` deletes existing history and runs a fresh disposable workflow. `just check trading` covers Cargo formatting, warning-denied Clippy, ShellCheck, browser JavaScript syntax, Nix evaluation and strict docs.
+Use an isolated checkout for `just test trading`: it deletes that checkout's trading history, starts a fresh lab, and checks price/time priority in both directions, multi-maker and partial fills, cancellation, rejection, stable IDs, metrics and exact replay. It also checks loopback hostname casing and pipelined replay/conflict responses under real backpressure. The underlying `bash labs/trading/e2e.sh` uses an already-running lab, cancels open WHEAT orders and requires no concurrent traders. `just check trading` covers Cargo formatting, warning-denied Clippy, ShellCheck, browser JavaScript syntax, Nix evaluation and strict docs.
 
 `Cargo.toml` pins direct dependencies and `Cargo.lock` pins transitive versions/checksums. `tiny_http`, `ureq`, `serde`, `serde_json`, `parking_lot`, Redpanda and Console retain their upstream licensing. No third-party UI assets, market data, logos or fonts are copied. The HTTP Proxy reference describes Redpanda 26.2 / v26.2.4; its rolling URL can change.

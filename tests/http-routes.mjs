@@ -124,7 +124,7 @@ if (mutationPaths[scenario]) {
     }
     console.log(`PASS intentional 403 foreign Host GET ${path}, with and without Origin`);
   }
-  for (const hostname of ['localhost', '[::1]']) {
+  for (const hostname of ['localhost', 'LOCALHOST', '[::1]']) {
     assert.equal(await rawStatus('/', 'GET', { host: `${hostname}:${base.port}` }), 200, `Supported loopback Host ${hostname}`);
   }
   const status = await rawStatus(mutationPaths[scenario], 'POST', {

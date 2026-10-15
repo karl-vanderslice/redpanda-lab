@@ -146,7 +146,7 @@ fn loopback_host(host: &str) -> bool {
         Some((name, port)) if !port.is_empty() && port.bytes().all(|c| c.is_ascii_digit()) => name,
         _ => host,
     };
-    matches!(name, "127.0.0.1" | "localhost" | "[::1]")
+    matches!(name, "127.0.0.1" | "[::1]") || name.eq_ignore_ascii_case("localhost")
 }
 static COMMODITIES: LazyLock<Value> = LazyLock::new(|| {
     json!([
@@ -613,7 +613,11 @@ fn handle(mut req: Request, state: Shared, jobs: mpsc::SyncSender<Job>) {
         .and_then(|value| value.split(';').next())
         .is_some_and(|value| value.trim().eq_ignore_ascii_case("application/json"));
     let origin_ok = get_header("Origin")
-        .map(|origin| origin.strip_prefix("http://") == Some(host))
+        .map(|origin| {
+            origin
+                .strip_prefix("http://")
+                .is_some_and(|authority| authority.eq_ignore_ascii_case(host))
+        })
         .unwrap_or(true);
     if !content_ok || !origin_ok {
         respond(
@@ -662,6 +666,7 @@ fn handle(mut req: Request, state: Shared, jobs: mpsc::SyncSender<Job>) {
         );
         return;
     }
+    // Pipelined replies wait for earlier requests, which may also need this lock.
     {
         let mut s = state.lock();
         if let Some(op) = s.operations.get(&command.id) {
@@ -673,16 +678,14 @@ fn handle(mut req: Request, state: Shared, jobs: mpsc::SyncSender<Job>) {
                     json!({"error":"Operation ID already belongs to a different command"}),
                 )
             };
+            drop(s);
             respond(req, result.0, result.1.to_string(), "application/json");
             return;
         }
         if !s.ready {
-            respond(
-                req,
-                503,
-                json!({"error":s.error,"status":"unavailable"}).to_string(),
-                "application/json",
-            );
+            let body = json!({"error":s.error,"status":"unavailable"}).to_string();
+            drop(s);
+            respond(req, 503, body, "application/json");
             return;
         }
         if let Some(existing) = s.pending.get(&command.id) {
@@ -694,6 +697,7 @@ fn handle(mut req: Request, state: Shared, jobs: mpsc::SyncSender<Job>) {
                     json!({"error":"Operation ID is pending with a different command"}),
                 )
             };
+            drop(s);
             respond(req, result.0, result.1.to_string(), "application/json");
             return;
         }
