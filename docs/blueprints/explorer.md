@@ -7,7 +7,7 @@ hide:
 
 ![Proposed Signal Harbor Works system topology](../assets/blueprints/explorer.svg)
 
-Authenticated admission feeds a native Kafka producer. Redpanda carries six ordered partitions to a consumer and bounded recent-event view. App and broker metrics reach Prometheus; Grafana queries that metric store, not Kafka.
+In this proposal, events enter through authenticated admission and a native Kafka producer. Redpanda's six ordered partitions feed a consumer and bounded recent-event view. Alongside that event path, Prometheus collects app and broker metrics for Grafana to query.
 
 [Scope and deployment assumptions](./index.md).
 
@@ -17,8 +17,8 @@ The lab combines producer and consumer in one Node process, uses a fixed group a
 
 ## Authority and effects
 
-The application owner controls native-client lifetime, partition readiness and event identities. Observability owns metric definitions and dashboards; creation-to-consumption delay includes backlog. The view is not a business ledger, and synthetic payment labels produce no commerce effects.
+The application owner controls native-client lifetime, partition readiness and event identities. Observability owns metric definitions and dashboards; creation-to-consumption delay includes backlog. The recent-event view helps you inspect delivery. Its synthetic payment labels are sample events with no commerce effects.
 
-The consumer resumes from committed group offsets and can redeliver records after interruption. Restarting the app resets its bounded view and process counters; it does not reconstruct a business ledger. Rebuilding a projection requires an explicit offset and retained-range contract because the explorer topic expires records after six hours.
+After an interruption, the consumer resumes from committed group offsets and may redeliver records. An app restart clears its bounded view and process counters. Rebuilding an event projection requires an explicit offset and retained-range contract: the explorer's six-hour event window can expire records that a rebuild would need.
 
 [Explorer guide](../tutorials/first-event.md) · [D2 source](sources/explorer.d2) · [PNG export](../assets/blueprints/explorer.png)

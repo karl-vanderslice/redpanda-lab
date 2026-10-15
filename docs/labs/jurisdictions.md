@@ -4,7 +4,9 @@ description: Route synthetic records to a fixed resident cluster, inspect summar
 
 # Meridian Ledger Alliance
 
-Meridian Ledger Alliance is a fictional regional-record operator. Three independent raw-log clusters, labelled EU, US and APAC, feed a fourth summary cluster. Four RF1 brokers and five Node/KafkaJS app containers run on one host. These labels are not geographic isolation, compliance certification or disaster recovery. Use synthetic data only; grouping Canadian and US fixtures is not a legal residency determination.
+Meridian Ledger Alliance lets you route fictional tenant records to a fixed home and watch approved summaries reach a global view. Three independent raw-log clusters, labelled EU, US and APAC, feed a fourth summary cluster. Four RF1 brokers and five Node/KafkaJS app containers run on your workstation.
+
+Use synthetic data only. The region labels help you explore placement and export policy on one host; real geographic isolation, compliance and disaster recovery need separate evidence. In particular, grouping Canadian and US fixtures here makes no legal residency determination.
 
 ## Publish and inspect a resident record
 
@@ -132,7 +134,7 @@ Role/broker settings are deployment wiring, not routing or privacy overrides. Ti
 
 [Production blueprint](../blueprints/jurisdictions.md).
 
-Only single-host resident logs, exporters and an operator gateway run in the lab. The proposed region-scoped identity, network, key, storage and backup owners enforce access and recovery within each real residency boundary; a reviewed registry owns placement changes. Export-policy and privacy reviewers own field/cohort approval, while the global summary service owns only its replayable filtered projection and federation lag.
+The proposal takes the lab's resident logs and exporters into real regional boundaries. Region-scoped identity, network, key, storage and backup owners enforce local access and recovery; a reviewed registry owns placement changes. Export-policy and privacy reviewers approve fields and cohorts. The global summary service retains a filtered, replayable projection and tracks federation lag, leaving raw-data authority with each resident region.
 
 Production needs regional quorums, TLS/auth/ACLs, writer fencing, export audit, aggregation/privacy assessment and explicit residency migration and disaster-recovery decisions. Never route private writes elsewhere merely to restore availability. The [UK ICO data-minimisation guidance](https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-protection-principles/a-guide-to-the-data-protection-principles/data-minimisation/) is UK-specific and marked under review, not an EU/US/APAC compliance determination. Define recovery for raw resident data separately from summaries; see [production and disaster recovery](../explanation/production.md).
 

@@ -13,7 +13,7 @@ Authorized scanners submit catalog-validated commands to one fenced stock owner.
 
 ## Lab and proposal
 
-The lab conserves integer stock across two locations and transfers both endpoints immediately. Fulfill is local accounting, not warehouse dispatch. The proposal adds scanners, operator identity and physical-intent/ack phases, requiring a schema/API migration with explicit conservation equations.
+Follow stock across the lab's two locations: whole-unit transfers update both endpoints immediately, and fulfillment records a local accounting outcome. Physical warehouse dispatch would add scanners, operator identity and separate intent/acknowledgment phases. Introducing those phases requires a schema/API migration with explicit conservation equations.
 
 ## Authority and effects
 

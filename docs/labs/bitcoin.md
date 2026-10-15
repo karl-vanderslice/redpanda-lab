@@ -4,7 +4,9 @@ description: Replay one fixed day of Bitcoin closes, inspect next-close paper fi
 
 # Beacon Ridge Research
 
-Beacon Ridge Research is a fictional paper-strategy desk. One Node/KafkaJS owner replays an offline BTC/USD candle fixture, records commands and complete outcomes in Redpanda, and serves the browser's account and chart. There is no live exchange connection, order-routing endpoint, wallet or private key.
+Beacon Ridge Research is a fictional paper-strategy desk where you can replay an offline day of BTC/USD candles and inspect the resulting account and chart. One Node/KafkaJS owner records commands and complete outcomes in Redpanda so a restart can reproduce the same paper account.
+
+All trades stay in the paper account. The lab has no live exchange connection, order-routing endpoint, wallet or private key, so you can explore strategy and recovery without supplying funds or credentials.
 
 ## Run the replay
 
@@ -103,7 +105,7 @@ The lab sends uncompressed records. [KafkaJS 2.2.4](https://raw.githubuserconten
 
 [Production blueprint](../blueprints/bitcoin.md).
 
-Only the offline fixture, paper owner and replayed browser state run here. The proposed market-data service owns provenance, gaps and corrections; a fenced strategy owner consumes its validated chronology. Separately authorized risk, execution and custody/accounting services own real positions and venue reconciliation, not the paper reducer or a broker acknowledgment.
+The proposal builds on the offline replay by giving market-data provenance, gaps and corrections to a dedicated service. A fenced strategy owner consumes its validated chronology. Real positions would need separately authorized risk, execution and custody/accounting services with venue reconciliation. Keep that authority separate from the paper reducer: a broker acknowledgment records publication, while a venue or custodian must supply evidence of the external outcome.
 
 No spread, liquidity, partial fills, network latency, funding, taxes or custody is modeled. One captured day is not an investment study or advice. Regional recovery must fence the owner and consistently restore market history, strategy version, cash, basis, fees, command identities and offsets before reconciling positions and any replication-loss window. Define and exercise RPO/RTO separately; see [production and disaster recovery](../explanation/production.md).
 

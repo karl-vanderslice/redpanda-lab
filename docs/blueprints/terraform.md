@@ -17,6 +17,6 @@ The lab uses pinned Terraform and Docker provider versions through a selected ro
 
 ## Authority and effects
 
-Infrastructure owns plan identity, provider lifecycle and API scope; the mounted Podman socket has broad host-user authority even when mounted read-only. Redpanda operations owns topics, security and data-preserving rolling changes. State replication is not broker-log backup; recovery must independently demonstrate retained data and restore frontiers.
+Infrastructure owns plan identity, provider lifecycle and API scope. Treat the mounted Podman socket as broad host-user authority even when it is mounted read-only. Redpanda operations owns topics, security and data-preserving rolling changes. Broker-log backups need their own recovery path alongside replicated infrastructure state, with verified retained data and restore frontiers.
 
 [Lab guide](../labs/terraform.md) · [D2 source](sources/terraform.d2) · [PNG export](../assets/blueprints/terraform.png)

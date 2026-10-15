@@ -4,7 +4,9 @@ description: Assign a synthetic driver, report positions, and distinguish a reco
 
 # Logistics: Wayline Dispatch
 
-Wayline Dispatch is a fictional three-driver dispatch board. Redpanda retains the fleet fixture, explicit location observations, trip assignments and rejected commands. The plotted 20 × 20 km grid is synthetic: no GPS receiver, road map, rider account, routing provider or physical delivery is connected.
+At Wayline Dispatch, you assign trips to three fictional drivers and report their positions on a 20 × 20 km grid. Follow an assignment through its lifecycle, including rejected commands, and use Redpanda to recover the dispatch board after a restart.
+
+The grid and position reports are synthetic. GPS collection, road maps, rider accounts, routing and physical delivery would belong to connected services; here you can focus on how one owner keeps driver availability and trip state consistent.
 
 ## Dispatch one trip {#run}
 
@@ -82,7 +84,7 @@ Measure candidate scans/sorting, queue wait and state serialization. Any spatial
 
 [Production blueprint](../blueprints/logistics.md).
 
-Production would add authenticated device observations, freshness checks and a dispatch lease/fence before commands reach the authoritative log. Routing and spatial read projections would support decisions without becoming independent assignment writers; driver notifications and proof of delivery would require their own reconciled workflows. Those components do not run here, and a consumed `completed` trip is not evidence that a person or parcel arrived.
+For a connected fleet, the proposal puts authenticated device observations, freshness checks and a dispatch lease or fence ahead of the authoritative log. Routing and spatial read projections help that owner make decisions while leaving assignments under its control. Driver notifications and proof of delivery need separately reconciled workflows: a consumed `completed` trip records the local decision, while arrival of a person or parcel needs its own evidence.
 
 ## Scenario and disposal
 

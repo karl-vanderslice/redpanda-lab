@@ -4,7 +4,9 @@ description: Complete a cash checkout and full refund, then learn how durable re
 
 # Point of sale: Counterlane Market
 
-Counterlane Market is a fictional checkout desk with a quantity basket, receipts and full refunds. Its synthetic USD catalog prices coffee at 350 cents, sandwich at 725 and cookie at 225. Cash is a local tender ledger, not a connected drawer; there is no tax, tip or inventory model. Optional Stripe test-mode and Square sandbox adapters make real HTTP requests, but their runtime behavior remains unverified without authorized credentials.
+Counterlane Market lets you build a basket, complete a cash checkout and issue a full refund at a fictional store. Its synthetic USD catalog prices coffee at 350 cents, a sandwich at 725 and a cookie at 225. Start with cash to follow the local tender ledger and durable receipt.
+
+Cash entries record accounting rather than operating a connected drawer; prices cover the catalog items without tax, tips or inventory changes. Optional Stripe test-mode and Square sandbox adapters make real HTTP requests. Their runtime behavior remains unverified without authorized credentials, so treat the cash workflow and provider exercises as separate paths.
 
 ## Start with a cash receipt {#run}
 
@@ -101,4 +103,6 @@ Startup uses a fresh full-prefix replay group and rejects missing history or ext
 
 [Production blueprint](../blueprints/pos.md).
 
-Production would need authenticated merchant/operator scopes, secret delivery and a fenced effect owner with durable payment-attempt evidence. Verified webhook deduplication, provider reconciliation and explicit manual resolution would append observations to the ledger; a receipt read store would remain a projection, not payment authority. Those services and applicable payment/security/legal reviews are absent here, and neither broker acknowledgments nor API success establish financial settlement.
+For a connected payment service, the proposal adds authenticated merchant/operator scopes, secret delivery and a fenced effect owner with durable payment-attempt evidence. Verified webhook deduplication, provider reconciliation and explicit manual resolution append observations to the ledger, while a receipt read store serves the resulting view.
+
+These additions need implementation and applicable payment, security and legal review. Financial settlement requires its own evidence beyond a broker acknowledgment or successful provider API response.

@@ -13,10 +13,10 @@ Authorized collectors publish raw telemetry to Redpanda. Normalization preserves
 
 ## Lab and proposal
 
-The lab serializes synthetic telemetry and analyst actions in one partition using a global event-time frontier. The proposal adds telemetry.ingress.v1 and telemetry.correlation.v1, source authorization, checkpoints and search. These are new pipeline/schema contracts, not existing topics.
+Explore synthetic telemetry and analyst actions in one ordered partition, using the lab's global event-time frontier. Moving to this proposed pipeline would introduce `telemetry.ingress.v1` and `telemetry.correlation.v1`, along with source authorization, checkpoints and search. Those additions require new pipeline and schema contracts.
 
 ## Authority and effects
 
-The rule owner retains window, lateness and case-revision authority. Collector owners must review entity keys and watermark completeness before repartitioning; per-entity watermarks cannot silently replace the global policy. Evidence custody owns access and restore. Search is a rebuildable projection, not evidence authority; no real network capture is implied.
+The rule owner retains authority over windows, lateness and case revisions. Before repartitioning, collector owners must review entity keys and watermark completeness; replacing the global policy with per-entity watermarks would change its behavior. Evidence custody owns access and restore, while search rebuilds a view of that evidence. The lab supplies synthetic telemetry; real network capture would need a separately authorized collection path.
 
 [Lab guide](../labs/siem.md) · [D2 source](sources/siem.d2) · [PNG export](../assets/blueprints/siem.png)

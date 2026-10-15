@@ -4,7 +4,9 @@ description: Send and schedule real local-model prompts, cancel pending work, an
 
 # Clockwork Correspondence
 
-Clockwork Correspondence is a fictional notebook for immediate and one-shot scheduled prompts. Redpanda retains conversation, schedule, cancellation, attempt and reply transitions. One Node app owns the timer and calls internal llama.cpp for real SmolLM2-135M-Instruct Q8_0 replies. Redpanda is the log, not the timer. No tools, internet retrieval, cloud credential or canned reply is provided.
+Clockwork Correspondence is a fictional notebook for sending a prompt now or scheduling it for later. Try a one-shot schedule, cancel pending work, and follow the recorded attempt through to its reply. Redpanda retains conversations and every schedule, cancellation, attempt and reply transition.
+
+One Node app runs the timer and calls an internal llama.cpp server for real SmolLM2-135M-Instruct Q8_0 replies. The model works locally with the supplied conversation text, without tools, internet retrieval or cloud credentials. Replies come from inference rather than canned text; Redpanda preserves the history while the app owns scheduling.
 
 ## Run and correspond
 
@@ -129,10 +131,12 @@ Measure due-lateness as queue wait, tick delay, publication/projection and model
 
 [Production blueprint](../blueprints/agent-chat.md).
 
-Production requires authenticated conversation access, deletion/retention policy, persistent schedules/results, admission quotas and explicit clock policy. Fenced execution ownership and coordinated failover must reconcile indeterminate model effects before any recorded retry decision; adding app replicas is unsafe here. Regional restore must preserve IDs, due times, cancel/start/completion order and pinned artifacts, fence the old scheduler and account for any replication-lost completion or cancellation rather than infer permission to repeat a call.
+For a shared conversation service, the proposal adds authenticated access, deletion and retention policy, persistent schedules and results, admission quotas and an explicit clock policy. Keep one app owner in the lab. Scaling the scheduler requires fenced execution ownership and coordinated failover that reconciles indeterminate model effects before a recorded retry decision.
+
+A regional restore must preserve IDs, due times, cancel/start/completion order and pinned artifacts. Fence the old scheduler and account for any completion or cancellation lost during replication before deciding whether another call is safe.
 
 ## Sources and scenario coverage
 
-The [HuggingFaceTB 135M card](https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct) documents English-first limits, possible factual/logical errors and bias. Its function-calling claim is for 1.7B, not this model; this app grants no tools. SmolLM2/GGUF card and Apache-2.0 license are retained in the model image; llama.cpp is MIT. Quantization adds no accuracy or safety guarantee.
+Review generated replies as model output, especially when a decision has consequences. The [HuggingFaceTB 135M card](https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct) describes English-first output, possible factual and logical errors, and bias. Its function-calling claim applies to 1.7B rather than this model; the notebook grants no tools. SmolLM2/GGUF cards and the Apache-2.0 license are retained in the model image; llama.cpp is MIT. Quantization changes representation, not the need to evaluate accuracy and safety.
 
 Run `just test agent-chat` only in a disposable checkout: it deletes the selected lab's existing data. It exercises request deduplication, actual output/usage, no early scheduled start, pending cancellation, restart before due, one scheduled attempt, exact completed-message replay, and a failed native restart with a paused model dependency. [Test orchestration](../reference/commands.md) owns setup and disposal. One execution is not proof of exactly-once inference under all failures.

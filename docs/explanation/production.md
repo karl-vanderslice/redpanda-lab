@@ -1,8 +1,8 @@
 # Production and disaster recovery
 
-The labs demonstrate local mechanisms, not production deployments. Replicas share power, disk, kernel and network failure domains. No lab result establishes stable-storage durability, multi-region failover, an RPO/RTO target, compliance, a security audit or a performance benchmark.
+The local labs give you a way to explore delivery, application decisions and recovery before taking on production operations. All replicas run on one workstation and share its power, disk, kernel and network. Treat the experiments as a starting point: production durability, regional failover, recovery targets, compliance, security review and performance each need their own validation.
 
-The [production blueprints](../blueprints/index.md) propose systems for the fictional organizations. Their identities, fences, external adapters, archives and zone boundaries are design responsibilities, not deployed controls.
+The [production blueprints](../blueprints/index.md) propose larger systems for the fictional organizations. Read their identity controls, writer fences, external adapters, archives and zone boundaries as responsibilities to implement and test when developing those designs.
 
 ## Establish the operating boundary
 
@@ -12,7 +12,7 @@ Ordering is partition-local. Choose keys around a decision owner: a book, task, 
 
 Producer idempotence does not identify a new HTTP request or reconcile an external payment. External effects need stable operation IDs, durable deduplication and an explicit unknown-result procedure. Replay must not silently repeat an effect.
 
-Ordinary lab applications require complete execution history; they have no authoritative snapshot fallback. Unlimited retention is not an archive and eventually exhausts disk. Any production checkpoint design must preserve domain state, deduplication identities, reducer/schema versions and an exact offset frontier. See [topic policy](../reference/tuning.md#topic-policy).
+Ordinary lab applications rebuild from their complete execution history. Keep that history available, since recovery has no authoritative snapshot fallback. Unlimited retention keeps records until disposal or resource exhaustion, so production needs a deliberate archive and checkpoint design. Preserve domain state, deduplication identities, reducer/schema versions and an exact offset frontier. See [topic policy](../reference/tuning.md#topic-policy).
 
 ## Recover under one writer
 
@@ -38,7 +38,7 @@ RPO is acceptable data loss; RTO is acceptable restoration time. Set them per wo
 
 ## Reconcile the domain, not just offsets
 
-These are production obligations, not claims that the lab implements them. Each [lab guide](../labs/index.md) describes the current local boundary; its [blueprint](../blueprints/index.md) describes a proposed extension.
+Use the table below to plan recovery around the outcome that matters to the application. Each [lab guide](../labs/index.md) explains the local workflow; its [blueprint](../blueprints/index.md) proposes how to extend it for production.
 
 | Workflow | Recovery must preserve or reconcile |
 | --- | --- |
@@ -58,4 +58,4 @@ These are production obligations, not claims that the lab implements them. Each 
 | Resident data | Regional write authority and raw-data boundaries, plus explicitly permitted summary identities and export progress. |
 | Terraform provisioning | Protected/locked state, provider pins and actual resources before a reviewed recovery plan. The Podman socket grants host-user authority; see [Terraform](../labs/terraform.md). |
 
-A restored log cannot establish that a bank settled funds, a driver completed a trip or a model call never ran. Those decisions belong to the system that owns the effect and its evidence.
+After restoring the log, reconcile external outcomes with the systems that own them. For a payment, check the bank's settlement evidence; for a trip, check the delivery record; for an interrupted model call, establish its outcome before deciding whether to try again.

@@ -13,7 +13,7 @@ Authenticated schedules and cancellations enter Redpanda. A time/lease owner gov
 
 ## Lab and proposal
 
-The lab selects due work by instant then ID in one process and resolves eligibility by consumed start/cancel order. The proposal adds authenticated conversation scope, UTC clock policy, lease epochs and durable projections; unlimited lab retention is not independent recovery.
+In the lab, one process selects due work by instant then ID, and consumed start/cancel order determines eligibility. For a production scheduler, the proposal adds authenticated conversation access, UTC clock policy, lease epochs and durable projections. Plan independent recovery alongside these additions; keeping the lab's full history is only the local rebuild path.
 
 ## Authority and effects
 

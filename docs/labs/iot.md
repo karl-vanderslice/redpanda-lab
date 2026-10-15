@@ -4,7 +4,9 @@ description: Open and close synthetic temperature and battery incidents, then se
 
 # IoT: Cryowell Instruments
 
-Cryowell Instruments is a fictional cold-chain monitoring desk. Three synthetic devices submit HTTP readings; one KafkaJS consumer derives device history, receipts and temperature/battery incidents from Redpanda. No physical sensor, MQTT broker, notification service or actuator is connected.
+Cryowell Instruments gives you a cold-chain sensor bench with three fictional devices. Send temperature and battery readings, watch incidents open and close, then replay the log to recover the same device history and receipts. Readings enter over HTTP, and one KafkaJS consumer applies them from Redpanda.
+
+You supply the readings in this experiment. Connecting physical sensors through MQTT, delivering notifications or controlling an actuator would add separate transport and delivery responsibilities, described in the [production proposal](#proposed-production-architecture).
 
 ## Run the sensor bench {#run}
 
@@ -75,7 +77,9 @@ Measure command queue wait, consumption latency, replay time and memory. Do not 
 
 [Production blueprint](../blueprints/iot.md).
 
-A production gateway would authenticate and rotate device identities, spool readings during outages, and define device-time and sequence validation. Redpanda would retain accepted telemetry for independently rebuildable time-series/read projections; notifications and actuators would use separately reconciled delivery workflows, not replay side effects. MQTT 5 is an optional transport proposal, not a running component, and its [QoS guarantees](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html) do not establish exactly-once actuation across the HTTP/Kafka/device boundary.
+To take the sensor bench into the field, start with device identity and reliable collection. The proposed gateway authenticates devices, rotates credentials, spools readings during outages and validates device time and sequence. Redpanda retains accepted telemetry so time-series and read projections can rebuild independently.
+
+Give notifications and actuators their own delivery records and reconciliation; replay must not repeat physical actions. MQTT 5 is a possible transport for that design. Its [QoS guarantees](https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html) cover messaging within their protocol scope, so exactly-once actuation still needs an end-to-end contract across HTTP, Kafka and the device.
 
 ## Scenario and disposal
 

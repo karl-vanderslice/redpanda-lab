@@ -1,14 +1,14 @@
 # Explorer architecture
 
-Redpanda owns the explorer's records and committed consumer offsets. The app owns process-local counters and a latest-100 consumed-record view; neither is a durable business database.
+The explorer connects a browser workbench to a Redpanda cluster and a set of inspection tools. Redpanda retains the records and committed consumer offsets. The app keeps counters and a recent view of the latest 100 consumed records in process memory, so those reset when it restarts.
 
-The browser sends HTTP commands to the app. Its native Kafka client publishes and consumes `lab.events`. Redpanda Console inspects the cluster; Prometheus scrapes the brokers and app; Grafana queries Prometheus. Schema Registry and HTTP Proxy are exposed separately through broker zero. The explorer does not route its Kafka traffic through the HTTP Proxy.
+The browser sends HTTP commands to the app, whose native Kafka client publishes and consumes `lab.events` directly. Redpanda Console lets you inspect the cluster. Prometheus collects broker and app metrics, and Grafana turns those readings into dashboards. Broker zero also exposes Schema Registry and HTTP Proxy as separate endpoints.
 
 ## Brokers and ordering
 
 `lab.events` has six partitions and replication factor three: a leader and two followers per partition. Ordering is partition-local. With a majority available, the cluster can elect new leaders after one broker process stops. This is the mechanism exercised by [failure and recovery](../how-to/failure-and-recovery.md).
 
-All three brokers share one host. Each starts with `--mode=dev-container --smp=1 --memory=1G --reserve-memory=0M`. These are demonstration settings, not capacity guidance or independent failure domains. A successful acknowledgment under this mode is not proof of stable storage; see [delivery versus storage](../reference/tuning.md#delivery-is-not-stable-storage).
+All three brokers share one host. Each starts with `--mode=dev-container --smp=1 --memory=1G --reserve-memory=0M` to support the local demonstration. For production capacity and durability, plan around independent failure domains and supported storage settings; a successful acknowledgment in this mode alone cannot establish stable-storage durability. See [delivery versus storage](../reference/tuning.md#delivery-is-not-stable-storage).
 
 The explorer requests a six-hour event retention window when creating its topic. Prometheus has separate six-hour/256 MB retention limits. Application restart resets the app counters and recent view; committed group offsets remain in the broker. This differs from ordinary application labs, which reconstruct domain state from a complete prefix. [Topic policy](../reference/tuning.md#topic-policy) describes both.
 
@@ -26,13 +26,13 @@ The `lab` wrapper derives a Compose project name from the checkout's absolute pa
 
 `up` and `down` serialize through `flock`. Containers must not inherit that lock descriptor. Initial port probes reduce collisions but cannot prevent another process binding before startup. Diagnose collisions without stopping unrelated processes.
 
-Dispose of a lab before moving its checkout, or retain the original path for cleanup. `down` removes the owned runtime and volumes; it is not a reversible stop. [Commands and ports](../reference/commands.md) covers the wrapper interface.
+Before moving a checkout, dispose of its lab or keep the original path available for cleanup. `down` permanently removes that lab's runtime and volumes. [Commands and ports](../reference/commands.md) covers the wrapper interface.
 
 ## Podman or Kubernetes?
 
-Rootless Podman is the supported runtime. The lab's purpose is to expose event delivery, application decisions and recovery through a disposable local workflow, not to teach an orchestrator. The existing wrappers own image identity, readiness, loopback ports, checkout-specific resources and deliberate data disposal.
+Rootless Podman keeps the local workflow focused on event delivery, application decisions and recovery. The existing wrappers handle image identity, readiness, loopback ports, checkout-specific resources and deliberate data disposal.
 
-[kind can run Kubernetes on rootless Podman](https://kind.sigs.k8s.io/docs/user/rootless/), but it adds another lifecycle:
+[kind can run Kubernetes on rootless Podman](https://kind.sigs.k8s.io/docs/user/rootless/). It's useful when you want to explore Kubernetes itself, and brings a few additional responsibilities:
 
 | Concern | Current lab | A kind-based deployment would also need |
 | --- | --- | --- |
@@ -41,10 +41,10 @@ Rootless Podman is the supported runtime. The lab's purpose is to expose event d
 | Data | Named volumes survive an app restart and are deleted by the selected lab's `down`. | Define PVC retention, storage-class behavior and what namespace or cluster deletion means for each dataset. |
 | Recovery | Restart an owned process and inspect its retained log. | Reconcile pod/controller rollout state as well as broker and application readiness. |
 
-A StatefulSet and a retained PVC can preserve a broker's data across pod replacement. They do not provide a backup, independent host failure domains or an application writer fence. Automatically starting a second matcher, scheduler or effect owner would violate several labs' current contracts.
+A StatefulSet with a retained PVC can preserve broker data across pod replacement. You still need backups, independent host failure domains and an application writer fence. Several labs require exactly one matcher, scheduler or effect owner, so replica management must respect that ownership.
 
-Use Kubernetes when its controllers, storage and operational reconciliation are themselves the experiment. This repository does not provide a second Kubernetes backend, Helm release or operator deployment. Its [production blueprints](../blueprints/index.md) describe responsibilities without implying that changing orchestrators implements them.
+Use Kubernetes when controllers, storage and operational reconciliation are part of what you want to learn. The repository currently supports the Podman workflow; Kubernetes, Helm and operator deployments would be separate implementations. The [production blueprints](../blueprints/index.md) can help you plan the responsibilities involved.
 
 ## Beyond the explorer
 
-[Domain labs](../labs/index.md) have their own decision owners, replay and effect contracts. A single ordered partition is not distributed writer fencing. Their [production blueprints](../blueprints/index.md), including [Signal Harbor Works](../blueprints/explorer.md), propose separate operational responsibilities; they do not describe deployed infrastructure.
+Each [domain lab](../labs/index.md) has its own decision owner, replay rules and external-effect handling. Keep that ownership intact as you explore: ordering within a partition alone cannot fence a competing writer. The [production blueprints](../blueprints/index.md), including [Signal Harbor Works](../blueprints/explorer.md), show how these responsibilities could be separated in a larger system.

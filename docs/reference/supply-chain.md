@@ -1,6 +1,6 @@
 # Supply-chain pins and reproducibility
 
-Pins identify inputs. They do not establish a security audit, license entitlement or byte-for-byte reproducible output. Review each layer separately.
+The project pins inputs so you can identify the tools, libraries and images used by a build. This guide shows where each input comes from and what to review when updating it. Security assessment, license entitlement and byte-for-byte build reproducibility need separate checks.
 
 ## Explorer
 

@@ -1,10 +1,10 @@
 # Redpanda Lab
 
-Run a local application, inspect the records behind its decisions, and see what survives a restart. The labs use real Redpanda brokers, fictional organizations and synthetic data. [Read the guide](https://karl-vanderslice.github.io/redpanda-lab/).
+Explore event streaming by running a small application and following the records behind its decisions. Publish an event, try a workflow, then restart the app to see how it recovers. The labs use real Redpanda brokers with fictional organizations and synthetic data. [Read the guide](https://karl-vanderslice.github.io/redpanda-lab/).
 
 ## Start the explorer
 
-Requires Linux, Nix with flakes, and a host configured for rootless Podman: user namespaces, subordinate UID/GID mappings and cgroup delegation. Nix supplies the user-space tools. Allow several GiB of free RAM for the three-broker explorer; start with one lab. The first build downloads dependencies and images.
+You'll need Linux, Nix with flakes, and a host configured for rootless Podman (user namespaces, subordinate UID/GID mappings and cgroup delegation). Nix supplies the user-space tools. Start with one lab and allow several GiB of free RAM for the three-broker explorer. The first build downloads dependencies and images.
 
 Get the source, then enter its locked development shell:
 
@@ -26,7 +26,7 @@ just urls
 
 Open the printed **Stream app** URL. Publish an event, find it in Redpanda Console, then pause the shared consumer to build lag. Follow [your first event](docs/tutorials/first-event.md) for the walkthrough.
 
-Next, [follow an application command through replay](docs/tutorials/command-and-replay.md): a command produces an immutable receipt, and the app rebuilds its view from the broker. This is different from merely restarting a web server.
+Once you've explored the stream, [follow an application command through replay](docs/tutorials/command-and-replay.md). You'll create a work item, read the receipt for a decision, and watch the app rebuild its view from the broker.
 
 Keeping an older explorer's telemetry? [Back it up before upgrading](docs/how-to/failure-and-recovery.md#upgrade-retained-telemetry). `up` preserves volumes; a new Grafana version can migrate them.
 
@@ -36,11 +36,11 @@ When finished:
 just down
 ```
 
-**`down` deletes the selected lab's records and telemetry volumes**, along with its containers and network. It is disposal, not a recoverable stop. Other labs and reusable upstream/Nix caches remain.
+**`down` permanently deletes the selected lab's records and telemetry volumes**, along with its containers and network. Leave the lab running if you'd like to keep its history. Other labs and reusable upstream/Nix caches remain.
 
 ## Choose a lab
 
-For a named lab, use `just up iot`, `just urls iot` and `just down iot`. Each has its own runtime and data. All organizations below are fictional; Redpanda and the other tools retain their actual names.
+Pick a workflow that interests you. For a named lab, use `just up iot`, `just urls iot` and `just down iot`. Each has its own runtime and data. The organizations below are fictional; the technology names are real.
 
 | Lab | Organization | Try |
 | --- | --- | --- |
@@ -61,7 +61,7 @@ For a named lab, use `just up iot`, `just urls iot` and `just down iot`. Each ha
 | [`jurisdictions`](docs/labs/jurisdictions.md) | Meridian Ledger Alliance | Regional raw logs and summary-only federation. |
 | [`terraform`](docs/labs/terraform.md) | Foundry Harbor Infrastructure | Reviewed plans, drift and teardown. Read its guide before granting Podman socket access. |
 
-Local workflows need no API keys. POS's optional Stripe/Square paths require server-side **sandbox** credentials and network access; credential-dependent behavior remains unverified. No lab moves live funds or places real market orders. Use synthetic data only.
+You can explore the local workflows without API keys. For payments, begin with cash; the optional Stripe/Square paths need server-side **sandbox** credentials and network access, and their credential-dependent behavior remains unverified. All funds and market orders in the labs are simulated. Use synthetic data only.
 
 ## Find your next step
 
@@ -69,10 +69,10 @@ Local workflows need no API keys. POS's optional Stripe/Square paths require ser
 - [Troubleshooting](docs/how-to/troubleshooting.md): startup failures and uncertain writes.
 - [Architecture](docs/explanation/architecture.md) and [delivery](docs/explanation/telemetry-and-delivery.md): what records, counters and acknowledgments mean.
 - [Tuning and storage limits](docs/reference/tuning.md): retention, resources and client-specific settings.
-- [Production and recovery](docs/explanation/production.md) and [blueprints](docs/blueprints/index.md): operational gaps and proposed systems, not deployed infrastructure.
+- [Production and recovery](docs/explanation/production.md) and [blueprints](docs/blueprints/index.md): proposed designs and the operational work needed to put them into service.
 
 Build the docs with `just docs`; preview them with `just docs-serve`. Both keep generated output outside the checkout. [Build options](docs/reference/commands.md#documentation) include an explicit external output directory.
 
-Ports are loopback-only and unauthenticated. Development-mode brokers on one host do not prove production durability or geographic resilience. [Supply-chain notes](docs/reference/supply-chain.md) distinguish pinned inputs from reproducible builds and describe dependency licenses.
+The labs listen on unauthenticated loopback ports and run development-mode brokers on one host. They're a place to explore behavior; production durability and geographic resilience need separate infrastructure and verification. [Supply-chain notes](docs/reference/supply-chain.md) explain the pinned inputs, build-reproducibility limits and dependency licenses.
 
-First-party code is [MIT licensed](LICENSE). Dependencies retain their own licenses; the repository grants no rights to third-party media.
+First-party code is [MIT licensed](LICENSE). Dependencies keep their own licenses, and third-party media rights require separate permission.

@@ -4,9 +4,9 @@ description: Create a work item, inspect its command receipt, reject a stale rev
 
 # Follow a command through replay
 
-A broker acknowledgment says that a record was accepted by the broker. It does not, by itself, say that an application has applied the record. In this tutorial, you will use Folio Harbor Archives to follow a command through both steps, then rebuild the application's view from its actual log.
+What happens between submitting a command and seeing the application change? In this tutorial, you'll use Folio Harbor Archives to follow a record from broker acknowledgment to an applied decision, then rebuild the application's view from the log.
 
-You will create one archival work item, assign an archivist, record a rejected change, and verify an exact rebuild. No files are uploaded and no external archive is connected.
+You'll create an archival work item, assign an archivist, record a rejected change, and verify an exact rebuild. The work item tracks archival work locally, so you can explore the ledger with synthetic titles while keeping files and external archives out of the exercise.
 
 ## Start the work ledger
 
@@ -22,7 +22,7 @@ Use Linux with the [host prerequisites](../reference/commands.md) met. Run from 
 
 === "Direct wrapper"
 
-    The wrapper provides the locked tools for its own command. It does not change your terminal shell.
+    The wrapper runs each command with the locked tools. Your terminal stays in its current shell.
 
     ```bash title="Start the work ledger without entering a shell first"
     ./labs/run event-log up
@@ -52,7 +52,7 @@ The command ID identifies this request. The item ID identifies the object being 
 
 In **Replay and receipts**, inspect the displayed receipt. Its `command` preserves your input; `result.before` is null and `result.after` contains the new item. The receipt's decimal-string `offset` locates the record in `event-log.events.v1`. On a fresh log the first offset is `0`; an existing log will use a later offset.
 
-The visible item is a **projection**, an in-memory view derived from consumed records. The receipt establishes that this application consumed the record and applied its recorded decision, not just that a producer sent bytes.
+The visible item is a **projection**, an in-memory view derived from consumed records. The receipt shows that the application has consumed the record and applied its recorded decision. That's the step between publication and the change you can see.
 
 ## Assign an archivist, then reject a stale change
 
@@ -100,7 +100,7 @@ In the browser, select **Rebuild from the log**. The owner closes its current pr
 
 Wait for **Exact projection equality verified after full replay**. Open **Exact replay evidence** and compare `beforeDigest` with `afterDigest`; they should match when no other writer has appended in the meantime. `equal` should be true. The item, accepted and rejected receipts, offsets and physical ledger survive. Rebuild itself adds no record.
 
-Repeat the rebuild. The result should still be equal. You are not recovering state from the browser: the running application reconstructs it from Redpanda.
+Repeat the rebuild and check equality again. The application reads Redpanda to reconstruct the view, including the decisions you made and the rejection you inspected.
 
 !!! warning "Rebuild is not a backup or writer fence"
 

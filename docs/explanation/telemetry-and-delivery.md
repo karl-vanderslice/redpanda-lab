@@ -4,7 +4,7 @@ A producer acknowledgment, consumer processing and offset commit are separate ev
 
 ## Delivery promises
 
-The explorer uses `@confluentinc/kafka-javascript` 1.11.0 with bundled librdkafka 2.16.0. Its producer enables idempotence, permits one in-flight request and requests `acks=all` (`-1`). Protocol retries within that producer's idempotent session do not create a new application operation. Another HTTP request does: the server assigns a new event ID. This is not end-to-end exactly-once processing.
+The explorer uses `@confluentinc/kafka-javascript` 1.11.0 with bundled librdkafka 2.16.0. Its producer enables idempotence, permits one in-flight request and requests `acks=all` (`-1`). Within that producer session, protocol retries preserve the same operation. Submitting another HTTP request creates a new event ID, so end-to-end exactly-once processing would need additional application-level handling.
 
 A produce timeout means **outcome unknown**. Inspect `lab.events` in Console before resubmitting; search by event ID when the response provides one. Browser mutations are not automatically retried. A missing record in the latest-100 app view does not establish that publication failed.
 
@@ -18,13 +18,13 @@ Consumer group `lab-explorer` processes at least once and commits successful off
 
 The app waits for six partitions with leaders and three replicas each, three broker IDs in metadata, and an actual six-partition consumer assignment. Merely calling `consumer.run()` is insufficient. The wrapper also waits for a healthy three-node Admin API overview, Console, Grafana and Prometheus before reporting startup complete.
 
-Readiness establishes a starting condition, not continuing health. Inspect errors, current broker state and lag during an experiment.
+Readiness gives you a known starting point. During an experiment, keep an eye on errors, current broker state and lag to follow changes in health.
 
 ## What the charts mean
 
 A separate admin client queries partition watermarks and broker-stored group offsets. **Committed lag** is their difference, using the retained low offset when no commit exists. Counter subtraction is not lag; processed records may still be uncommitted.
 
-Prometheus scrapes and evaluates rules every five seconds. Grafana shows production, consumption, committed lag, creation-to-consumption latency, broker availability, requests and resource use. Latency includes time spent in a paused backlog; it is not broker append latency.
+Prometheus scrapes and evaluates rules every five seconds. Grafana shows production, consumption, committed lag, creation-to-consumption latency, broker availability, requests and resource use. The latency chart includes time spent waiting in a paused backlog, which is useful when exploring the consumer's experience. Measuring broker append latency needs a separate observation.
 
 | Alert | Condition and limit |
 | --- | --- |
@@ -32,7 +32,7 @@ Prometheus scrapes and evaluates rules every five seconds. Grafana shows product
 | Under-replication | Reported live, lagging replicas for one minute. Unreachable replicas are not counted; a missing series leaves the rule inactive. |
 | Paused-consumer lag | Shared consumer paused, positive lag and growth across the last minute, sustained for 30 seconds. A short demonstration may not fire it. |
 
-No Alertmanager or notification delivery is configured.
+You can inspect alert states in Prometheus. Delivering those alerts would require an Alertmanager and a notification configuration.
 
 ## Explorer HTTP endpoints
 

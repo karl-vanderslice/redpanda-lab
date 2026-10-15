@@ -1,6 +1,6 @@
 # Tuning and operating limits
 
-The labs favor inspectable outcomes, not maximum throughput. No optimization gain has been measured. Change one owned setting, replay the same workload, and keep the original correctness checks.
+Start with a workflow you can inspect and repeat. Keep its correctness checks, change one setting at a time, and replay the same workload to see what changes. The labs prioritize understandable outcomes over maximum throughput. Use measurements from your own workload before drawing performance conclusions.
 
 ## Delivery is not stable storage
 

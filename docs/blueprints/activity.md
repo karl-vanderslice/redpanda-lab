@@ -13,11 +13,11 @@ An authenticated command owner records public feed outcomes in Redpanda and serv
 
 ## Lab and proposal
 
-The lab stores feed commands and explicit read receipts together in activity.events.v1; profile IDs are not authentication. The proposal separates activity.clicks.v1 and consent-aware analytics. Splitting reads requires an API/event migration that preserves or explicitly redefines existing receipts and counts.
+The lab stores feed commands and explicit read receipts together in `activity.events.v1`, using public profile IDs that anyone with lab access can select. The proposal adds authentication and separates `activity.clicks.v1` for consent-aware analytics. Splitting reads requires an API/event migration that preserves or explicitly redefines existing receipts and counts.
 
 ## Authority and effects
 
-The feed owner keeps exact unsampled outcomes and public-only publishing. Identity/privacy owns consent, actor scope and deletion across linked stores and backups. Analytics owns dedupe and late-data definitions; new read IDs do not prove unique people or attention. Broker segment retention is not selective record erasure.
+The feed owner preserves exact, unsampled outcomes and keeps publishing public-only. Identity/privacy manages consent, actor scope and deletion across linked stores and backups, while analytics defines deduplication and late-data handling. Read IDs identify recorded interactions; measuring unique people or attention requires additional evidence. Selective erasure also needs its own design, since broker retention removes segments.
 
 Rebuild the feed from its complete ordered outcomes through a captured offset frontier. Restore must preserve original interaction IDs and receipts without publishing new article-open events. Splitting clickstream storage requires a separate checkpoint and privacy-retention policy; deleting the lab's prefix breaks reconstruction.
 

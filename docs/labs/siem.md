@@ -4,7 +4,9 @@ description: Correlate synthetic authentication and network observations, inspec
 
 # Vesper Lantern Networks
 
-Vesper Lantern Networks is a fictional security desk for synthetic authentication and network observations. One Node HTTP owner publishes to `siem.events.v1`; its consumer alone changes the incident queue, evidence and receipts. There is no database, packet capture, remote collector, customer traffic or notification service.
+At Vesper Lantern Networks, you can correlate synthetic authentication and network observations, inspect the evidence, and triage incidents through recorded decisions. One Node HTTP owner publishes to `siem.events.v1`; its consumer builds the incident queue, evidence and receipts.
+
+You work with supplied observations rather than customer traffic or packet capture. Connecting remote collectors, a database or notification delivery would add separate ingestion, storage and effect boundaries, described in the [production proposal](#proposed-production-view).
 
 ## Run and inspect
 
@@ -138,7 +140,7 @@ Measure candidate cardinality, full-state response size, correlation cost and co
 
 [Production blueprint](../blueprints/siem.md).
 
-Authenticated collectors would need disk spooling, schema provenance and clock-health checks before Redpanda ingestion. Fenced correlation ownership, a search index and a restricted original-evidence archive would separate rule state, analyst queries and retention; none runs in this lab. External alerts and response actions need their own deduplication and authorization, not an inference from a broker acknowledgment.
+The proposal begins at collection: authenticated collectors spool to disk, preserve schema provenance and check clock health before sending observations to Redpanda. Fenced correlation ownership, a search index and a restricted original-evidence archive then give rule state, analyst queries and retention distinct owners. External alerts and response actions need their own deduplication and authorization so a recorded incident can lead to a controlled action.
 
 [NIST SP 800-92](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-92.pdf), the September 2006 final guide, supports timestamp, provenance and disposal planning, not modern product settings or compliance claims. Its [2023 revision](https://csrc.nist.gov/pubs/sp/800/92/r1/ipd) is an initial public draft. Proposed event-time policies should state their late-data meaning explicitly; the [Beam watermark guide](https://beam.apache.org/documentation/programming-guide/#watermarks-and-late-data) is conceptual guidance, not an implemented Beam pipeline here.
 

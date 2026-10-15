@@ -13,7 +13,7 @@ Authenticated driver positions enter a fenced dispatch authority. Redpanda store
 
 ## Lab and proposal
 
-The lab operates three synthetic drivers on a 20 × 20 km grid, with exact coordinate transitions and no live GPS or maps. The proposal adds device identity, source sequences, freshness checks and advisory routing; those ingress semantics need a versioned migration.
+The lab lets you dispatch three synthetic drivers on a 20 × 20 km grid, advancing trips at exact coordinates. Positions come from your input on that grid. Connecting live GPS and maps would introduce device identity, source sequences, freshness checks and advisory routing; those new input semantics need a versioned migration.
 
 ## Authority and effects
 

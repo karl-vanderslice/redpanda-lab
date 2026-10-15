@@ -13,10 +13,10 @@ Authenticated order admission reaches one fenced price-time matcher. Redpanda re
 
 ## Lab and proposal
 
-The lab uses one Rust book engine and explicit partition-zero HTTP Proxy writes, with maker-price fills and replayed receipts. The proposal adds account/risk authorization, fencing and clearing. More partitions alone do not create safe parallel matching.
+One Rust book engine gives you a place to explore maker-price fills and replayed receipts, using explicit partition-zero HTTP Proxy writes. The proposal adds account/risk authorization, fencing and clearing around that workflow. Safe parallel matching needs an ownership design as well as a partitioning choice.
 
 ## Authority and effects
 
-The exchange owner controls sequence, order identity and matching rules. Market data owns projections and frontiers; finance/delivery owns stable fill effects and reconciliation. Execution is not settlement. Independent recovery must restore book and dedupe state without resending external effects.
+The exchange owner controls sequence, order identity and matching rules. Market data owns projections and frontiers; finance/delivery owns stable fill effects and reconciliation. After an execution, settlement still needs its own evidence. Independent recovery must restore book and dedupe state without resending external effects.
 
 [Lab guide](../labs/trading.md) · [D2 source](sources/trading.d2) · [PNG export](../assets/blueprints/trading.png)

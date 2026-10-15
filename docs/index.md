@@ -1,16 +1,16 @@
 ---
-description: Run a local Redpanda application, inspect its records, and learn what acknowledgment, replay, and recovery do and do not guarantee.
+description: Explore event streaming with hands-on Redpanda labs, from your first event to application replay and recovery.
 ---
 
 # Redpanda Lab
 
-Run an application, inspect the records behind its decisions, then interrupt it and see what the log can reconstruct. These experiments use real Redpanda brokers on your Linux workstation, with fictional organizations and synthetic data.
+Follow an event from a button in your browser to a record in Redpanda. Then try an application workflow, interrupt it, and see how the log helps it recover. These experiments run on your Linux workstation with real brokers, fictional organizations and synthetic data.
 
-Start with the explorer if partitions and consumer lag are new to you. Then follow one application command through a receipt and a rebuild. The production blueprints show responsibilities that the local experiments deliberately do not implement.
+If you're new to partitions and consumer lag, start with the explorer. If you're more interested in application state, follow a command through a receipt and a rebuild. When you're ready to look beyond the local setup, the production blueprints outline larger systems and the operational work they would need.
 
 ## Run the explorer
 
-You need Linux, Nix flakes and host support for rootless Podman. Nix supplies the tools, not user-namespace policy, subordinate UID/GID mappings or cgroup delegation. Allow several GiB of free RAM; the first startup downloads dependencies.
+You'll need Linux, Nix flakes and a host configured for rootless Podman, including user namespaces, subordinate UID/GID mappings and cgroup delegation. Nix supplies the tools. Allow several GiB of free RAM and time for dependency downloads on the first startup.
 
 From the checkout root:
 
@@ -44,13 +44,13 @@ Open **Stream app**. The [first-event tutorial](tutorials/first-event.md) takes 
 
 -   **Explore a domain**
 
-    Choose telemetry, inventory, trading, media, agents or regional federation. Each guide explains its own decision and recovery boundaries.
+    Choose telemetry, inventory, trading, media, agents or regional federation. Each guide walks you through a decision and shows how to inspect and recover it.
 
     [Choose an application lab](labs/index.md)
 
 -   **Plan beyond one host**
 
-    Compare the running lab with the identity, storage, ownership and recovery work a production system would require.
+    Use the local workflow as a starting point for thinking about identity, storage, ownership and recovery in a production system.
 
     [Read the production blueprints](blueprints/index.md)
 

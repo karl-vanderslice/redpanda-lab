@@ -4,7 +4,9 @@ description: Distinguish approval, reservations, exception review, and balanced 
 
 # Northbridge Ledgerworks
 
-Screen fictional transfers, review held obligations and record balanced local clearing entries. No bank, payment network or external watchlist is connected. Approval is not clearance; local clearance is not bank settlement.
+At Northbridge Ledgerworks, you can screen fictional transfers, review held obligations and record balanced local clearing entries. Follow a transfer from approval through reserved funds to clearance, and inspect the evidence for each decision.
+
+The desk uses local accounting with fixture rules. It connects to no bank, payment network or external watchlist. Keep approval, clearance and bank settlement distinct as you work: each represents a different decision and needs its own evidence.
 
 ## Start the desk
 
@@ -149,6 +151,6 @@ It saves initial, before-restart and after-restart state, results and request tr
 
 ## Beyond local clearing
 
-The [Northbridge blueprint](../blueprints/clearing.md) is a proposal, not deployed infrastructure. Real operation would require authenticated account permissions, distinct review roles, verified operator evidence, a durable writer fence, trusted/versioned risk policy, supported replicated storage, audited reconciliation and restore procedures.
+Use the [Northbridge blueprint](../blueprints/clearing.md) to plan how local clearing could connect to a larger system. The proposal adds authenticated account permissions, distinct review roles, verified operator evidence, a durable writer fence and trusted, versioned risk policy. Supported replicated storage, audited reconciliation and restore procedures protect the resulting history.
 
 A separately authorized bank/network adapter would also need persistent external idempotency keys, unknown-outcome reconciliation, finality rules, statement matching and controlled settlement. Qualified owners must determine licensing, sanctions, privacy, retention and regulatory obligations. No local result establishes compliance, external exactly-once effects or legal finality. See [production and recovery](../explanation/production.md).

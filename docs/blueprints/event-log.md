@@ -13,7 +13,7 @@ A fenced writer appends immutable revision outcomes to Redpanda. A materializer 
 
 ## Lab and proposal
 
-The lab rebuilds in-memory state with a fresh group to a captured frontier and compares full projections. The proposal adds durable read storage, distributed fencing and independent archives; there is no implemented checkpoint fallback or restore-import API.
+The lab rebuilds in-memory state with a fresh consumer group up to a captured frontier, then compares full projections. The proposal extends that approach with durable read storage, distributed fencing and independent archives. Checkpoint fallback and a restore-import API would be additional work; the lab's recovery path uses the complete retained log.
 
 ## Authority and effects
 

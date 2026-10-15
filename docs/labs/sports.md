@@ -4,7 +4,9 @@ description: Play original local sports animation while separately observing sco
 
 # Courtside Assembly
 
-Courtside Assembly is a fictional sports portal for the original Crosswater Assembly exhibition slate. The Nix-built image serves silent geometric field animations. Redpanda stores score, preference and playback events, not video. No real event, borrowed team identity, film footage or external stream is included.
+Courtside Assembly lets you browse the fictional Crosswater Assembly exhibition slate, watch local field animations, and follow scores, watchlist preferences and playback events through Redpanda. The Nix-built image serves the silent geometric animations directly; the log carries the events while video follows its own delivery path.
+
+The clubs, events and media are original fiction. You can explore the portal with local assets; using a real event, team identity, film footage or external stream would require a separate integration and rights review.
 
 ## Run and watch
 
@@ -117,7 +119,7 @@ Names, clubs, venues, captions and animations are authored fiction; no posters, 
 
 [Production blueprint](../blueprints/sports.md).
 
-Authorized scorers need fenced ownership, durable projections and a recovery policy separate from media publishing. Redundant ingest/transcode, object origins, regional CDN, captions, entitlement checks and player-quality monitoring are proposed ancillary services, not current infrastructure. Scores, preferences, telemetry and audiovisual delivery need distinct RPO/RTO and rights/privacy policies; restoring old heartbeat records must not recreate a fresh audience.
+The proposal separates score authority from media publishing. Authorized scorers get fenced ownership, durable projections and their own recovery policy. A media delivery system adds redundant ingest and transcoding, object origins, regional CDN delivery, captions, entitlement checks and player-quality monitoring. Each part needs suitable recovery objectives and rights/privacy policy. Preserve the distinction during restore: old heartbeat records describe past activity and must not recreate a fresh audience.
 
 ## Scenario coverage
 

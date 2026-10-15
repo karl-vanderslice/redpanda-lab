@@ -4,7 +4,9 @@ description: Inspect immutable accepted and rejected work-item decisions and reb
 
 # Event log and rebuild: Folio Harbor Archives
 
-Folio Harbor Archives is a fictional archival work-item desk. Redpanda stores complete accepted and rejected command outcomes; the item index and ruled execution ledger are volatile projections. The app can close its owner, discard projection memory and reconstruct it from the actual Kafka log. It stores no archival file bytes and connects to no external archive.
+Folio Harbor Archives lets you create archival work items, inspect accepted and rejected decisions, and rebuild the desk from its log. Redpanda stores the complete command outcomes; the item index and ruled execution ledger are in-memory projections. The rebuild closes the owner, clears that memory and reconstructs it from the actual Kafka log.
+
+The work items describe archival work. Archival file bytes and connections to an external archive would need their own storage and integration.
 
 New to this workbench? Follow the [command-and-replay tutorial](../tutorials/command-and-replay.md) first. This guide is the reference for its revision checks, immutable receipts and recovery boundary.
 
@@ -79,7 +81,9 @@ Measure history length, rebuild time, RSS and state-response cost. Do not compac
 
 [Production blueprint](../blueprints/event-log.md).
 
-A production service would authenticate workspace commands and fence writers by ordering scope, with a durable read store that remains rebuildable from Redpanda. Verified backups/checkpoints would bind reducer version, complete deduplication state and offsets; archival files would live in separately backed-up object storage with stable references in events. Access policy, legal holds, erasure and restore objectives need their own design; none is implemented by the volatile item index or the rebuild button.
+The proposal carries the rebuildable view into a shared service with authenticated workspace commands, writers fenced by ordering scope and a durable read store. Verified backups and checkpoints bind the reducer version, complete deduplication state and offsets. Archival files live in separately backed-up object storage, with stable references in events.
+
+Plan access policy, legal holds, erasure and restore objectives alongside that storage. The lab's in-memory index and rebuild button demonstrate log reconstruction; these production responsibilities need their own implementation and verification.
 
 ## Scenario and disposal
 

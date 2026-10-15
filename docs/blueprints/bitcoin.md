@@ -13,10 +13,10 @@ Historical candles enter a provenance store before a fenced strategy can use the
 
 ## Lab and proposal
 
-The lab uses digest-bound offline hourly fixtures, prior-close signals and subsequent-close paper fills with integer cents/satoshis. It has no live feed, venue, custody or bank transfer. The proposal adds reviewed feed provenance and an independently authorized optional venue boundary.
+The lab supports offline paper research with digest-bound hourly fixtures, prior-close signals and subsequent-close fills, accounted in integer cents/satoshis. Live feeds and venue execution, including custody and bank transfers, belong to a separate integration. The proposal adds reviewed feed provenance and keeps any optional venue connection subject to independent authorization.
 
 ## Authority and effects
 
-Research owns chronology, source digest and strategy version; account ownership preserves fees, semantic IDs and conservation. A venue/custody owner must define durable effect lookup and uncertain-outcome reconciliation before enabling real execution. Neither the diagram nor the paper account demonstrates realistic liquidity or profitability.
+Research owns chronology, source digest and strategy version; account ownership preserves fees, semantic IDs and conservation. Before enabling real execution, a venue/custody owner must define durable effect lookup and uncertain-outcome reconciliation. Assess liquidity and profitability separately from this paper exercise.
 
 [Lab guide](../labs/bitcoin.md) · [D2 source](sources/bitcoin.d2) · [PNG export](../assets/blueprints/bitcoin.png)

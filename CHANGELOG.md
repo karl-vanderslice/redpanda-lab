@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Lead the README, tutorials, lab guides and production blueprints with what readers can try and observe. Explain workflows in connected prose, with safety and recovery limits beside the decisions they affect.
 - Pre-render the three IoT fixture device cards with a fixed line count, so first state and first readings no longer shift the bench.
 - Use second-level headings for sports match cards and put the sports lab notice in a labeled landmark. Pre-render the sports navigation and fix the connection-status width, so first state no longer shifts the page.
 - Reserve the trading contract strip with static cards so first state no longer shifts the page. Name the brand link and closed order buttons by their visible text.

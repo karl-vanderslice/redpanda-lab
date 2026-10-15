@@ -1,6 +1,6 @@
 # Production blueprints
 
-These drawings describe proposed production systems for fictional organizations. No identity service, distributed fence, external adapter, archive, database or availability-zone boundary becomes deployed by publishing a diagram. Dashed boxes name responsibility or trust boundaries, not verified network controls. Muted blue identifies Redpanda, not measured health.
+These blueprints explore how the local workflows could grow into production systems for the fictional organizations. Use them to follow data through a larger system and discuss who would own each part. The identity services, writer fences, adapters, archives, databases and availability-zone placements shown here are proposed work. Dashed boxes mark responsibility or trust boundaries that would need enforcement in a deployment. Muted blue identifies Redpanda components; health would come from runtime measurements.
 
 | System | Blueprint |
 | --- | --- |
@@ -23,13 +23,13 @@ These drawings describe proposed production systems for fictional organizations.
 
 ## Deployment assumptions
 
-Proposed RF3 means one replica per partition in each of three independent availability zones within a region, not three regions or demonstrated disaster recovery. Jurisdictions proposes separate resident clusters and a summary cluster, each with its own local three-zone placement. Current lab containers share one host and use development mode. A production owner must remove development mode and unsafe fsync bypass, review supported XFS/ext4 storage, and test failure/recovery behavior before claiming durability.
+The proposed RF3 placement gives each partition one replica in each of three independent availability zones within a single region. Jurisdictions applies that placement separately to its resident clusters and summary cluster. Regional disaster recovery needs its own design and rehearsal. The running labs use development-mode containers on one host; before claiming production durability, remove development mode and unsafe fsync bypass, review supported XFS/ext4 storage, and test failure and recovery.
 
-Platform operations must own TLS/SASL/ACLs, application and operator identities, quotas, secrets, disk capacity, lag/readiness, schema changes and restore objectives. Distributed ownership needs an enforceable lease/epoch with stale-writer rejection; a process-local queue or diagram label is not fencing. Replication does not protect against malicious deletion, correlated loss or uncertain external effects. No enterprise feature or license entitlement is assumed.
+Platform operations would own TLS/SASL/ACLs, application and operator identities, quotas, secrets, disk capacity, lag/readiness, schema changes and restore objectives. Distributed ownership needs an enforceable lease/epoch with stale-writer rejection. Plan separately for malicious deletion, correlated loss and uncertain external effects, since replication alone cannot resolve them. Check licensing before choosing enterprise features; the proposals assume no enterprise entitlement.
 
-Domain authority remains ordered and scoped. More partitions do not safely parallelize coordinated stock transfers, matching, assignment or clearing. Topic/key, checkpoint, event-schema and identity changes require reviewed migrations. Each guide names the critical transition or external-effect boundary; [production and recovery](../explanation/production.md) covers wider operational gaps.
+Domain decisions still need a clear owner. Stock transfers, matching, assignment and clearing coordinate state that must stay consistent when you add partitions. Review topic/key, checkpoint, event-schema and identity changes as migrations. Each guide identifies the transition or external effect to protect; [production and recovery](../explanation/production.md) connects these details to wider operations.
 
-Ordinary application topics currently use one partition, RF1, delete cleanup and unlimited time/byte retention. They require a complete prefix until disposal; unbounded disk and memory growth is not an archive. Explorer separately uses six partitions, RF3 and six-hour retention. Local RF3 is still not independent failure isolation.
+For comparison, ordinary application topics currently use one partition, RF1, delete cleanup and unlimited time/byte retention. They rebuild from the complete prefix until disposal, with growing disk and memory use. An independent archive would need separate storage and recovery procedures. The explorer uses six partitions, RF3 and six-hour retention, still within one host's failure domain.
 
 ## Sources and regeneration
 

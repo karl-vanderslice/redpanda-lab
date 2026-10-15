@@ -1,10 +1,10 @@
 ---
-description: Choose an event-streaming experiment by the decision, failure, or recovery boundary you want to understand.
+description: Find a hands-on event-streaming lab for the application behavior you'd like to explore.
 ---
 
 # Choose a lab
 
-Start with the [explorer](../tutorials/first-event.md) if you want to see partitions and consumer lag. For application state, first [follow a command through replay](../tutorials/command-and-replay.md), then choose the question you want to investigate below. Every organization is fictional.
+Choose a question that interests you, then follow its guide to try the workflow. The [explorer](../tutorials/first-event.md) is a good starting point for partitions and consumer lag. For application state, [follow a command through replay](../tutorials/command-and-replay.md) before moving on to a domain lab. You'll meet a fictional organization in each one.
 
 | Question to explore | Lab | What you operate |
 | --- | --- | --- |
@@ -64,12 +64,12 @@ Projection
 Receipt
 :   An application's recorded outcome for a command. Read the guide to distinguish a consumed decision from an append acknowledgment or an external effect.
 
-The [delivery explanation](../explanation/telemetry-and-delivery.md) covers the explorer's counters and committed lag. Domain receipts, revisions and recovery rules belong to each lab; an offset alone does not explain a business outcome.
+Use the [delivery explanation](../explanation/telemetry-and-delivery.md) to make sense of the explorer's counters and committed lag. For a business decision, look at the lab's receipt and revision as well as its offset. Each guide explains how those pieces fit together and what to do when a result is uncertain.
 
 ## Keep history or dispose of it
 
 Ordinary application labs rebuild from the complete topic prefix. They disable time/size expiration and compaction; disk and projection memory grow until explicit disposal or resource exhaustion. Startup reapplies retention to older ordinary topics but cannot recover records already deleted. Explorer has a separate six-hour event window. See [topic policy](../reference/tuning.md#topic-policy) before changing retention or partition count.
 
-Each guide owns its command IDs, replay rules and uncertain-result procedure. A broker acknowledgment does not establish consumer completion or an external effect. Payments, models, media, schedulers and physical operations retain their own responsibilities.
+Keep command IDs and their original input when investigating an uncertain result. A broker acknowledgment tells you about publication; the lab's receipt and recovery procedure help you establish what the application did. External effects, such as payments or model calls, need their own evidence.
 
-For validation commands and their disposal rules, see [commands](../reference/commands.md). For a proposed production design, see the corresponding [blueprint](../blueprints/index.md); none is a deployed production system.
+For validation commands and their disposal rules, see [commands](../reference/commands.md). To explore how the workflow could grow into a production system, read its [blueprint](../blueprints/index.md). These are design proposals you can compare with the running lab.

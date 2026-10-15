@@ -4,7 +4,9 @@ description: Trace a real local fx task through proposal, critique, and synthesi
 
 # Relay Loom Cooperative
 
-Relay Loom Cooperative is a fictional task desk with two separate agent workers. `planner` proposes, `reviewer` critiques, then `planner` synthesizes. Each owns a Node worker, private fx home, loopback relay and independent Vercel Labs fx invocation. `app` serves the transcript; an internal llama.cpp container supplies SmolLM2-135M-Instruct Q8_0. No host model, account, API key, credential directory or ambient service is mounted.
+Relay Loom Cooperative lets you follow a task through two agent workers: `planner` proposes, `reviewer` critiques, then `planner` synthesizes. Open the transcript to see each durable handoff and the result of a real local model call.
+
+Each role has its own Node worker, private fx home, loopback relay and independent Vercel Labs fx invocation. `app` serves the transcript, and an internal llama.cpp container supplies SmolLM2-135M-Instruct Q8_0. The lab supplies this environment itself, keeping your host model, accounts, API keys, credential directories and ambient services outside the containers.
 
 ## Run and submit
 
@@ -132,13 +134,15 @@ Runtime downloads nothing. Only app is host-published. Workers/model are nonroot
 
 Measure enqueue/start/result delay, CPU/RSS and model-slot occupancy separately. With one shared model slot, two worker containers do not imply parallel generation. Thread/batch-thread/slot experiments require rebuilding the pinned image and measuring fixed workloads; the [llama.cpp 0.6.0 server reference](https://github.com/ggml-org/llama.cpp/blob/v0.6.0/tools/server/README.md) defines `-t`, `-tb`, `-np` and `-c`. See [broker and Linux tuning](../reference/tuning.md) for client and host limits. Do not expand permissions or auto-retry unknown attempts for throughput.
 
-The [135M model card](https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct) warns of English-first output, factual errors, inconsistent logic and bias. Its function-calling statement applies to 1.7B, not this variant. Q8_0, grammar and a reviewer lane do not establish good judgment; review consequential output. Inference counters are process-local and reset to zero on replay; task gauges reconstruct.
+Treat the proposal, critique and synthesis as material to review, especially when the output has consequences. The [135M model card](https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct) describes English-first output, factual errors, inconsistent logic and bias; its function-calling statement applies to 1.7B rather than this variant. Q8_0, constrained grammar and a reviewer lane still need quality evaluation. When measuring the workflow, distinguish process-local inference counters, which reset to zero on replay, from task gauges, which reconstruct.
 
 ## Proposed production view
 
 [Production blueprint](../blueprints/agent-messaging.md).
 
-Production would need admission/token budgets, persistent projections/checkpoints, isolated inference and quality evaluation before human-approved external actions. Fenced leases/epochs or transactional claims must protect execution ownership; do not scale either current role or share its topic with competing owners. Broker transactions cannot make model HTTP exactly once, and regional recovery must retain task/step/claim/result IDs and pinned artifacts, fence the old owner and reconcile missing completion before any deliberate new attempt.
+Taking this workflow into a shared service would add admission and token budgets, persistent projections and checkpoints, isolated inference and quality evaluation. Keep human approval ahead of external actions. Distributed execution also needs fenced leases, epochs or transactional claims; retain one owner per current role and keep competing owners off its topic.
+
+Recovery must retain task, step, claim and result IDs plus pinned artifacts, fence the old owner and reconcile missing completion before a deliberate new attempt. Broker transactions cover the log; the model HTTP call still needs that separate reconciliation.
 
 ## Sources and scenario coverage
 

@@ -1,6 +1,6 @@
 # Stop one broker and recover
 
-Use the explorer to observe a broker process failure without deleting its volumes. This experiment does not cover host loss or power failure.
+Stop one of the explorer's broker processes and watch the remaining brokers recover leadership while keeping its volumes. All three brokers share your workstation, so this exercise covers process failure. Host loss and power failure need a separate recovery test.
 
 ## Interrupt an owned broker
 
@@ -33,7 +33,7 @@ The Compose services declare `restart: unless-stopped`; check actual status duri
 
 **`just test` deletes existing explorer records and telemetry.** It exercises 24 distinct keys with one broker stopped, retained pause intent, broker-stored lag, resumed consumption and broker recovery, then disposes of the lab. Reports go under `${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/e2e/`.
 
-The scenario's source describes those checks; a successful run is evidence only for that run's environment. It does not establish power-failure durability, independent failure domains or exactly-once external effects. See [storage limits](../reference/tuning.md#delivery-is-not-stable-storage) and [production recovery](../explanation/production.md).
+Use the scenario's source and report to see exactly what was checked in your environment. For power-failure durability, independent failure domains and recovery of external effects, continue with [storage limits](../reference/tuning.md#delivery-is-not-stable-storage) and [production recovery](../explanation/production.md).
 
 ## Upgrade retained telemetry
 
@@ -58,4 +58,4 @@ Do not run `down` as an upgrade step. Keep the private backup until dashboard qu
 
 For rollback, import the archive into a **fresh volume** and run the original pinned image against that volume. Preserve the migrated volume. Recreate the original provisioning mounts for a full explorer restore; the volume alone is not the whole configuration.
 
-The local review preserved a stored annotation through Grafana 11.6.0 → 12.4.13 and recovered it from the exported backup under 11.6.0. That is one SQLite-backed lab migration, not validation of arbitrary dashboards, plugins or production data.
+A local check preserved a stored annotation through Grafana 11.6.0 → 12.4.13 and recovered it from the exported backup under 11.6.0. Use that SQLite-backed lab migration as an example, then verify your own dashboards, plugins and data before relying on an upgrade or rollback.

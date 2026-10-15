@@ -4,7 +4,9 @@ description: Cross a resting limit order, inspect a partial fill, and cancel the
 
 # Amber Commodity Exchange
 
-Amber Commodity Exchange is a fictional commodity order desk. A Rust matcher, embedded browser UI and `commodity-exchange` CLI share one Redpanda log. No account ledger, database, local journal, live price feed, cash settlement or physical delivery runs here. Nix builds the locked Rust application; host Rust is not required.
+Amber Commodity Exchange gives you a fictional commodity order desk for exploring price/time matching. Place a limit order through the embedded browser UI or `commodity-exchange` CLI, inspect its fills, then replay the shared Redpanda log to recover the book. Nix builds the locked Rust matcher, so you can run it without host Rust.
+
+Orders and fills are local simulations. Account balances, a separate database or local journal, live market prices, cash settlement and physical delivery would need additional services; the [production proposal](#proposed-production-blueprint) shows where those responsibilities belong.
 
 ## Place and inspect an order
 
@@ -123,7 +125,7 @@ The matcher scans and sorts eligible resting orders for every command, and retur
 
 [Production blueprint](../blueprints/trading.md).
 
-Only the matcher, local entry points and replayed in-memory views run in the lab. The proposed entry/authentication service and fenced ownership coordinator control who can submit and which matcher is authoritative; a separate risk/account ledger owns credit, balances and settlement eligibility. Clearing or delivery adapters and reconciliation own external effects, which a broker receipt cannot confirm.
+To build a connected exchange around the matcher, the proposal adds authenticated admission and a fenced ownership coordinator. They decide who can submit and which matcher is authoritative. A separate risk/account ledger owns credit, balances and settlement eligibility, while clearing or delivery adapters reconcile external effects. The lab lets you explore matching and replay first; confirming an external outcome requires evidence beyond its broker receipt.
 
 Production also needs encrypted authenticated transport, replicated logs in independent failure domains, replay-tested snapshots/checkpoints, schema migration, audit retention, self-trade policy, precision/overflow review, rate/risk limits and circuit breakers. Regional recovery must fence the old matcher and restore order/fill/cancel identities, offsets and account authority consistently, then reconcile any replication-loss window before reopening. See [production and disaster recovery](../explanation/production.md). This lab is not a trading recommendation, latency benchmark or exactly-once settlement claim.
 

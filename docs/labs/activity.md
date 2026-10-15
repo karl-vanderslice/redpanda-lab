@@ -4,7 +4,9 @@ description: Use seeded public profiles to read, like, and follow local articles
 
 # Commonfield Dispatch
 
-Commonfield Dispatch is a fictional publisher and public reading room. One Node owner records original local articles, profiles, follows, likes, feed preferences and article opens in `activity.events.v1`. Its consumer alone changes the in-memory projection. No external news service, asset download, sign-in or private messaging runs.
+Commonfield Dispatch is a fictional public reading room where you can publish local articles, choose a profile, and see how reads, likes and follows change the feed. One Node owner records those actions, profiles and feed preferences in `activity.events.v1`; its consumer builds the in-memory view.
+
+The room uses original local content and public fixture profiles. You can explore it without a news service, asset downloads or sign-in. Treat the profiles as shared identities rather than private accounts; private messaging is outside this workflow.
 
 ## Run and read
 
@@ -106,7 +108,7 @@ All profile IDs, article text, follow/like sets and per-reader opens are exposed
 
 [Production blueprint](../blueprints/activity.md).
 
-An authenticated authorization boundary, moderation and abuse controls would precede command admission. Independent feed and analytics consumers would need durable bounded query stores, explicit raw-click access rules and consent/deletion policy; this lab runs none of them. Fenced ownership, schemas, backups and restore exercises must preserve interaction and deduplication meaning rather than merely add replicas.
+The proposal starts with authenticated access, moderation and abuse controls before command admission. It then separates feed queries from analytics, giving each consumer a durable bounded read store and explicit rules for raw-click access, consent and deletion. These additions need a recovery design too: fenced ownership, schemas, backups and restore exercises must preserve what an interaction and a duplicate mean as the system grows.
 
 ## Scenario coverage
 

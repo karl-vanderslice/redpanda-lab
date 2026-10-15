@@ -4,7 +4,7 @@ description: Publish a keyed event, verify its ID and broker position, then buil
 
 # Publish your first event
 
-Use Signal Harbor Works, the fictional explorer company, to publish a record, find its partition and offset, then drain a consumer backlog.
+Publish a sensor reading at Signal Harbor Works, the explorer's fictional company, and follow it through Redpanda. You'll find its partition and offset, then pause and resume the consumer to watch a backlog build and drain.
 
 ## Start the workbench
 
@@ -53,9 +53,9 @@ Publish another event with the same key. With unchanged partition count and part
 3. Watch **Produced** increase while **Committed lag** grows. Open Grafana to compare the app readings with the dashboard.
 4. Select **Resume consumer**. Wait for committed lag to reach zero after processing and offset commits catch up.
 
-Consumer pause affects the shared backend, including other browsers. An in-progress read or commit can still finish. **Pause live updates** only freezes this browser's polling; it does not pause consumption or stop the generator. **Stop generator** prevents future sends, not completion of sends already in flight.
+Consumer pause affects the shared backend, including other browsers. An in-progress read or commit can still finish. To freeze just your browser's view, use **Pause live updates**; consumption and the generator continue in the background. **Stop generator** prevents future sends while allowing sends already in flight to finish.
 
-Produced and consumed are process counters, not an accounting identity. [Delivery and telemetry](../explanation/telemetry-and-delivery.md) explains lag, redelivery and alert delays.
+If **Produced** and **Consumed** differ, look at the app's lifetime and any redelivery before comparing them. [Delivery and telemetry](../explanation/telemetry-and-delivery.md) explains those counters, committed lag and alert delays.
 
 ## Keep exploring or erase the lab
 

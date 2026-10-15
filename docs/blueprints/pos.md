@@ -13,7 +13,7 @@ A merchant submits checkout or refund commands to a fenced orchestrator. Redpand
 
 ## Lab and proposal
 
-The lab records requested, bound, attempt and observed phases in one app. Cash is local accounting; optional Stripe test and Square sandbox adapters need explicit enablement and credentials. The proposal adds merchant-scoped identity, webhook intake and background reconciliation, none of which are lab routes.
+Follow requested, bound, attempt and observed phases within one lab app. Cash stays local accounting, while optional Stripe test and Square sandbox adapters require explicit enablement and credentials. Merchant-scoped identity, webhook intake and background reconciliation would extend this flow with new services and routes.
 
 ## Authority and effects
 

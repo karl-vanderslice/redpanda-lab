@@ -1,6 +1,8 @@
 # Foundry Harbor Infrastructure
 
-Foundry Harbor Infrastructure is a fictional infrastructure review desk. HashiCorp Terraform manages three Redpanda brokers, three named data volumes, a network, immutable image references and optional Console through the current user's rootless Podman Docker-compatible Unix API. There is no Compose owner, cloud account, remote backend, `local-exec`, OpenTofu or CI/CD deployment in this lab. A saved plan authorizes resource changes; state is not a broker-log backup.
+Foundry Harbor Infrastructure lets you review a saved Terraform plan, apply exactly that artifact, and inspect a three-broker Redpanda cluster. HashiCorp Terraform manages the brokers, three named data volumes, a network, immutable image references and optional Console through your rootless Podman's Docker-compatible Unix API.
+
+Terraform owns this lab's resources directly, independently of Compose. The workflow uses local state and same-user plan review; cloud accounts, a remote backend, `local-exec`, OpenTofu and CI/CD deployment are outside this implementation. Keep infrastructure state and broker backups separate: a saved plan authorizes resource changes, while recovering log records requires a data backup.
 
 ## Plan, review and apply
 
@@ -143,7 +145,9 @@ OCI pins identify multi-architecture manifests. HashiCorp Terraform, the provide
 
 [Production blueprint](../blueprints/terraform.md).
 
-Only the local backend, same-user saved-plan review and broad rootless engine socket run here. The proposed plan/review/apply owners approve both artifact and target, while a separately protected encrypted, versioned, locking state backend owns infrastructure identity. Broker operators and backup/recovery owners preserve streaming data and execute replica-aware maintenance; state owners cannot recover a log by restoring Terraform state.
+The proposal extends local saved-plan review into a controlled deployment workflow. Plan, review and apply owners approve both the artifact and its target, with infrastructure identity held in a separately protected, encrypted, versioned and locking state backend. The running lab instead uses a local backend and the current user's broad rootless engine socket.
+
+Keep streaming-data recovery with broker operators and backup owners. They preserve records and carry out replica-aware maintenance; restoring Terraform state alone cannot restore a broker log.
 
 Production needs least-privilege automation, audited approvals, independent failure domains, TLS/auth and controlled Admin access. Replace unsafe development storage settings, review version compatibility and drain/replica health before rolling changes, and research import/migration/moved blocks before changing identity. `sensitive=true` masks display, not state/plan values; inject least-privilege secrets and verify exact support before using ephemeral/write-only fields. Preserve lineage/serial, stop competing writers and prove dead lock ownership before authorized force-unlock.
 

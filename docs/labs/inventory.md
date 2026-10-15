@@ -4,7 +4,9 @@ description: Receive, reserve, fulfill, and transfer stock while checking whole-
 
 # Inventory: Cedarline Supply
 
-Cedarline Supply is a fictional two-location stock desk. Redpanda stores its versioned catalog, initial stock, reservations and complete movement outcomes; one consumer owns the visible stock sheet. Receiving, transferring and fulfillment are local accounting commands, not scanner observations, supplier deliveries or physical shipments. No inventory database or warehouse system is connected.
+Cedarline Supply lets you receive, reserve, fulfill and transfer whole units of stock between two fictional locations. Watch the stock sheet change, check conservation across both locations, then reconstruct the same state from Redpanda's versioned catalog, initial stock, reservations and movement outcomes.
+
+One consumer owns the stock sheet. Its commands record local accounting decisions; connecting scanner observations, supplier deliveries, physical shipments or a warehouse database would require the adapters and reconciliation described in the [production proposal](#proposed-production-architecture).
 
 ## Run the stock desk {#run}
 
@@ -104,7 +106,7 @@ Measure hot-product queue wait, replay RSS and stock-response serialization. A r
 
 [Production blueprint](../blueprints/inventory.md).
 
-Production would add authenticated warehouse/catalog adapters and audited receiving or cycle-count observations, while a fenced owner keeps reservations and conservation authoritative in Redpanda. A stock read store would remain a projection; an idempotent fulfillment outbox and receipt reconciliation would connect committed reservations to actual shipment workflows. Those components are absent here: local `fulfilled` accounting neither sends a parcel nor proves delivery, and cross-shard transfer would require a new protocol.
+To connect the stock desk to a warehouse, the proposal adds authenticated catalog and warehouse adapters with audited receiving and cycle-count observations. A fenced owner keeps reservations and conservation authoritative in Redpanda, while a read store serves the stock view. An idempotent fulfillment outbox and receipt reconciliation connect committed reservations to shipment workflows. That connection needs separate evidence: the lab's `fulfilled` result records accounting, not parcel dispatch or delivery. Transfers across shards would also need a new conservation protocol.
 
 ## Scenario and disposal
 

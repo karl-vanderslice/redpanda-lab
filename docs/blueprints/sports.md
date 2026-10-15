@@ -7,13 +7,13 @@ hide:
 
 ![Proposed Courtside Assembly system topology](../assets/blueprints/sports.svg)
 
-A Redpanda consumer serves revision-checked score views while the viewer receives video through a separate CDN. Authenticated controls distinguish score authority from viewer telemetry. Media bytes flow through origin, transcoding and objects, never the Kafka log.
+Follow two paths through the proposed system: a Redpanda consumer serves revision-checked score views, while a separate CDN delivers video. Authenticated controls keep score authority distinct from viewer telemetry. Media bytes travel through origin, transcoding and object storage, leaving the Kafka log for events.
 
 [Scope and deployment assumptions](./index.md).
 
 ## Lab and proposal
 
-The lab combines score, preference and playback records in one ordered `sports.events.v2` topic and serves local MP4 files directly. The proposal separates analytics and adds authorized media publishing, captions, objects and CDN delivery; no media-provider integration exists.
+In the lab, one ordered `sports.events.v2` topic carries score, preference and playback records, and the app serves local MP4 files directly. The proposed media-provider integration separates analytics and adds authorized publishing, captions, object storage and CDN delivery.
 
 ## Authority and effects
 

@@ -13,7 +13,7 @@ Devices send sequence-numbered readings through a bounded gateway. A Redpanda co
 
 ## Lab and proposal
 
-The lab has three fixture devices and one HTTP gateway/reducer, with no device authentication or notification provider. The proposal adds credential lifecycle, bounded spooling, a fenced fleet writer and a durable delivery ledger.
+Start with the lab's three fixture devices and single HTTP gateway/reducer to see how sequence numbers shape device history and alerts. Moving to physical devices would add authentication and credential lifecycle, bounded spooling and a fenced fleet writer. Notification delivery would have its own provider and durable delivery ledger.
 
 ## Authority and effects
 
