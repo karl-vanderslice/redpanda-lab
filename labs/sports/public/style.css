@@ -70,11 +70,11 @@ nav a[aria-current="page"] { color: var(--rust); border-color: var(--rust); }
 main { padding-block: 1.5rem 3rem; }
 .update-tools { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin-bottom: 2rem; font-size: .85rem; }
 .update-tools span { flex: 1 1 20rem; color: var(--muted); }
-h1, h2, h3, p, li, dt, dd, a, span { overflow-wrap: anywhere; }
-h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
+h1, h2, p, li, dt, dd, a, span { overflow-wrap: anywhere; }
+h1, h2 { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
 h1 { font-size: clamp(2rem, 4vw, 3.5rem); line-height: 1.1; margin: 0 0 1.5rem; }
 h2 { font-size: 1.65rem; line-height: 1.2; margin: 0 0 .8rem; }
-h3 { font-size: 1.5rem; line-height: 1.25; margin: 0 0 .8rem; }
+.card-title { font-size: 1.5rem; line-height: 1.25; margin: 0 0 .8rem; }
 p { margin: 0 0 1rem; }
 .section-heading { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 1.75rem; }
 .section-heading h1, .section-heading h2 { margin: 0; }

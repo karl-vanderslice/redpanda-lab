@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Use second-level headings for sports match cards and put the sports lab notice in a labeled landmark.
 - Reserve the trading contract strip with static cards so first state no longer shifts the page. Name the brand link and closed order buttons by their visible text.
 - State that concurrent identical agent-messaging submissions can each append, while consumption ignores the later copy and starts no second inference.
 - Name the exact generator controls, work-ledger page areas and activity follow button in the guides, and describe `restart` as a log rebuild rather than an image rebuild.
