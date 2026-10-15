@@ -44,6 +44,9 @@ function parseResponse(wire, start) {
 }
 // The first response exceeds the receive window. The following response must
 // wait for its turn on this connection without retaining the exchange mutex.
+// This needs the paused reader to stall the server's write. Before the lock
+// fix, 8 MiB stalled under rootless port forwarding even with 32 MiB TCP
+// autotuning limits. A host that buffers more could let the old bug pass.
 const missingId = 'pipelined-missing-'.padEnd(8 * 1024 * 1024, 'a');
 for (const conflict of [false, true]) {
   const command = { ...operation.command };
