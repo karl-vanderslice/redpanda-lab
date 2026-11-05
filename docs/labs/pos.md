@@ -64,7 +64,15 @@ Identical IDs and canonical input return retained state without repeating a prov
 
 ## Sandbox configuration and API provenance
 
-Export server-only values before `labs/run pos up`. Never put secrets in browser inputs, URLs or ledger records. Provider availability means configuration accepted, not connectivity verified.
+The root `secretspec.toml` declares the existing server-side environment
+interfaces. `stripe-sandbox` selects only the Stripe test key;
+`square-sandbox` selects the Square token and location ID. Cash requires no
+credentials. Supply existing values through their authorized environment
+owner; this repository does not create credentials or a SOPS file. For a
+durable encrypted source, add an explicit SOPS provider referencing the
+operator's existing ciphertext rather than copying values to a second store.
+Never put secrets in browser inputs, URLs or ledger records. Provider
+availability means configuration accepted, not connectivity verified.
 
 | Supported environment | Default | Contract |
 | --- | --- | --- |
@@ -74,6 +82,18 @@ Export server-only values before `labs/run pos up`. Never put secrets in browser
 | `SQUARE_SANDBOX_ACCESS_TOKEN` | Empty | Server-side token with no line breaks. |
 | `SQUARE_SANDBOX_LOCATION_ID` | Empty | Letters, digits, underscores or hyphens; verified location must use USD. |
 | `POS_SANDBOX_E2E` | Unset | Scenario-only opt-in; `1` runs external checks and also requires authorization and real credentials. |
+
+After separate authorization for sandbox provider requests, a scoped launch
+can deliver the selected existing environment values:
+
+```sh
+secretspec --file secretspec.toml --reason "Start the authorized Stripe sandbox" \
+  run --profile stripe-sandbox -- env POS_SANDBOX_ENABLED=1 ./labs/run pos up
+```
+
+Use `square-sandbox` for Square. The profile does not authorize provider
+requests or hide credentials already available to the child process. Check
+requirements without printing values using `secretspec ... check --json`.
 
 Only these public test sources are accepted: [Stripe](https://docs.stripe.com/testing) `pm_card_visa` and `pm_card_chargeDeclinedExpiredCard`; [Square](https://developer.squareup.com/docs/devtools/sandbox/payments) `cnon:card-nonce-ok` and `cnon:card-nonce-declined`. Do not enter card details or use live funds.
 

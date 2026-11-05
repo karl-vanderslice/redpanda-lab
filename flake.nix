@@ -116,6 +116,11 @@
               coreutils
               util-linux
               just
+              secretspec
+              sops
+              age
+              age-plugin-tpm
+              age-plugin-yubikey
               zensical
               shellcheck
               actionlint
