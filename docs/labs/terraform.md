@@ -45,10 +45,10 @@ Rootful operation, remote connection overrides, foreign-user sockets and mismatc
 
 ## State and supported settings
 
-Private state defaults to:
+Private state defaults to the primary checkout's gitignored `.lab-state/` directory, which linked worktrees share:
 
 ```text
-${XDG_STATE_HOME:-$HOME/.local/state}/redpanda-lab/terraform/<checkout-hash>/
+<primary checkout>/.lab-state/terraform/<checkout-hash>/
   settings.json                  project, ports and Console selection
   inputs.tfvars.json             effective pinned inputs
   host-fingerprint               rootless store/socket identity
@@ -61,17 +61,17 @@ ${XDG_STATE_HOME:-$HOME/.local/state}/redpanda-lab/terraform/<checkout-hash>/
   evidence/                      private E2E plan JSON
 ```
 
-Directory mode is 0700 with umask 077. `LAB_TF_STATE_DIR` must be outside the checkout. Moving/cloning the checkout changes the project namespace. Restore the original path/engine or deliberately inventory, back up and research import/migration; never erase state and overlay a second cluster on existing volumes.
+Directory mode is 0700 with umask 077. Wrappers pass the checkout to Nix as a Git flake, so untracked `.lab-state/` never enters the Nix store; a `path:` reference would copy it. Running outside a Git checkout fails unless `LAB_TF_STATE_DIR` is set. Moving/cloning the checkout changes the project namespace. Restore the original path/engine or deliberately inventory, back up and research import/migration; never erase state and overlay a second cluster on existing volumes.
 
 | Actual wrapper setting | Default and boundary |
 | --- | --- |
-| `LAB_TF_STATE_DIR` | External path above; same project identity required |
+| `LAB_TF_STATE_DIR` | Overrides the primary checkout path above; same project identity required |
 | `LAB_TF_PORT_BASE` | Path-derived base; explicit integer 49152–65520 |
 | `LAB_TF_CONSOLE_ENABLED` | `true`; only `true` or `false` |
 | `LAB_TF_HEALTH_TIMEOUT` | 120 seconds of wrapper patience |
 | `LAB_PODMAN_SOCKET` | Project-private Unix socket unless explicitly supplied |
 | `LAB_TERRAFORM_IMAGE` | Normally Nix-built `localhost/redpanda-lab-terraform:tf-1.16.4-docker-4.6.0`; explicit image override's resolved ID binds review |
-| `XDG_STATE_HOME`, `XDG_RUNTIME_DIR`, `TMPDIR` | State/runtime path inputs; runtime falls back through `TMPDIR` to `/tmp` |
+| `XDG_RUNTIME_DIR`, `TMPDIR` | Runtime path inputs; runtime falls back through `TMPDIR` to `/tmp` |
 
 Port and Console selections persist at first planning, not inspection/validation. Overrides cannot change a live selection. Port collisions fail without reallocation or retry; only running owned containers can retain their bound ports, not stopped ones. A successful reviewed destroy releases settings only after state and owned container/volume/network inventory are empty. Backups and evidence remain.
 

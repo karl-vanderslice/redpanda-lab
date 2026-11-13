@@ -11,7 +11,7 @@ if [[ $output == / || $output == "$root" || $output == "$root/"* || $root == "$o
   exit 2
 fi
 if [[ ${REDPANDA_LAB_SHELL:-0} != 1 ]]; then
-  exec nix develop "path:$root" --no-update-lock-file -c bash "$root/scripts/diagrams" "$output"
+  exec nix develop "$root" --no-update-lock-file -c bash "$root/scripts/diagrams" "$output"
 fi
 mkdir -p -- "$output"
 output=$(realpath -e -- "$output")

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Keep durable lab state (saved port blocks, lifecycle locks and Terraform state, plans and evidence) in the primary checkout's gitignored `.lab-state/` directory, shared by linked worktrees. Terraform state no longer defaults to `XDG_STATE_HOME`, which can be lost at reboot, and the outside-checkout guard is gone. Wrappers now pass the checkout as a Git flake reference instead of `path:`, so only tracked files reach the Nix store; `git add` new files before building. Lifecycle commands now require a Git checkout. Existing state at the old locations is not migrated.
 - Name the resident-data and approved-export lab **Data sovereignty**, with `sovereignty` commands, source paths, navigation and blueprint exports. Preserve existing topic, resource, port-state and browser preference identifiers so retained instances remain usable without a reset.
 - Add a visual Zensical landing page, native icon cards, a blueprint gallery and an original local logo/favicon. Present shell examples as copyable terminals and keep alternate walkthroughs visible without content tabs.
 - Extend blueprint diagrams with responsive fit, mouse pan, cursor-centered wheel zoom, keyboard and pan-button controls, and an expanded native dialog. Preserve static exports and no-JavaScript viewing; keep theme shortcuts, focus restoration, annotations and printing usable.

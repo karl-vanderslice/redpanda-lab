@@ -6,7 +6,7 @@ terraform {
       version = "= 4.6.0"
     }
   }
-  # The wrapper initializes this to /state/terraform.tfstate, never the checkout.
+  # The wrapper initializes this to /state/terraform.tfstate, its private state mount, never the source workspace.
   backend "local" {}
 }
 

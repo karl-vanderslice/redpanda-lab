@@ -2,7 +2,7 @@
 set -euo pipefail
 root=$(realpath "$(dirname "${BASH_SOURCE[0]}")/../..")
 if [[ ${REDPANDA_LAB_SHELL:-0} != 1 ]]; then
-  exec nix develop "path:$root" --no-update-lock-file -c bash "$root/labs/sovereignty/lab" "$@"
+  exec nix develop "$root" --no-update-lock-file -c bash "$root/labs/sovereignty/lab" "$@"
 fi
 command=${1:-help}; shift || true
 # shellcheck source-path=SCRIPTDIR
@@ -12,7 +12,8 @@ case "$command" in up|down|status|logs|exec|rpk|restart|outage|recover) require_
 # Keep the stored namespace so the renamed command reuses retained records and ports.
 identity=$(printf '%s' "$root/jurisdictions" | sha256sum)
 export LAB_PROJECT="rp-jurisdictions-${identity:0:10}" LAB_APP_IMAGE=localhost/redpanda-sovereignty:nix
-state="${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/labs/${identity:0:10}"
+state_root=$(lab_state_root "$root")
+state="$state_root/labs/${identity:0:10}"
 mkdir -p "$state"
 case "$command" in
   up|down|restart|outage|recover) exec 9>"$state/lifecycle.lock"; flock -n 9 || { echo 'Another lifecycle action owns this lab.' >&2; exit 1; } ;;
@@ -60,7 +61,7 @@ JS
       ((available)) || { echo 'Selected port unavailable.' >&2; exit 1; }
       printf '%s\n' "$port" > "$state/port-base"
     fi
-    image=$(nix build --no-update-lock-file --no-link --print-out-paths "path:$root#sovereignty-image")
+    image=$(nix build --no-update-lock-file --no-link --print-out-paths "$root#sovereignty-image")
     LAB_APP_IMAGE=$(load_archive_image "$image")
     compose up -d broker-eu broker-us broker-apac broker-global
     for target in eu us apac global; do

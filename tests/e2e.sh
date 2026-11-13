@@ -4,7 +4,7 @@
 set -euo pipefail
 root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
 if [[ ${REDPANDA_LAB_SHELL:-0} != 1 ]]; then
-  exec nix develop "path:$root" --no-update-lock-file -c env REDPANDA_LAB_SHELL=1 bash "$root/tests/e2e.sh" "$@"
+  exec nix develop "$root" --no-update-lock-file -c env REDPANDA_LAB_SHELL=1 bash "$root/tests/e2e.sh" "$@"
 fi
 # shellcheck source-path=SCRIPTDIR
 # shellcheck source=../scripts/local-podman
@@ -205,7 +205,7 @@ for kind in volume network; do
     fail "no lab $kind remains"
   fi
 done
-if [[ ! -f ${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/${identity:0:10}/port-base ]]; then
+if [[ ! -f $(lab_state_root "$root")/explorer/${identity:0:10}/port-base ]]; then
   pass 'saved port state removed'
 else
   fail 'saved port state removed'

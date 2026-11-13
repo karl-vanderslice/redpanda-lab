@@ -2,7 +2,7 @@
 set -euo pipefail
 root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
 if [[ ${REDPANDA_LAB_SHELL:-0} != 1 ]]; then
-  exec nix develop "path:$root" --no-update-lock-file -c bash "$root/labs/run" "$@"
+  exec nix develop "$root" --no-update-lock-file -c bash "$root/labs/run" "$@"
 fi
 name=${1:-help}
 case "$name" in
@@ -20,7 +20,8 @@ source "$root/scripts/local-podman"
 case "$command" in up|down|status|logs|exec|rpk|restart) require_local_podman ;; esac
 identity=$(printf '%s' "$root/$name" | sha256sum)
 export LAB_PROJECT="rp-${name}-${identity:0:10}"
-state="${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/labs/${identity:0:10}"
+state_root=$(lab_state_root "$root")
+state="$state_root/labs/${identity:0:10}"
 mkdir -p "$state"
 if [[ $command == up || $command == down || $command == restart ]]; then
   exec 9>"$state/lifecycle.lock"
@@ -78,11 +79,11 @@ JS
       (( available )) || { echo 'No free port block found; select another LAB_PORT_BASE.' >&2; exit 1; }
       printf '%s\n' "$base" > "$state/port-base"
     fi
-    image=$(nix build --no-update-lock-file --no-link --print-out-paths "path:$root#$name-image")
+    image=$(nix build --no-update-lock-file --no-link --print-out-paths "$root#$name-image")
     # Mutable cache tags cannot select a different checkout's image.
     LAB_APP_IMAGE=$(load_archive_image "$image")
     if [[ $name == agent-chat || $name == agent-messaging ]]; then
-      model_image=$(nix build --no-update-lock-file --no-link --print-out-paths "path:$root#model-image")
+      model_image=$(nix build --no-update-lock-file --no-link --print-out-paths "$root#model-image")
       LAB_MODEL_IMAGE=$(load_archive_image "$model_image")
     fi
     compose up -d redpanda console

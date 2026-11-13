@@ -91,7 +91,7 @@ The strict build checks internal page links and heading anchors. Preview the sta
 
 ## Ports
 
-Explorer and ordinary application labs allocate a free high-port block on first startup, saved until successful `down`:
+Explorer and ordinary application labs allocate a free high-port block on first startup, saved in the primary checkout's gitignored `.lab-state/` until successful `down`:
 
 ```bash
 LAB_PORT_BASE=53000 just up trading

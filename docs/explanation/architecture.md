@@ -22,7 +22,7 @@ Console, Grafana and Prometheus are unmodified upstream interfaces. A rendered r
 
 ## Runtime ownership
 
-The `lab` wrapper derives a Compose project name from the checkout's absolute path. Named volumes hold broker and telemetry data, outside the repository. Port state and lifecycle locks live under `${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/`.
+The `lab` wrapper derives a Compose project name from the checkout's absolute path. Named volumes hold broker and telemetry data, outside the repository. Port state and lifecycle locks live in the primary checkout's gitignored `.lab-state/` directory, which linked worktrees share; it stays out of the Nix store because the wrappers use Git flake references.
 
 `up` and `down` serialize through `flock`. Containers must not inherit that lock descriptor. Initial port probes reduce collisions but cannot prevent another process binding before startup. Diagnose collisions without stopping unrelated processes.
 

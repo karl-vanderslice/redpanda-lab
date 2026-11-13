@@ -8,3 +8,4 @@ site/
 *.tfstate.*
 *.tfplan
 .backlog/.locks/
+/.lab-state/

@@ -2,7 +2,7 @@
 set -euo pipefail
 root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
 if [[ ${REDPANDA_LAB_SHELL:-0} != 1 ]]; then
-  exec nix develop "path:$root" --no-update-lock-file -c bash "$root/scripts/docs" "$@"
+  exec nix develop "$root" --no-update-lock-file -c bash "$root/scripts/docs" "$@"
 fi
 mode=${1:-build}
 output=''

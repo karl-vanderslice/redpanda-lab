@@ -3,13 +3,13 @@ set -euo pipefail
 root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 if [[ ${REDPANDA_LAB_SHELL:-0} != 1 ]]; then
   command -v nix >/dev/null || { echo 'Nix with flakes is required. The locked development shell supplies all user-space tools.' >&2; exit 1; }
-  exec nix develop "path:$root" --no-update-lock-file -c env REDPANDA_LAB_SHELL=1 bash "$root/lab" "$@"
+  exec nix develop "$root" --no-update-lock-file -c env REDPANDA_LAB_SHELL=1 bash "$root/lab" "$@"
 fi
 # shellcheck source-path=SCRIPTDIR
 # shellcheck source=scripts/local-podman
 source "$root/scripts/local-podman"
 command=${1:-help}
-tools=(node npm curl jq flock sha256sum)
+tools=(node npm curl jq flock sha256sum git)
 case "$command" in up|down|status|logs|rpk) tools+=(podman podman-compose redpanda-local-podman) ;; esac
 for tool in "${tools[@]}"; do
   command -v "$tool" >/dev/null || { echo "Missing tool: $tool" >&2; exit 1; }
@@ -18,7 +18,9 @@ case "$command" in up|down|status|logs|rpk) require_local_podman ;; esac
 identity=$(printf '%s' "$root" | sha256sum)
 export LAB_PROJECT="rp-lab-${identity:0:10}"
 export LAB_APP_IMAGE="localhost/$LAB_PROJECT-app:1"
-state="${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/${identity:0:10}"
+state_root=$(lab_state_root "$root")
+state="$state_root/explorer/${identity:0:10}"
+cache="${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/${identity:0:10}"
 mkdir -p "$state"
 if [[ $command == up || $command == down ]]; then
   # Containers outlive this script; never let their conmon processes inherit the lock descriptor.
@@ -107,11 +109,11 @@ JS
     ;;
   lock)
     # Environment registry/auth settings outrank .npmrc. Resolve in a clean public-only npm environment.
-    mkdir -p "$state/npm-home"
-    : > "$state/npm-home/empty.npmrc"
-    env -i PATH="$PATH" HOME="$state/npm-home" npm_config_cache="$state/npm" \
+    mkdir -p "$cache/npm-home"
+    : > "$cache/npm-home/empty.npmrc"
+    env -i PATH="$PATH" HOME="$cache/npm-home" npm_config_cache="$cache/npm" \
       npm --prefix "$root/app" install --package-lock-only --ignore-scripts --no-audit --no-fund \
-      --registry=https://registry.npmjs.org/ --userconfig="$state/npm-home/empty.npmrc" --globalconfig=/dev/null
+      --registry=https://registry.npmjs.org/ --userconfig="$cache/npm-home/empty.npmrc" --globalconfig=/dev/null
     ;;
   status) compose ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'; [[ ! -f $state/port-base ]] || urls ;;
   urls) [[ -f $state/port-base ]] || { echo 'Lab is not initialized. Run ./lab up.' >&2; exit 1; }; urls ;;

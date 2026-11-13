@@ -1,5 +1,21 @@
 #!/usr/bin/env bash
-# Sourced by engine consumers; engine-free commands never call this preflight.
+# Sourced by lifecycle wrappers; engine-free commands never call the Podman preflight.
+
+# Durable lab state lives in the primary checkout's gitignored .lab-state/, shared by
+# its linked worktrees. Git flake sources exclude untracked files, so it never reaches
+# the Nix store; a snapshot without Git metadata has no safe state location.
+lab_state_root() {
+  local root=$1 top common dir
+  if ! top=$(git -C "$root" rev-parse --show-toplevel 2>/dev/null) || [[ $top != "$root" ]]; then
+    printf 'Lab state needs a Git checkout rooted at %s.\n' "$root" >&2
+    return 1
+  fi
+  common=$(git -C "$root" rev-parse --path-format=absolute --git-common-dir) || return
+  dir="$(dirname -- "$common")/.lab-state"
+  mkdir -m 700 -- "$dir" 2>/dev/null || [[ -d $dir ]] || return
+  printf '%s\n' "$dir"
+}
+
 require_local_podman() {
   if [[ ! -x ${REDPANDA_LAB_PODMAN:-} ]]; then
     printf 'Local Podman adapter is unavailable; enter the locked Nix development shell.\n' >&2

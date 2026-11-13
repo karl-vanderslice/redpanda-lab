@@ -9,8 +9,12 @@ source "$root/scripts/local-podman"
 identity=$(printf '%s' "$root" | sha256sum)
 identity=${identity:0:12}
 project="rplab-tf-$identity"
-state=$(realpath -m "${LAB_TF_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/redpanda-lab/terraform/$identity}")
-case "$state/" in "$root/"*) printf 'State must be outside checkout: %s\n' "$state" >&2; exit 1;; esac
+if [[ -n ${LAB_TF_STATE_DIR:-} ]]; then
+  state=$(realpath -m "$LAB_TF_STATE_DIR")
+else
+  state_root=$(lab_state_root "$root")
+  state="$state_root/terraform/$identity"
+fi
 # shellcheck source=images.env
 source "$lab/images.env"
 fail() { printf 'terraform lab: %s\n' "$*" >&2; exit 1; }
@@ -149,7 +153,7 @@ else
 fi
 image=${LAB_TERRAFORM_IMAGE:-}
 if [[ -z "$image" ]]; then
-  archive=$(nix build --no-update-lock-file --no-link --print-out-paths "path:$root#terraform-image")
+  archive=$(nix build --no-update-lock-file --no-link --print-out-paths "$root#terraform-image")
   [[ -f "$archive" ]] || fail 'terraform-image must be a dockerTools archive'
   image_id=$(load_archive_image "$archive")
 else

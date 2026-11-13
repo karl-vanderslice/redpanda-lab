@@ -44,6 +44,12 @@ Extend these owners rather than adding competing checkers or wrappers. Bash must
 - POS provider calls are sandbox-only. Cash workflows are not evidence that credential-dependent provider paths work. Keep credentials out of images, Nix expressions, logs and artifacts.
 - Keep disposable outputs outside the checkout. Back up retained telemetry before an upgrade; `down` is disposal, not rollback.
 
+## Local state
+
+- `.lab-state/` in the primary checkout is gitignored, mode 0700 and holds the durable state: `explorer/<hash>/` and `labs/<hash>/` saved port blocks and lifecycle locks, and `terraform/<hash>/` Terraform state, settings, saved plans and evidence. Plans and evidence can contain secrets. Linked worktrees use the primary checkout's directory; each hash comes from the worktree's own physical path. `LAB_TF_STATE_DIR` overrides the Terraform location.
+- Wrappers pass the checkout path as a Git flake reference, which copies only tracked files into the Nix store. Never use `path:` references; they copy `.lab-state/` too. `git add` new source files before building.
+- Disposable: lab records in Podman named volumes (`down` deletes them) and `${XDG_CACHE_HOME:-$HOME/.cache}/redpanda-lab/` (npm/Cargo caches, documentation stages, E2E reports).
+
 ## Documentation and verification
 
 Use fictional companies for first-party labs. Keep actual technology, integration and license identifiers accurate. Write short, direct documentation about behavior and limits, not the task or editing process. Production blueprints are proposals, not deployed infrastructure. Generate their exports; do not hand-edit SVG/PNG output.
